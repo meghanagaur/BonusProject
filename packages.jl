@@ -1,0 +1,15 @@
+Pkg.add("NLopt")
+Pkg.add("DataStructures")
+Pkg.add("Distributions")
+Pkg.add("ForwardDiff")
+Pkg.add("Interpolations")
+Pkg.add("LinearAlgebra")
+Pkg.add("Parameters")
+Pkg.add("Random")
+Pkg.add("Roots")
+Pkg.add("Roots")
+Pkg.add("Distributed")
+Pkg.add("Sobol")
+Pkg.add(url="https://github.com/meghanagaur/DynamicModel")
+
+
