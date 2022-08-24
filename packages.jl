@@ -1,4 +1,3 @@
-Pkg.add("NLopt")
 Pkg.add("DataStructures")
 Pkg.add("Distributions")
 Pkg.add("ForwardDiff")
@@ -10,6 +9,8 @@ Pkg.add("Roots")
 Pkg.add("Roots")
 Pkg.add("Distributed")
 Pkg.add("Sobol")
+Pkg.add("Optim")
+Pkg.add("NLopt")
 Pkg.add(url="https://github.com/meghanagaur/DynamicModel")
 
 

@@ -27,11 +27,11 @@ function objFunction(endogParams, pb, zshocks, data_mom, W)
     else
         # Simulate the model and compute moments
         out     = simulate(baseline, zshocks)
-        mod_mom = [out.var_Δlw, out.dlw1_du, out.dΔlw_dy ]
-        d       = (mod_mom - data_mom)./2(mod_mom + data_mom) # arc percentages 
-        f       = maximum([out.c_flag; out.a_flag]) < 1 ? d'*W*d : Inf
+        mod_mom = [out.var_Δlw, out.dlw1_du, out.dΔlw_dy]
+        d       = (mod_mom - data_mom)./2(mod_mom + data_mom) # arc percentage differences
+        f       = out.flag < 1 ? d'*W*d : Inf
         println(string(d'*W*d))
-        return f, mod_mom, out.c_flag, out.a_flag, out.θ
+        return f, mod_mom, out.flag, out.θ
     end
 end
 
@@ -40,27 +40,30 @@ endogParams    = zeros(3)
 endogParams[1] = 0.5      # ε
 endogParams[2] = 0.05     # σ_η
 endogParams[3] = 0.3      # χ
-zshocks        = simulateZShocks(model())
-data_mom       =[0.53^2, -0.5, .05] # update 
+zshocks        = simulateZShocks(model()) # do  OUTSIDE of estimation 
+data_mom       =[0.53^2, -0.5, .05] # may need to update 
 J              = length(data_mom)
-W              = Matrix(1.0I, J, J) # set to inverse of covariance matrix?s
+W              = Matrix(1.0I, J, J) # inverse of covariance matrix of data_mom?
 pb             = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
                 (1, [0.1, 1.0]),
                 (2, [0.0, 0.1]),
                 (3, [0.0, 0.5])])
 
-@time f, mod_mom, c_flag, a_flag, θ = objFunction(endogParams, pb, zshocks, data_mom, W)
+@time f, mod_mom, flag, θ = objFunction(endogParams, pb, zshocks, data_mom, W)
 
 
-# check to make sure we always fall within bounds 
+# check to make sure we fall within bounds for all χ
 zgrid = model().zgrid
 
+# min χ
 mod1 = solveModel(model(z0 = log(minimum(zgrid)), χ = 0.0))
 mod2 = solveModel(model(z0 = log(maximum(zgrid)), χ = 0.0))
 
+# max χ
 mod3 = solveModel(model(z0 = log(minimum(zgrid)), χ = 0.5))
 mod4 = solveModel(model(z0 = log(maximum(zgrid)), χ = 0.5))
 
+# median χ
 mod5 = solveModel(model(z0 = log(minimum(zgrid)), χ = 0.3))
 mod6 = solveModel(model(z0 = log(maximum(zgrid)), χ = 0.3))
 
