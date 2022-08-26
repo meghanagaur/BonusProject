@@ -1,6 +1,4 @@
-#=
-Define some important functions for the SMM.
-=#
+# Define important functions for the SMM.
 
 """
 Simulate EGSS, given parameters defined in tuple m.
@@ -16,9 +14,8 @@ function simulate(baseline, shocks; u0 = 0.06)
 
     # Initialize series for each point on zgrid 
     θ_z      = zeros(length(zgrid))  # θ(z) 
-    lw0_z    = zeros(length(zgrid))  # log of w_0(z): constant for wage diff equation
-    lw1_z    = zeros(length(zgrid))  # E[log w1(z)] <- wage of new hires
-    w1_z     = zeros(length(zgrid))  # E[w1(z)]  (= w_0(z) by martingale property)
+    lw1_z    = zeros(length(zgrid))  # E[log w1(z)] <- wages of new hires
+    w1_z     = zeros(length(zgrid))  # E[w1(z)] (= w_0(z) by martingale property)
     a_z      = zeros(length(zgrid))  # a(z | z_0 = z)
     flag_z   = zeros(Int64,length(zgrid)) # flags
 
@@ -26,28 +23,26 @@ function simulate(baseline, shocks; u0 = 0.06)
     sol    = OrderedDict{Int64, Any}()
     @inbounds for (iz,z) in enumerate(zgrid)
         
-        modd          = model(z0 = log(z), ε = ε, σ_η = σ_η, χ = χ) #, γ = γ)
+        modd          = model(z0 = z, ε = ε, σ_η = σ_η, χ = χ) #, γ = γ)
         sol[iz]       = solveModel(modd; noisy = false)
 
         @unpack exit_flag1, exit_flag2, exit_flag3, wage_flag, effort_flag, az, w_0, θ = sol[iz]
-        z_idx  = modd.z0_idx
-
+        z_idx         = modd.z0_idx
         flag_z[iz]    = maximum([exit_flag1, exit_flag2, exit_flag3, wage_flag, effort_flag])
         θ_z[iz]       = θ             
-        lw0_z[iz]     = log(w_0)       
         a_z[iz]       = az[z_idx]     
-        lw1_z[iz]     = lw0_z[iz] - 0.5*(ψ*hp(a_z[iz])*σ_η)^2 
+        lw1_z[iz]     = log(w_0) - 0.5*(ψ*hp(a_z[iz])*σ_η)^2 
         w1_z[iz]      = w_0           
     end
 
-    # for regressions with initial z0 FIXED (continuing hires)
+    # for regressions with initial z0 FIXED at z_ss (continuing hires)
     az_z0 = sol[z0_idx].az  # a(z | z_0 = z_ss)
     hp_z0 = hp.(az_z0)      # h'(a(z | z_0 = z_ss))
     yz_z0 = sol[z0_idx].yz  # z*a(z | z_0 = z_ss)
 
     # Get all of the z_t and η_t shocks <- beginning at z_ss
     @unpack z_shocks, z_shocks_idx, burnin, N, T, seed = zshocks # all N X T (including burnin-in)
-    η_shocks =  simulateEShocks(mod; N = N, T = T - burnin, seed = seed)
+    η_shocks =  simulateEShocks(baseline; N = N, T = T - burnin, seed = seed)
     
     # Compute simulated series (trim to post-burn-in for z_t when computing moments)
     @views lw1   = lw1_z[z_shocks_idx]  # E[w_1 | z_t]
@@ -60,7 +55,7 @@ function simulate(baseline, shocks; u0 = 0.06)
     Δlw          = t1 - t2
     var_Δlw      = var(Δlw) 
     histogram(vec(Δlw))
-    
+
     # Compute individual log output y_it
     @views y   = yz_z0[z_shocks_idx][:,burnin+1:end]
     @views ηz  = z_shocks[:,burnin+1:end].*η_shocks

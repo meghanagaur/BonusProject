@@ -1,3 +1,4 @@
+#using Pkg; Pkg.add(url="https://github.com/meghanagaur/DynamicModel")
 using DynamicModel, BenchmarkTools, DataStructures, Distributions, Plots,
 ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase
 
@@ -50,22 +51,3 @@ pb             = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
                 (3, [0.0, 0.5])])
 
 @time f, mod_mom, flag, θ = objFunction(endogParams, pb, zshocks, data_mom, W)
-
-
-# check to make sure we fall within bounds for all χ
-zgrid = model().zgrid
-
-# min χ
-mod1 = solveModel(model(z0 = log(minimum(zgrid)), χ = 0.0))
-mod2 = solveModel(model(z0 = log(maximum(zgrid)), χ = 0.0))
-
-# max χ
-mod3 = solveModel(model(z0 = log(minimum(zgrid)), χ = 0.5))
-mod4 = solveModel(model(z0 = log(maximum(zgrid)), χ = 0.5))
-
-# median χ
-mod5 = solveModel(model(z0 = log(minimum(zgrid)), χ = 0.3))
-mod6 = solveModel(model(z0 = log(maximum(zgrid)), χ = 0.3))
-
-
-
