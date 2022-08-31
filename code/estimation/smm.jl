@@ -47,12 +47,12 @@ endogParams[1] = 0.5   # ε
 endogParams[2] = 0.05  # σ_η
 endogParams[3] = 0.3   # χ
 endogParams[4] = 0.66  # χ
-data_mom       =[0.53^2, -0.5, .05, 0.6]  # may need to update 
+data_mom       =[0.53, -0.5, .05, 0.6]  # may need to update 
 J              = length(data_mom)
 W              = Matrix(1.0I, J, J)       # inverse of covariance matrix of data_mom?
 pb             = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
                 (1, [0  , 3.0]),
-                (2, [0.0, sqrt(.366)]),
+                (2, [0.0, .36]),
                 (3, [-1, 1]),
                 (4, [eps(), 1]) ])
 
@@ -91,5 +91,5 @@ zShocks = (z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, distr = distr,
 T = T, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
 
 # solve SMM
-@time f, mod_mom, flag = objFunction(endogParams, pb, zShocks, data_mom, W)
+@time fval, mod_mom, flag = objFunction(endogParams, pb, zShocks, data_mom, W)
 

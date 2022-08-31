@@ -33,8 +33,8 @@ tsfilter hp srate_hp = srate, smooth(100000)  trend(srate_trend)
 */
 
 * compute the avg frate + sep rate
-egen avg_frate    = mean(frate) if !missing(vacancies)
-egen avg_srate    = mean(srate) if !missing(vacancies)
+egen avg_frate    = mean(frate) // if !missing(vacancies)
+egen avg_srate    = mean(srate) // if !missing(vacancies)
 
 * compute quarterly probabilities
 gen q_frate       = 1 - (1 - avg_frate)^3

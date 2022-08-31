@@ -28,15 +28,14 @@ tsset
 * estimate AR coefficients for log alp
 gen lresid = L1.resid
 
-reg resid l.resid, nocons
+* useful check
 reg resid l.resid
+predict resid2, residuals
+reg resid l.resid, nocons
+bootstrap  _b[lresid], reps(10000): reg resid lresid
 
-summ resid
-
+* get variance of filtered log productivity
+bootstrap std=r(sd), reps(10000): sum resid
 
 * get variance of residuals
-predict resid2, residuals
-summ resid2
-
-bootstrap std=r(sd), reps(1000): sum resid2
-bootstrap  _b[lresid], reps(1000): reg resid lresid, nocons
+bootstrap std=r(sd), reps(10000): sum resid2

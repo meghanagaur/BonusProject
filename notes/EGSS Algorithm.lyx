@@ -99,18 +99,10 @@ Guess
 \end_layout
 
 \begin_layout Enumerate
-Solve for effort 
-\begin_inset Formula $a_{1}$
-\end_inset
-
- and 
-\begin_inset Formula $a_{2}$
-\end_inset
-
- using 
+Solve for effort as 
 \begin_inset Formula 
 \[
-a_{t}=\left[\cfrac{z_{t}a_{t}}{\psi_{1}(Y-\frac{\kappa}{q(\theta)})}-\cfrac{\psi_{t}}{\epsilon_{F}}(h'(a_{t})\sigma_{\eta})^{2}\right]^{\frac{\varepsilon}{1+\varepsilon}}
+a_{t}(z_{t})=\left[\cfrac{z_{t}a_{t}}{\psi_{1}(Y-\frac{\kappa}{q(\theta)})}-\cfrac{\psi_{t}}{\epsilon_{F}}(h'(a_{t})\sigma_{\eta})^{2}\right]^{\frac{\varepsilon}{1+\varepsilon}}
 \]
 
 \end_inset
@@ -146,7 +138,7 @@ Update
 
 \begin_inset Formula 
 \[
-\hat{Y}=\mathbb{E}_{0}\left[\sum_{t=1}^{T}(\beta(1-s))^{t-1}z_{t}a_{t}\right]
+\hat{Y}=\mathbb{E}_{1}\left[\sum_{t=1}^{T}(\beta(1-s))^{t-1}z_{t}a_{t}\right]
 \]
 
 \end_inset
@@ -187,7 +179,7 @@ Solve for
  using (zero profit condition)
 \begin_inset Formula 
 \[
-w_{0}=\psi_{1}\left(Y(\theta_{0})-\frac{\kappa}{q(\theta_{0})}\right)
+w_{0}=\psi_{1}\left(Y(\theta_{1})-\frac{\kappa}{q(\theta_{1})}\right)
 \]
 
 \end_inset
@@ -224,7 +216,7 @@ Then use this to calculate to value of participation constraint assuming
 \begin_inset Formula $\mathbb{E}[\log w_{t}]$
 \end_inset
 
- is exactly what we need).
+ is sexactly what we need).
 \end_layout
 
 \begin_layout Enumerate
@@ -233,69 +225,54 @@ If implied LHS of participation constraint (expected utility from contract)
 \begin_inset Formula $\omega$
 \end_inset
 
- then lower guess of 
-\begin_inset Formula $\theta_{0}$
+, then lower guess of q.
+ If implied LHS of participation constraint (expected utility from contract)
+ < 
+\begin_inset Formula $\omega$
 \end_inset
 
- to 
-\begin_inset Formula $\hat{\theta}$
+, then we will need to raise guess of 
+\begin_inset Formula $q$
 \end_inset
 
- (check that this seems to be converging; make sure we don't need to raise
- guess of 
-\begin_inset Formula $\theta_{0}$
-\end_inset
-
-).
+.
+ 
 \end_layout
 
 \begin_deeper
 \begin_layout Enumerate
 Dichotomy/bisection algorithm.
- E.g.
- start with range 
-\begin_inset Formula $\theta\in[\theta_{L},\theta_{H}]$
+ We will enforce 
+\begin_inset Formula $q\in[0,1]$
 \end_inset
 
 .
- For starters, let's take 
-\begin_inset Formula $\theta_{L}=0$
+ So for starters, let's take 
+\begin_inset Formula $q_{L}=0$
 \end_inset
 
 , 
-\begin_inset Formula $\theta_{H}=1$
+\begin_inset Formula $q_{H}=1$
 \end_inset
 
 .
  Start with guess 
-\begin_inset Formula $\hat{\theta}_{0}=\cfrac{1}{2}(\theta_{L}+\theta_{H})=0.5$
+\begin_inset Formula $\hat{q}=\cfrac{1}{2}(q_{L}+q_{H})=0.5$
 \end_inset
 
  (midpoint).
- If algo above reveals 
-\begin_inset Formula $\hat{\theta}_{0}<\theta^{*}$
-\end_inset
-
-, then update 
-\begin_inset Formula $\theta_{L}^{1}\rightarrow0.5$
-\end_inset
-
- and then 
-\begin_inset Formula $\hat{\theta}_{1}=0.5(\theta_{L}^{1}+\theta_{H})$
-\end_inset
-
-
+ Update q as described above.
 \end_layout
 
 \end_deeper
 \begin_layout Enumerate
-Iterate steps 2-??? till convergence.
+Iterate steps 2-9 until convergence.
 \end_layout
 
 \begin_layout Standard
 
 \series bold
-UTILITY FUNCTIONS
+UTILITY FUNCTION
 \end_layout
 
 \begin_layout Standard
@@ -314,43 +291,7 @@ setting
 \begin_inset Formula $\epsilon=0.5$
 \end_inset
 
- following Doligalski, Ndiaye and Werquin (2022)
-\end_layout
-
-\begin_layout Subsubsection
-With savings
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\max_{c}\sum\beta^{s}(\log(c_{s})-h(a_{s}))
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-BC and natural borrowing limit
-\end_layout
-
-\begin_layout Standard
-I think in this income fluctuation problem agents consume a fixed fraction
- of NPV income
-\end_layout
-
-\begin_layout Standard
-2 changes:
-\end_layout
-
-\begin_layout Standard
-zero profit condition in step 7 and 4
-\end_layout
-
-\begin_layout Itemize
-consumption (income fluctuation
+ following Doligalski, Ndiaye and Werquin (2022).
 \end_layout
 
 \end_body
