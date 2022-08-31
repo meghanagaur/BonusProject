@@ -8,98 +8,111 @@ Then, approximate the effort optimal effort a and wage w,
 as a(z) and w(z), i.e. assume an infinite horizon, so we do not have to keep
 track of the time period t. Note: u0 = initial unemployment rate.
 """
-function simulate(baseline, shocks; u0 = 0.06)
+function simulate(baseline, zshocks; u0 = 0.06)
+    
     # Get all of the relevant parameters for the model
-    @unpack β, s, κ, hp, zgrid, f, ε, σ_η, χ, ψ, z0_idx = baseline 
+    @unpack β, s, κ, hp, zgrid, N_z, ψ, z0_idx, f, ε, σ_η, χ, γ = baseline 
 
-    # Initialize series for each point on zgrid 
-    θ_z      = zeros(length(zgrid))  # θ(z) 
-    lw1_z    = zeros(length(zgrid))  # E[log w1(z)] <- wages of new hires
-    w1_z     = zeros(length(zgrid))  # E[w1(z)] (= w_0(z) by martingale property)
-    a_z      = zeros(length(zgrid))  # a(z | z_0 = z)
-    flag_z   = zeros(Int64,length(zgrid)) # flags
+    # Unpack the relevant shocks
+    @unpack z_shocks, z_shocks_idx, distr, zstring, burnin, z_ss_dist = zshocks
 
     # Loop through every point on zgrid
-    sol    = OrderedDict{Int64, Any}()
-    @inbounds for (iz,z) in enumerate(zgrid)
-        
-        modd          = model(z0 = z, ε = ε, σ_η = σ_η, χ = χ) #, γ = γ)
-        sol[iz]       = solveModel(modd; noisy = false)
+    indexes = cumsum(distr, dims=2)*zShocks.T
+    Δlw     = zeros(indexes[end])        # Δlog w_it
+    ly      = zeros(indexes[end])        # log y_it 
+    w_y_z   = zeros(length(zgrid))       # W/Y
+    θ_z     = zeros(length(zgrid))       # θ(z) 
+    lw1_z   = zeros(length(zgrid))       # E[log w1(z)] <- wages of new hires
+    flag_z  = zeros(Int64,length(zgrid)) # error flags
 
-        @unpack exit_flag1, exit_flag2, exit_flag3, wage_flag, effort_flag, az, w_0, θ = sol[iz]
-        z_idx         = modd.z0_idx
+    Threads.@threads for iz = 1:N_z
+        
+        modd          = model(z0 = zgrid[iz], ε = ε, σ_η = σ_η, χ = χ) #, γ = γ)
+        sol           = solveModel(modd; noisy = false)
+
+        @unpack exit_flag1, exit_flag2, exit_flag3, wage_flag, effort_flag, az, yz, w_0, θ, Y = sol
+        
         flag_z[iz]    = maximum([exit_flag1, exit_flag2, exit_flag3, wage_flag, effort_flag])
+        z_idx         = modd.z0_idx # index of z on the productivity grid
+        
+        # log wage of new hires, given z0 = z
+        lw1_z[iz]     = log(w_0) - 0.5*(ψ*hp(az[z_idx])*σ_η)^2 
+        # tightness, given z0 = z
         θ_z[iz]       = θ             
-        a_z[iz]       = az[z_idx]     
-        lw1_z[iz]     = log(w_0) - 0.5*(ψ*hp(a_z[iz])*σ_η)^2 
-        w1_z[iz]      = w_0           
+        w_y_z[iz]     = (w_0./ψ)/Y
+
+        # now, let's think about wages and output for continuing hires
+        @views z_shocks_z     = z_shocks[iz]
+        @views z_shocks_idx_z = z_shocks_idx[iz]
+        η_shocks              = simulateEShocks(σ_η; N = length(z_shocks_idx_z), T = 1)
+        
+        start_idx    = (iz==1) ? 1 : indexes[iz-1] + 1 
+        end_idx      = indexes[iz]
+        hp_z0        = hp.(az)  # h'(a(z | z_0 = z_ss))
+        @views hp_az = hp_z0[z_shocks_idx_z]
+        t1           = ψ*hp_az.*η_shocks 
+        t2           = 0.5*(ψ*hp_az*σ_η).^2 
+        @views y     = yz[z_shocks_idx_z]
+        ηz           = z_shocks_z.*η_shocks
+
+        Δlw[start_idx:end_idx]  = t1 - t2
+        ly[start_idx:end_idx]   = log.(y + ηz)
     end
 
-    # for regressions with initial z0 FIXED at z_ss (continuing hires)
-    az_z0 = sol[z0_idx].az  # a(z | z_0 = z_ss)
-    hp_z0 = hp.(az_z0)      # h'(a(z | z_0 = z_ss))
-    yz_z0 = sol[z0_idx].yz  # z*a(z | z_0 = z_ss)
-
-    # Get all of the z_t and η_t shocks <- beginning at z_ss
-    @unpack z_shocks, z_shocks_idx, burnin, N, T, seed = zshocks # all N X T (including burnin-in)
-    η_shocks =  simulateEShocks(baseline; N = N, T = T - burnin, seed = seed)
+    # Weighted average of labor share
+    w_y          = sum(w_y_z.*vec(z_ss_dist))
     
-    # Compute simulated series (trim to post-burn-in for z_t when computing moments)
-    @views lw1   = lw1_z[z_shocks_idx]  # E[w_1 | z_t]
-    @views θ     = θ_z[z_shocks_idx]    # θ(z_t)
-
-    # Compute log wage changes for continuing workers given η_t and z_t shocks (discard burnin for z_t)
-    @views hp_az = hp_z0[z_shocks_idx][:,burnin+1:end]
-    t1           = ψ*hp_az.*η_shocks 
-    t2           = 0.5*(ψ*hp_az*σ_η).^2 
-    Δlw          = t1 - t2
+    # Variance of wage changes for incumbents
     var_Δlw      = var(Δlw) 
-    histogram(vec(Δlw))
-
-    # Compute individual log output y_it
-    @views y   = yz_z0[z_shocks_idx][:,burnin+1:end]
-    @views ηz  = z_shocks[:,burnin+1:end].*η_shocks
-    ly         = log.(y + ηz)
-
+    
     # Regress wage changes Δ log w_it on individual log output log y_it
-    dΔlw_dy = ols(vec(Δlw), vec(ly))
+    dΔlw_dy = ols(vec(Δlw), vec(ly))[2]
+
+    # Compute simulated series (trim to post-burn-in for z_t when computing moments)
+    @unpack z_shocks_idx = zstring
+    @views lw1_t  = lw1_z[z_shocks_idx]   # E[log w_1 | z_t]
+    @views θ_t    = θ_z[z_shocks_idx]     # θ(z_t)
 
     # Compute evolution of unemployment for the different z_t paths
-    T       = size(z_shocks,2)
-    u       = zeros(size(z_shocks))
-    u[:,1] .= u0
+    T        = length(θ_t)
+    u_t      = zeros(T)
+    u_t[1]   = u0
     @views @inbounds for t=2:T
-        u[:,t] .= (1 .- f.(θ[:,t-1])).*u[:,t-1] + s*(1 .- u[:,t-1])
+        u_t[t] = (1 - f(θ_t[t-1]))*u_t[t-1] + s*(1 - u_t[t-1])
     end
 
     # Compute d log w_1 / d u (pooled ols)
-    @views dlw1_du = ols(vec(lw1[:,burnin+1:end]), vec(u[:,burnin+1:end]))
+    @views dlw1_du = ols(vec(lw1_t[burnin+1:end]), vec(u_t[burnin+1:end]))[2]
     
     # Return simulation results
-    return (var_Δlw = var_Δlw, dlw1_du = dlw1_du, dΔlw_dy = dΔlw_dy, θ = θ, flag = maximum(flag_z))
+    return (var_Δlw = var_Δlw, dlw1_du = dlw1_du, dΔlw_dy = dΔlw_dy, w_y = w_y, flag = maximum(flag_z))
 end
 
 """
 Run an OLS regression of Y on X.
 """
-function ols(Y,X)
+function ols(Y, X; intercept = true)
+    if intercept == true
+        X = [ones(size(X,1)) X]
+    end
     return inv(X'X)*X'*Y
 end
 
 """
 Simulate N X T shock panel for z. Include a burn-in period.
 """
-function simulateZShocks(mod; burnin = 1000, N = 10000, T = 5000 + burnin, seed = 512)
-    @unpack P_z, zgrid, σ_η        =  mod
-    z_shocks, probs, z_shocks_idx  = simulateProd(P_z, zgrid, T; N = N, set_seed = seed) # N X T 
-    return (z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, burnin = burnin, 
-    N = N, T = T, seed = seed)
+function simulateZShocks(mod; N = 10000, T = 500, z0_idx = median(1:length(zgrid)), seed = 512)
+
+    @unpack P_z, zgrid, σ_η        = mod
+    z_shocks, probs, z_shocks_idx  = simulateProd(P_z, zgrid, T; z0_idx = z0_idx, N = N, seed = seed) # N X T 
+    
+    return (z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, N = N, T = T, z0_idx = z0_idx, seed = seed)
 end
 
 """
 Simulate N X T shock panel for η. 
 """
-function simulateEShocks(mod; N, T, seed)
+function simulateEShocks(σ_η; N, T, seed = 512)
     Random.seed!(seed)
     η_shocks = rand(Normal(0, σ_η), N, T) # N x T 
     return η_shocks
