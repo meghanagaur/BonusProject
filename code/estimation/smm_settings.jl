@@ -1,7 +1,9 @@
 """
 Objective function to be minimized during SMM. 
 Variable descriptions below.
-endogParams  = evaluate objFunction @ these endog. parameters
+xx           = evaluate objFunction @ these parameters (before transformation)
+endogParams2 = evaluate objFunction @ these parameters (after transformation)
+endogParams  = actual starting point for local optimization
 zshocks      = z shocks for the simulation
 pb           = parameter bounds
 data_mom     = data moments
@@ -33,9 +35,9 @@ end
 """ 
 Transform parameters to lie within bounds
 """
-function transform(xx, pb, x0, p0)
+function transform(xx, pb, x0, p0; λ = 2)
     # rescales all of the parameters to lie between -1 and 1 
-    xx2          = 2 ./(1 .+ exp.(-(xx .- x0)./50) ) .- 1
+    xx2          = 2 ./(1 .+ exp.(-(xx .- x0)./λ) ) .- 1
     # Transform function so that boundrary conditions are satisfied 
     if xx2 > 0
         x1 = xx2*(pb[2] - p0) + p0

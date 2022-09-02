@@ -263,7 +263,7 @@ If the below work is correct, we do not need to separately consider the
 Otherwise, we could also discard such points from the Sobol points.
  For local optimization and other stages, we can penalize these parameter
  choices in the function evaluation.
- Not sure if there any other  alternatives? 
+ Not sure if there any other alternatives? 
 \end_layout
 
 \end_deeper
@@ -313,7 +313,7 @@ Otherwise, we could also discard such points from the Sobol points.
 
 \begin_layout Itemize
 Require 
-\begin_inset Formula $\log b(z)=\log\gamma+\chi(\log(z)<\log z$
+\begin_inset Formula $\log b(z)=\log\gamma+\chi\log(z)<\log z$
 \end_inset
 
  for all 
@@ -618,6 +618,29 @@ We can also then do this without guessing a
  In this setting, we can reduce the number of initial start points for the
  local optimizers to speed up computation time, because we know roughly
  where we should be looking.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Local optimization Extensions:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+turn off varying 
+\begin_inset Formula $\gamma$
+\end_inset
+
+ and labor share if still running into issues...
+\end_layout
+
+\begin_layout Enumerate
+Provide input for simplex or use Matlab simplex from fminbox.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Try NLOPT Nelder Mead or DFLNS.
 \end_layout
 
 \end_deeper
