@@ -107,7 +107,7 @@ Preliminaries
 
 \begin_layout Standard
 Let 
-\begin_inset Formula $z_{0}\in\mathcal{Z}=\left[\underline{z},...,\overline{z}\right]$
+\begin_inset Formula $z_{1}\in\mathcal{Z}=\left[\underline{z},...,\overline{z}\right]$
 \end_inset
 
  be given.
@@ -131,7 +131,7 @@ In the infinite horizon case without savings, the optimal effort, given
 and satisfies 
 \begin_inset Formula 
 \begin{equation}
-a\left(z|z_{0}\right)=\left[\frac{za\left(z|z_{0}\right)}{\psi\left(Y\left(z_{0}\right)-\frac{\kappa}{q\left(\theta\left(z_{0}\right)\right)}\right)}-\frac{\psi}{\varepsilon}\left(h'\left(a\left(z|z_{0}\right)\right)\sigma_{\eta}\right)^{2}\right]^{\frac{\varepsilon}{1+\varepsilon}}\quad\psi\equiv1-\beta\left(1-s\right)\label{eq:first}
+a\left(z|z_{1}\right)=\left[\frac{za\left(z|z_{1}\right)}{\psi\left(Y\left(z_{1}\right)-\frac{\kappa}{q\left(\theta\left(z_{1}\right)\right)}\right)}-\frac{\psi}{\varepsilon}\left(h'\left(a\left(z|z_{1}\right)\right)\sigma_{\eta}\right)^{2}\right]^{\frac{\varepsilon}{1+\varepsilon}}\quad\psi\equiv1-\beta\left(1-s\right)\label{eq:first}
 \end{equation}
 
 \end_inset
@@ -155,7 +155,7 @@ and initial
  as
 \begin_inset Formula 
 \[
-Y\left(z|z_{0}\right)=za\left(z|z_{0}\right)+\sum_{z'\in\mathcal{Z}}\beta\left(1-s\right)Y\left(z'|z_{0}\right)\pi\left(z'|z\right)
+Y\left(z|z_{1}\right)=za\left(z|z_{1}\right)+\sum_{z'\in\mathcal{Z}}\beta\left(1-s\right)Y\left(z'|z_{1}\right)\pi\left(z'|z\right)
 \]
 
 \end_inset
@@ -210,7 +210,7 @@ Algorithm
 
 \begin_layout Enumerate
 Guess 
-\begin_inset Formula $q\left(\theta^{0}\left(z_{0}\right)\right)$
+\begin_inset Formula $q\left(\theta^{0}\left(z_{1}\right)\right)$
 \end_inset
 
 .
@@ -233,7 +233,7 @@ For each,
 
 \begin_layout Enumerate
 Solve for effort as 
-\begin_inset Formula $a^{i,n}\left(z|z_{0}\right)=\tilde{a}\left(z,Y^{i}\left(z_{0}\right),\theta^{n}\left(z_{0}\right)\right)$
+\begin_inset Formula $a^{i,n}\left(z|z_{1}\right)=\tilde{a}\left(z,Y^{i}\left(z_{1}\right),\theta^{n}\left(z_{1}\right)\right)$
 \end_inset
 
 .
@@ -247,7 +247,7 @@ Update expected future output
  as follows:
 \begin_inset Formula 
 \[
-Y^{i+1}\left(z|z_{0}\right)=za^{i,n}\left(z|z_{0}\right)+\sum_{z'\in\mathcal{Z}}\beta\left(1-s\right)Y^{i}\left(z'|z_{0}\right)\pi\left(z'|z\right)
+Y^{i+1}\left(z|z_{1}\right)=za^{i,n}\left(z|z_{1}\right)+\sum_{z'\in\mathcal{Z}}\beta\left(1-s\right)Y^{i}\left(z'|z_{1}\right)\pi\left(z'|z\right)
 \]
 
 \end_inset
@@ -257,7 +257,7 @@ Y^{i+1}\left(z|z_{0}\right)=za^{i,n}\left(z|z_{0}\right)+\sum_{z'\in\mathcal{Z}}
 
 \begin_layout Enumerate
 Iterate Steps (3)-(4) on i, until 
-\begin_inset Formula $Y^{i}\left(z|z_{0}\right)$
+\begin_inset Formula $Y^{i}\left(z|z_{1}\right)$
 \end_inset
 
  has converged for all values of 
@@ -266,30 +266,30 @@ Iterate Steps (3)-(4) on i, until
 
 .
  Define 
-\begin_inset Formula $\tilde{Y}\left(z_{0},\theta^{0}\left(z_{0}\right)\right)$
+\begin_inset Formula $\tilde{Y}\left(z_{1},\theta^{0}\left(z_{1}\right)\right)$
 \end_inset
 
  = 
-\begin_inset Formula $Y^{i}\left(z_{0}|z_{0}\right)$
+\begin_inset Formula $Y^{i}\left(z_{1}|z_{1}\right)$
 \end_inset
 
  .
  Define 
-\begin_inset Formula $\tilde{a}\left(z,\theta^{n}\left(z_{0}\right)\right)=a^{i,n}\left(z|z_{0}\right)$
+\begin_inset Formula $\tilde{a}\left(z,\theta^{n}\left(z_{1}\right)\right)=a^{i,n}\left(z|z_{1}\right)$
 \end_inset
 
 .
 \end_layout
 
 \begin_layout Enumerate
-Solve for 
-\begin_inset Formula $w_{0}\left(z_{0},\theta^{n}\left(z_{0}\right)\right)$
+Solve for the constant 
+\begin_inset Formula $w_{0}\left(z_{1},\theta^{n}\left(z_{1}\right)\right)$
 \end_inset
 
  using the zero-profit condition 
 \begin_inset Formula 
 \[
-w_{0}\left(z_{0},\theta^{n}\left(z_{0}\right)\right)=\psi\left(\tilde{Y}\left(z_{0},\theta^{n}(z_{0})\right)-\frac{\kappa}{q\left(\theta^{n}\left(z_{0}\right)\right)}\right).
+w_{0}\left(z_{1},\theta^{n}\left(z_{1}\right)\right)=\psi\left(\tilde{Y}\left(z_{1},\theta^{n}(z_{1})\right)-\frac{\kappa}{q\left(\theta^{n}\left(z_{1}\right)\right)}\right).
 \]
 
 \end_inset
@@ -318,7 +318,7 @@ Solve for
  via a contraction like 
 \begin_inset Formula 
 \[
-W\left(z,\theta^{0}\left(z_{0}\right)\right)=-\frac{1}{\psi}\frac{1}{2}(\psi h'(\tilde{a}\left(z,\theta^{n}(z_{0})\right))\sigma_{\eta})^{2}-h(\tilde{a}\left(z,\theta^{n}\left(z_{0}\right)\right))+\sum_{z'\in\mathcal{Z}}\left[\beta s\omega\left(z'\right)+\beta\left(1-s\right)W\left(z',\theta^{n}\left(z_{0}\right)\right)\right]\pi\left(z'|z\right)
+W\left(z,\theta^{0}\left(z_{1}\right)\right)=-\frac{1}{\psi}\frac{1}{2}(\psi h'(\tilde{a}\left(z,\theta^{n}(z_{1})\right))\sigma_{\eta})^{2}-h(\tilde{a}\left(z,\theta^{n}\left(z_{1}\right)\right))+\sum_{z'\in\mathcal{Z}}\left[\beta s\omega\left(z'\right)+\beta\left(1-s\right)W\left(z',\theta^{n}\left(z_{1}\right)\right)\right]\pi\left(z'|z\right)
 \]
 
 \end_inset
@@ -330,7 +330,7 @@ W\left(z,\theta^{0}\left(z_{0}\right)\right)=-\frac{1}{\psi}\frac{1}{2}(\psi h'(
 And then calculate 
 \begin_inset Formula 
 \[
-U\left(z_{0},\theta^{n}\left(z_{0}\right)\right)=\frac{1}{\psi}\log\left(w_{0}\left(z_{0},\theta^{n}\left(z_{0}\right)\right)\right)+W\left(z_{0},\theta^{n}\left(z_{0}\right)\right)
+U\left(z_{1},\theta^{n}\left(z_{1}\right)\right)=\frac{1}{\psi}\log\left(w_{0}\left(z_{1},\theta^{n}\left(z_{1}\right)\right)\right)+W\left(z_{1},\theta^{n}\left(z_{1}\right)\right)
 \]
 
 \end_inset
@@ -341,20 +341,20 @@ U\left(z_{0},\theta^{n}\left(z_{0}\right)\right)=\frac{1}{\psi}\log\left(w_{0}\l
 \end_deeper
 \begin_layout Enumerate
 If 
-\begin_inset Formula $U\left(z_{0},\theta^{n}\left(z_{0}\right)\right)>\omega\left(z_{0}\right)$
+\begin_inset Formula $U\left(z_{1},\theta^{n}\left(z_{1}\right)\right)>\omega\left(z_{1}\right)$
 \end_inset
 
  , set 
-\begin_inset Formula $\theta^{n+1}\left(z_{0}\right)>\theta^{n}\left(z_{0}\right)$
+\begin_inset Formula $\theta^{n+1}\left(z_{1}\right)>\theta^{n}\left(z_{1}\right)$
 \end_inset
 
 .
  If 
-\begin_inset Formula $U\left(z_{0},\theta^{n}\left(z_{0}\right)\right)<\omega\left(z_{0}\right)$
+\begin_inset Formula $U\left(z_{1},\theta^{n}\left(z_{1}\right)\right)<\omega\left(z_{1}\right)$
 \end_inset
 
 , set 
-\begin_inset Formula $\theta^{n+1}\left(z_{0}\right)<\theta^{n}\left(z_{0}\right)$
+\begin_inset Formula $\theta^{n+1}\left(z_{1}\right)<\theta^{n}\left(z_{1}\right)$
 \end_inset
 
 .
@@ -363,7 +363,7 @@ If
 
 \begin_layout Enumerate
 Iterate Steps (2)-(8) on n, until convergence of 
-\begin_inset Formula $\theta^{n}\left(z_{0}\right)$
+\begin_inset Formula $\theta^{n}\left(z_{1}\right)$
 \end_inset
 
 .
@@ -375,6 +375,10 @@ Notes
 
 \begin_layout Itemize
 Superscripts denote iterations , subscripts denote time periods.
+\end_layout
+
+\begin_layout Itemize
+There is no period 0!!!
 \end_layout
 
 \begin_layout Itemize

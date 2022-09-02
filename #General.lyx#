@@ -1,0 +1,597 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Section*
+Important Details to Finalize for Estimation
+\end_layout
+
+\begin_layout Enumerate
+Need to finalize the moments (and their 
+\series bold
+quarterly
+\series default
+ values) that we are matching:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\frac{{\sum(\beta(1-s))^{t}E_{1}[w_{t}]}}{\sum(\beta(1-s))^{t}E_{1}[a_{t}(z_{t})z_{t}]}$
+\end_inset
+
+ <- PV labor share? (0.6?) Note: this is equal to 
+\begin_inset Formula $\frac{{w_{0}}}{\psi Y_{1}}=1-\frac{{\kappa}}{Y_{1}q(\theta_{1})}$
+\end_inset
+
+ since wages are martingale.
+ 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $Var(\Delta\log w_{it})$
+\end_inset
+
+ <- Variance of wage growth.
+ We need a quarterly value (John is looking for this).
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\frac{{d\Delta\log w_{it}}}{d\log y_{it}}$
+\end_inset
+
+ <- Passthrough.
+ Range is 
+\begin_inset Formula $[0.05,0.5]$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\frac{{dE[\log w_{1}|z_{t}]}}{du_{t}(z_{t})}$
+\end_inset
+
+ <- Cyclicality of new wage hires.
+ Range is 
+\begin_inset Formula $[-1,-0.5$
+\end_inset
+
+].
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Need to finalize the parameters (and reasonable bounds on these parameters)
+ we are estimating:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\gamma,\chi,\varepsilon,\sigma_{\eta}$
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Formula $\gamma\in[\text{\underbar{\ensuremath{\gamma}}},\bar{\gamma}]$
+\end_inset
+
+ for some small 
+\begin_inset Formula $\text{\underbar{\ensuremath{\gamma}}}>0$
+\end_inset
+
+,
+\begin_inset Formula $\bar{\gamma}<1.$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi\in[-1,1]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\varepsilon\in[0,3]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\sigma_{\eta}\in[0,0.6]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Require 
+\begin_inset Formula $\log b(z)=\log\gamma+\chi(\log(z)<\log z$
+\end_inset
+
+ for all 
+\begin_inset Formula $z.$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+So we need to check 3 conditions:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Formula $\log\gamma<0\iff\gamma<1$
+\end_inset
+
+ (for 
+\begin_inset Formula $z=1)$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi<1-\frac{{\log\gamma}}{\log\bar{z}}$
+\end_inset
+
+ (for 
+\begin_inset Formula $z>1$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi>1-\frac{{\log\gamma}}{\log\text{\underbar{z}}}$
+\end_inset
+
+ (for 
+\begin_inset Formula $z<1)$
+\end_inset
+
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+The last two can be condensed into 
+\begin_inset Formula $\chi\in[1-\frac{{\log\gamma}}{\log\text{\underbar{z}}},1-\frac{{\log\gamma}}{\log\bar{z}}]$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+Say 
+\begin_inset Formula $\text{\underbar{\ensuremath{\gamma}}}=0.3,\bar{\gamma}=0.9.$
+\end_inset
+
+ Then 
+\begin_inset Formula $\chi$
+\end_inset
+
+ always satisfies these restrictions.DOUBLE-CHECK BEFORE FINAL ESTIMATION.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Note: 
+\begin_inset Formula $b(z)=\gamma+\chi(z-z_{ss})$
+\end_inset
+
+ for original affine specification in the code.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Under new functional form assumption, define 
+\begin_inset Formula $b(z)=\gamma(z/z_{ss})^{\chi}.$
+\end_inset
+
+ Recall that 
+\begin_inset Formula $\logz=\rho\log z_{t-1}+\epsilon.$
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Then 
+\begin_inset Formula $u(b(z))=\log(\gamma(z/z_{ss})^{\chi})=\log\gamma+\chi(\log(z)-\log(z_{ss}))=\log\gamma+\chi\log(z)$
+\end_inset
+
+ since 
+\begin_inset Formula $z_{ss}=1$
+\end_inset
+
+ (
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+note: 
+\begin_inset Formula $z_{ss}$
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ is actually just a definition; however, 1 is the unconditional mean of
+ the 
+\begin_inset Formula $\log z$
+\end_inset
+
+ process).
+\end_layout
+
+\begin_layout Enumerate
+This implies that 
+\begin_inset Formula $U(z)=\frac{{\log\gamma}}{1-\beta}+\frac{{\chi}}{1-\beta\rho}\log z$
+\end_inset
+
+ (see John's previous work on the isomorphism b/w procycylical unempyloement
+ benefit and Nash bargaining).
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The above is not 
+\emph on
+exactly
+\emph default
+ the same as our unemployment value because approximate the continuous AR-1
+ with a discrete grid, following Rouwenhurst.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+John mentioned to add some sort of bound to require 
+\begin_inset Formula $\log b(z)<\logz$
+\end_inset
+
+ for all 
+\begin_inset Formula $z.$
+\end_inset
+
+ Note that effort usually approximately around 1.
+ We can discard such points from the Sobol points.
+ For local optimization and other stages, we can penalize these parameter
+ choices in the function evaluation.
+ What are the alternatives?
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Need to finalize externally calibrated parameters: 
+\begin_inset Formula $\beta,s,\iota,\kappa,\rho,\sigma_{\epsilon}.$
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\beta=0.99$
+\end_inset
+
+ - standard quarterly value
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $s=0.1$
+\end_inset
+
+ - Shimer (2005), the quarterly exogenous separation rate (can re-estimate)
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\iota=1.67$
+\end_inset
+
+ - Chosen so that 
+\begin_inset Formula $f(1)=0.79.$
+\end_inset
+
+Note that 
+\begin_inset Formula $0.79=1-(1-f_{monthly})^{3},$
+\end_inset
+
+where 
+\begin_inset Formula $f_{monthly}$
+\end_inset
+
+ is computed following Shimer (2005).
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa=0.474$
+\end_inset
+
+, approximately based on Hagedorn and Manovskii (2008) (match 
+\begin_inset Formula $\theta_{ss}=1{\normalcolor }$
+\end_inset
+
+, may need to update this or include explicitly in the calibration)
+\end_layout
+
+\begin_layout Enumerate
+Productivity process is estimated using HP-filtered (smoothing parameter
+ = 10^5) log quarterly average labor productivity.
+ Regress HP-filtered log quarterly average labor productivity on its lag,
+ to obtain 
+\begin_inset Formula $\rho$
+\end_inset
+
+.Set 
+\begin_inset Formula $\sigma_{\epsilon}$
+\end_inset
+
+ to match the unconditional variance (so ignoring potential autocorrelation
+ in residuals for now).
+\end_layout
+
+\begin_layout Enumerate
+How to handle when q gets stuck near either 0 or 1 for certain z (IR constraint
+ isn't satisfied)? 
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+For the latter case, PNZ set 
+\begin_inset Formula $q=1$
+\end_inset
+
+ and 
+\begin_inset Formula $\theta=0$
+\end_inset
+
+ , but this will not work for us, since the implied solution does not satisfy
+ the IR constraint.
+ 
+\end_layout
+
+\begin_layout Itemize
+For the former, technically could increase 
+\begin_inset Formula $\bar{\theta}$
+\end_inset
+
+ (right now, we are around 15).
+ Note that IR constraint holds 
+\emph on
+strictly
+\emph default
+ .
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Should I allow for the constraint to hold 
+\emph on
+strictly
+\emph default
+ ? Or do we 
+\emph on
+need
+\emph default
+ equality for TIOLI assumption to make sense?
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Right now, penalize these parameter vectors in the SMM.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Section*
+Important, but Less Urgent, Details
+\end_layout
+
+\begin_layout Enumerate
+Note that the solution hits the bounds quite frequently for given parameter
+ choices...
+ so the objective function may have lots of kinks.
+\end_layout
+
+\begin_layout Enumerate
+Using the identity matrix as weight matrix for SMM.
+ Efficiency concerns (i.e.
+ do we have covariance matrxi for data moments)?
+\end_layout
+
+\begin_layout Section*
+To-Do
+\end_layout
+
+\begin_layout Enumerate
+Run test codes for local optimization.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Get some initial set of parameters, dubbed 
+\begin_inset Formula $\theta^{*}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Enumerate
+We’ll think of this as being “the true” parameters Run the code which calculates
+ the model versions of the moments we want to match.
+ Let these model moments be given by a vector 
+\begin_inset Formula $m(\theta^{*})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Create some initial guess of parameters 
+\begin_inset Formula $\theta_{0}=\theta^{*}+\epsilon$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Run optimization routine trying to match 
+\begin_inset Formula $m(\theta^{*}),$
+\end_inset
+
+ where our initial guess is 
+\begin_inset Formula $\theta_{0}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Enumerate
+See if we get 
+\begin_inset Formula $\theta^{*}$
+\end_inset
+
+ back.
+ 
+\end_layout
+
+\begin_layout Enumerate
+This gives us a way to, at the very least, get the local optimization running
+ and test whether it’s working.
+ 
+\end_layout
+
+\begin_layout Enumerate
+We can also then do this without guessing a 
+\begin_inset Formula $THETA$
+\end_inset
+
+_0 and see if we get the THETA^* back.
+ This lets us know whether the algorithm is working when we know the true
+ moments and parameters.
+ In this setting, we can reduce the number of initial start points for the
+ local optimizers to speed up computation time, because we know roughly
+ where we should be looking.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Write and run Tik-Tak code.
+ Can be done on Adroit?
+\end_layout
+
+\begin_layout Enumerate
+Write Tik-Tak code.
+\end_layout
+
+\begin_layout Enumerate
+Run Tik-Tak optimization on the Della cluster (also should request a Tigress
+ acount).
+\end_layout
+
+\end_body
+\end_document

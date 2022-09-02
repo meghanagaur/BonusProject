@@ -81,6 +81,8 @@ Establish a zgrid
 \end_inset
 
 .
+ Note superscripts denote indicies, subscripts denote time period.
+ Time begins at period 1.
 \end_layout
 
 \begin_layout Enumerate
@@ -174,7 +176,7 @@ Calculate the unconditional variance of (pooled) wage growth
 \end_inset
 
 .
- s
+ 
 \end_layout
 
 \begin_layout Enumerate
@@ -232,7 +234,7 @@ Calculate the cyclicality of new hire wages.
 \end_layout
 
 \begin_layout Enumerate
-Compure the new hire wage series as 
+Compute the new hire wage series as 
 \begin_inset Formula $\mathbb{E}[\log w_{1}|z_{t}]$
 \end_inset
 
