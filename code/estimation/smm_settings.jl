@@ -17,31 +17,32 @@ dΔlw_dy      = 3rd moment (d Δ log w_it / y_it)
 w_y          = 4th moment (PV of labor share)
 """
 function objFunction(xx, x0, endogParams, pb, zshocks, data_mom, W)
-    
-    # rescales all of the parameters to lie between -1 and 1 
-    xx2          = 2 ./(1 .+ exp.(-(xx .- x0)./50) ) .- 1
-    # Transform function so that boundrary conditions are satisfied 
-    endogParams2 = [ transform(xx2[i], pb[i], endogParams[i]) for i = 1:length(endogParams) ] 
+
+    endogParams2 = [ transform(xx[i], pb[i], x0[i], endogParams[i]) for i = 1:length(endogParams) ] 
     baseline     = model(ε = endogParams2[1] , σ_η = endogParams2[2], χ = endogParams2[3], γ = endogParams2[4]) 
 
     # Simulate the model and compute moments
     out     = simulate(baseline, zshocks)
     mod_mom = [out.var_Δlw, out.dlw1_du, out.dΔlw_dy, out.w_y]
     d       = (mod_mom - data_mom)./2(mod_mom + data_mom) # arc percentage differences
-    f       = out.flag < 1 ? d'*W*d : Inf
-    println(string(d'*W*d))
+    f       = out.flag < 1 ? d'*W*d : 10000
+    println(string(f))
     return f, mod_mom, out.flag
 end
 
 """ 
 Transform parameters to lie within bounds
 """
-function transform(xx2, pb, p0)
+function transform(xx, pb, x0, p0)
+    # rescales all of the parameters to lie between -1 and 1 
+    xx2          = 2 ./(1 .+ exp.(-(xx .- x0)./50) ) .- 1
+    # Transform function so that boundrary conditions are satisfied 
     if xx2 > 0
         x1 = xx2*(pb[2] - p0) + p0
     else
         x1 = xx2*(p0 - pb[1]) + p0  
     end
+
     return x1
 end
 

@@ -10,6 +10,12 @@ track of the time period t. Note: u0 = initial unemployment rate.
 """
 function simulate(baseline, zshocks; u0 = 0.06)
     
+    # initialize moments to export
+    var_Δlw = 0 
+    dlw1_du = 0 
+    dΔlw_dy = 0 
+    w_y     = 0 
+
     # Get all of the relevant parameters for the model
     @unpack β, s, κ, hp, zgrid, N_z, ψ, z0_idx, f, ε, σ_η, χ, γ = baseline 
 
@@ -34,7 +40,7 @@ function simulate(baseline, zshocks; u0 = 0.06)
         
         flag_z[iz]    = maximum([exit_flag1, exit_flag2, exit_flag3, wage_flag, effort_flag])
 
-        if flag_z < 1 
+        if flag_z[iz] < 1 
             z_idx         = modd.z0_idx # index of z on the productivity grid
             
             # log wage of new hires, given z0 = z
@@ -62,7 +68,8 @@ function simulate(baseline, zshocks; u0 = 0.06)
         end
     end
 
-    if maximum(flag) < 1
+    # only compute moments for reasonable parameters
+    if maximum(flag_z) < 1
         # Weighted average of labor share
         w_y          = sum(w_y_z.*vec(z_ss_dist))
         

@@ -92,11 +92,12 @@ quarterly
 \begin_inset Formula $\frac{{\sum(\beta(1-s))^{t}E_{1}[w_{t}]}}{\sum(\beta(1-s))^{t}E_{1}[a_{t}(z_{t})z_{t}]}$
 \end_inset
 
- <- PV labor share? (0.6?) Note: this is equal to 
+ <- PV labor share? (is 0.6 the right value?) Note: this moment is equal
+ to 
 \begin_inset Formula $\frac{{w_{0}}}{\psi Y_{1}}=1-\frac{{\kappa}}{Y_{1}q(\theta_{1})}$
 \end_inset
 
- since wages are martingale.
+ in our EGSS model since wages are a martingale.
  
 \end_layout
 
@@ -135,126 +136,11 @@ quarterly
 \end_deeper
 \begin_layout Enumerate
 Need to finalize the parameters (and reasonable bounds on these parameters)
- we are estimating:
-\end_layout
-
-\begin_deeper
-\begin_layout Enumerate
-\begin_inset Formula $\gamma,\chi,\varepsilon,\sigma_{\eta}$
-\end_inset
-
-
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-\begin_inset Formula $\gamma\in[\text{\underbar{\ensuremath{\gamma}}},\bar{\gamma}]$
-\end_inset
-
- for some small 
-\begin_inset Formula $\text{\underbar{\ensuremath{\gamma}}}>0$
-\end_inset
-
-,
-\begin_inset Formula $\bar{\gamma}<1.$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\chi\in[-1,1]$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\varepsilon\in[0,3]$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\sigma_{\eta}\in[0,0.6]$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-Require 
-\begin_inset Formula $\log b(z)=\log\gamma+\chi(\log(z)<\log z$
-\end_inset
-
- for all 
-\begin_inset Formula $z.$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-So we need to check 3 conditions:
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-\begin_inset Formula $\log\gamma<0\iff\gamma<1$
-\end_inset
-
- (for 
-\begin_inset Formula $z=1)$
-\end_inset
-
+ we are estimating.
  
 \end_layout
 
-\begin_layout Itemize
-\begin_inset Formula $\chi<1-\frac{{\log\gamma}}{\log\bar{z}}$
-\end_inset
-
- (for 
-\begin_inset Formula $z>1$
-\end_inset
-
-)
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\chi>1-\frac{{\log\gamma}}{\log\text{\underbar{z}}}$
-\end_inset
-
- (for 
-\begin_inset Formula $z<1)$
-\end_inset
-
- 
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-The last two can be condensed into 
-\begin_inset Formula $\chi\in[1-\frac{{\log\gamma}}{\log\text{\underbar{z}}},1-\frac{{\log\gamma}}{\log\bar{z}}]$
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Itemize
-Say 
-\begin_inset Formula $\text{\underbar{\ensuremath{\gamma}}}=0.3,\bar{\gamma}=0.9.$
-\end_inset
-
- Then 
-\begin_inset Formula $\chi$
-\end_inset
-
- always satisfies these restrictions.DOUBLE-CHECK BEFORE FINAL ESTIMATION.
-\end_layout
-
-\end_deeper
+\begin_deeper
 \begin_layout Enumerate
 Note: 
 \begin_inset Formula $b(z)=\gamma+\chi(z-z_{ss})$
@@ -346,21 +232,167 @@ exactly
 \end_deeper
 \end_deeper
 \begin_layout Enumerate
-John mentioned to add some sort of bound to require 
-\begin_inset Formula $\log b(z)<\logz$
+We need a joint constraint on 
+\begin_inset Formula $\gamma,\chi$
+\end_inset
+
+, requiring 
+\begin_inset Formula $\log b(z)<\log z$
 \end_inset
 
  for all 
 \begin_inset Formula $z.$
 \end_inset
 
- Note that effort usually approximately around 1.
- We can discard such points from the Sobol points.
- For local optimization and other stages, we can penalize these parameter
- choices in the function evaluation.
- What are the alternatives?
+ Note that effort usually hovers around 1 (so 
+\begin_inset Formula $\text{\ensuremath{\log z}\ensuremath{\approx\log(a(z)z})}$
+\end_inset
+
+).
+ 
 \end_layout
 
+\begin_deeper
+\begin_layout Enumerate
+If the below work is correct, we do not need to separately consider the
+ joint constraint.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Otherwise, we could also discard such points from the Sobol points.
+ For local optimization and other stages, we can penalize these parameter
+ choices in the function evaluation.
+ Not sure if there any other alternatives? 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\gamma,\chi,\varepsilon,\sigma_{\eta}$
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Formula $\gamma\in[\text{\underbar{\ensuremath{\gamma}}},\bar{\gamma}]$
+\end_inset
+
+ for some small 
+\begin_inset Formula $\text{\underbar{\ensuremath{\gamma}}}>0$
+\end_inset
+
+,
+\begin_inset Formula $\bar{\gamma}<1.$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi\in[-1,1]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\varepsilon\in[0,3]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\sigma_{\eta}\in[0,0.6]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Require 
+\begin_inset Formula $\log b(z)=\log\gamma+\chi\log(z)<\log z$
+\end_inset
+
+ for all 
+\begin_inset Formula $z.$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+So we need to check 3 conditions:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Formula $\log\gamma<0\iff\gamma<1$
+\end_inset
+
+ (for 
+\begin_inset Formula $z=1)$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi<1-\frac{{\log\gamma}}{\log\bar{z}}$
+\end_inset
+
+ (for 
+\begin_inset Formula $z>1$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi>1-\frac{{\log\gamma}}{\log\text{\underbar{z}}}$
+\end_inset
+
+ (for 
+\begin_inset Formula $z<1)$
+\end_inset
+
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+The last two can be condensed into 
+\begin_inset Formula $\chi\in[1-\frac{{\log\gamma}}{\log\text{\underbar{z}}},1-\frac{{\log\gamma}}{\log\bar{z}}]$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+Say 
+\begin_inset Formula $\text{\underbar{\ensuremath{\gamma}}}=0.3,\bar{\gamma}=0.9.$
+\end_inset
+
+ Then 
+\begin_inset Formula $\chi$
+\end_inset
+
+ always satisfies these restrictions.DOUBLE-CHECK BEFORE FINAL ESTIMATION.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Note: that the strictest bounds occur for 
+\begin_inset Formula $\gamma=0.9.$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\end_deeper
 \end_deeper
 \begin_layout Enumerate
 Need to finalize externally calibrated parameters: 
@@ -431,9 +463,13 @@ Productivity process is estimated using HP-filtered (smoothing parameter
  in residuals for now).
 \end_layout
 
+\end_deeper
 \begin_layout Enumerate
-How to handle when q gets stuck near either 0 or 1 for certain z (IR constraint
- isn't satisfied)? 
+How to handle when q gets stuck near either 0 or 1 for certain 
+\begin_inset Formula $z$
+\end_inset
+
+ and parameters?
 \end_layout
 
 \begin_deeper
@@ -456,19 +492,22 @@ For the former, technically could increase
 \begin_inset Formula $\bar{\theta}$
 \end_inset
 
- (right now, we are around 15).
- Note that IR constraint holds 
-\emph on
-strictly
-\emph default
- .
+ (right now, 
+\begin_inset Formula $\bar{\theta}$
+\end_inset
+
+ is around 15).
+ 
 \end_layout
 
-\begin_deeper
 \begin_layout Itemize
-Should I allow for the constraint to hold 
+Should I keep these solutions when the constraint holds 
 \emph on
-strictly
+strictly (so 
+\begin_inset Formula $q=0$
+\end_inset
+
+)
 \emph default
  ? Or do we 
 \emph on
@@ -477,12 +516,11 @@ need
  equality for TIOLI assumption to make sense?
 \end_layout
 
-\end_deeper
 \begin_layout Itemize
-Right now, penalize these parameter vectors in the SMM.
+If we need equality, penalize these parameter vectors in the SMM.
+ This is what we are currently doing.
 \end_layout
 
-\end_deeper
 \end_deeper
 \begin_layout Section*
 Important, but Less Urgent, Details
@@ -505,7 +543,7 @@ To-Do
 \end_layout
 
 \begin_layout Enumerate
-Run test codes for local optimization.
+Run test for local optimization:
 \end_layout
 
 \begin_deeper
@@ -567,10 +605,14 @@ This gives us a way to, at the very least, get the local optimization running
 
 \begin_layout Enumerate
 We can also then do this without guessing a 
-\begin_inset Formula $THETA$
+\begin_inset Formula $\theta_{0}$
 \end_inset
 
-_0 and see if we get the THETA^* back.
+ and see if we get the 
+\begin_inset Formula $\theta^{*}$
+\end_inset
+
+ back.
  This lets us know whether the algorithm is working when we know the true
  moments and parameters.
  In this setting, we can reduce the number of initial start points for the
@@ -580,12 +622,13 @@ _0 and see if we get the THETA^* back.
 
 \end_deeper
 \begin_layout Enumerate
-Write and run Tik-Tak code.
- Can be done on Adroit?
+Write and run pre-testing for Tik-Tak.
+ Can be done on Adroit.
 \end_layout
 
 \begin_layout Enumerate
 Write Tik-Tak code.
+ Debug on Adroit?
 \end_layout
 
 \begin_layout Enumerate

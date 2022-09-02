@@ -136,10 +136,137 @@ quarterly
 \end_deeper
 \begin_layout Enumerate
 Need to finalize the parameters (and reasonable bounds on these parameters)
- we are estimating:
+ we are estimating.
+ 
 \end_layout
 
 \begin_deeper
+\begin_layout Enumerate
+Note: 
+\begin_inset Formula $b(z)=\gamma+\chi(z-z_{ss})$
+\end_inset
+
+ for original affine specification in the code.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Under new functional form assumption, define 
+\begin_inset Formula $b(z)=\gamma(z/z_{ss})^{\chi}.$
+\end_inset
+
+ Recall that 
+\begin_inset Formula $\logz=\rho\log z_{t-1}+\epsilon.$
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Then 
+\begin_inset Formula $u(b(z))=\log(\gamma(z/z_{ss})^{\chi})=\log\gamma+\chi(\log(z)-\log(z_{ss}))=\log\gamma+\chi\log(z)$
+\end_inset
+
+ since 
+\begin_inset Formula $z_{ss}=1$
+\end_inset
+
+ (
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+note: 
+\begin_inset Formula $z_{ss}$
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ is actually just a definition; however, 1 is the unconditional mean of
+ the 
+\begin_inset Formula $\log z$
+\end_inset
+
+ process).
+\end_layout
+
+\begin_layout Enumerate
+This implies that 
+\begin_inset Formula $U(z)=\frac{{\log\gamma}}{1-\beta}+\frac{{\chi}}{1-\beta\rho}\log z$
+\end_inset
+
+ (see John's previous work on the isomorphism b/w procycylical unempyloement
+ benefit and Nash bargaining).
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The above is not 
+\emph on
+exactly
+\emph default
+ the same as our unemployment value because approximate the continuous AR-1
+ with a discrete grid, following Rouwenhurst.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+We need a joint constraint on 
+\begin_inset Formula $\gamma,\chi$
+\end_inset
+
+, requiring 
+\begin_inset Formula $\log b(z)<\log z$
+\end_inset
+
+ for all 
+\begin_inset Formula $z.$
+\end_inset
+
+ Note that effort usually hovers around 1 (so 
+\begin_inset Formula $\text{\ensuremath{\log z}\ensuremath{\approx\log(a(z)z})}$
+\end_inset
+
+).
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+If the below work is correct, we do not need to separately consider the
+ joint constraint.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Otherwise, we could also discard such points from the Sobol points.
+ For local optimization and other stages, we can penalize these parameter
+ choices in the function evaluation.
+ Not sure if there any other  alternatives? 
+\end_layout
+
+\end_deeper
 \begin_layout Enumerate
 \begin_inset Formula $\gamma,\chi,\varepsilon,\sigma_{\eta}$
 \end_inset
@@ -265,132 +392,6 @@ Note: that the strictest bounds occur for
 \end_layout
 
 \end_deeper
-\end_deeper
-\begin_layout Enumerate
-Note: 
-\begin_inset Formula $b(z)=\gamma+\chi(z-z_{ss})$
-\end_inset
-
- for original affine specification in the code.
- 
-\end_layout
-
-\begin_layout Enumerate
-Under new functional form assumption, define 
-\begin_inset Formula $b(z)=\gamma(z/z_{ss})^{\chi}.$
-\end_inset
-
- Recall that 
-\begin_inset Formula $\logz=\rho\log z_{t-1}+\epsilon.$
-\end_inset
-
-
-\end_layout
-
-\begin_deeper
-\begin_layout Enumerate
-Then 
-\begin_inset Formula $u(b(z))=\log(\gamma(z/z_{ss})^{\chi})=\log\gamma+\chi(\log(z)-\log(z_{ss}))=\log\gamma+\chi\log(z)$
-\end_inset
-
- since 
-\begin_inset Formula $z_{ss}=1$
-\end_inset
-
- (
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\strikeout off
-\xout off
-\uuline off
-\uwave off
-\noun off
-\color none
-note: 
-\begin_inset Formula $z_{ss}$
-\end_inset
-
-
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\strikeout default
-\xout default
-\uuline default
-\uwave default
-\noun default
-\color inherit
- is actually just a definition; however, 1 is the unconditional mean of
- the 
-\begin_inset Formula $\log z$
-\end_inset
-
- process).
-\end_layout
-
-\begin_layout Enumerate
-This implies that 
-\begin_inset Formula $U(z)=\frac{{\log\gamma}}{1-\beta}+\frac{{\chi}}{1-\beta\rho}\log z$
-\end_inset
-
- (see John's previous work on the isomorphism b/w procycylical unempyloement
- benefit and Nash bargaining).
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-The above is not 
-\emph on
-exactly
-\emph default
- the same as our unemployment value because approximate the continuous AR-1
- with a discrete grid, following Rouwenhurst.
-\end_layout
-
-\end_deeper
-\end_deeper
-\begin_layout Enumerate
-We need a joint constraint on 
-\begin_inset Formula $\gamma,\chi$
-\end_inset
-
-, requiring 
-\begin_inset Formula $\log b(z)<\log z$
-\end_inset
-
- for all 
-\begin_inset Formula $z.$
-\end_inset
-
- Note that effort usually hovers around 1 (so 
-\begin_inset Formula $\text{\ensuremath{\log z}\ensuremath{\approx\log(a(z)z})}$
-\end_inset
-
-).
- 
-\end_layout
-
-\begin_deeper
-\begin_layout Enumerate
-If the above work is correct, our current bounds are fine, and we do not
- need to incorporate the joint constraint.
- 
-\end_layout
-
-\begin_layout Enumerate
-Otherwise, we can discard such points from the Sobol points.
- For local optimization and other stages, we can penalize these parameter
- choices in the function evaluation.
- What are the alternatives? 
-\end_layout
-
 \end_deeper
 \end_deeper
 \begin_layout Enumerate
