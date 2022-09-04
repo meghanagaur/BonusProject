@@ -11,4 +11,4 @@
 module purge
 module load julia/1.6.1
 
-julia --threads $SLURM_CPUS_PER_TASK smm_test.jl
+julia --threads $SLURM_CPUS_PER_TASK smm_test_v2.jl

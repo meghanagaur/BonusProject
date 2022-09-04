@@ -294,21 +294,21 @@ Otherwise, we could also discard such points from the Sobol points.
 \begin_inset Formula $\chi\in[-1,1]$
 \end_inset
 
-
+ 
 \end_layout
 
 \begin_layout Itemize
 \begin_inset Formula $\varepsilon\in[0,3]$
 \end_inset
 
-
+ <- 3 seems large
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\sigma_{\eta}\in[0,0.6]$
+\begin_inset Formula $\sigma_{\eta}\in[0,0.36]$
 \end_inset
 
-
+ <- 0.36 seems large
 \end_layout
 
 \begin_layout Itemize
@@ -388,7 +388,11 @@ Note: that the strictest bounds occur for
 \begin_inset Formula $\gamma=0.9.$
 \end_inset
 
+ Perhaps we should decrease the range of 
+\begin_inset Formula $\chi$
+\end_inset
 
+.
 \end_layout
 
 \end_deeper
@@ -523,7 +527,7 @@ If we need equality, penalize these parameter vectors in the SMM.
 
 \end_deeper
 \begin_layout Section*
-Important, but Less Urgent, Details
+Important Details
 \end_layout
 
 \begin_layout Enumerate
@@ -532,10 +536,87 @@ Note that the solution hits the bounds quite frequently for given parameter
  so the objective function may have lots of kinks.
 \end_layout
 
+\begin_deeper
+\begin_layout Enumerate
+In particular,
+\begin_inset Formula $\theta$
+\end_inset
+
+ is 
+\emph on
+highly
+\emph default
+ sensitive to 
+\begin_inset Formula $\gamma.$
+\end_inset
+
+ For now, I have turned off the estimation of 
+\begin_inset Formula $\gamma.$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
 \begin_layout Enumerate
 Using the identity matrix as weight matrix for SMM.
  Efficiency concerns (i.e.
  do we have covariance matrxi for data moments)?
+\end_layout
+
+\begin_layout Enumerate
+For 
+\begin_inset Formula $\varepsilon=1,$
+\end_inset
+
+ the implicit effort equation is a quadratic equation, and there is only
+ one positive root (the other root is 0).
+ For other values of 
+\begin_inset Formula $\varepsilon,$
+\end_inset
+
+ I take the positive root (in practice, solve for this using a root finder,
+ with a search interval of 
+\begin_inset Formula $[10^{-10},\bar{a}]$
+\end_inset
+
+ to exclude the choice of zero effort).
+ I have tried varying 
+\begin_inset Formula $\bar{a},$
+\end_inset
+
+doesn't seem to make a huge difference.
+ I flag the result if more than one root is found.
+\end_layout
+
+\begin_layout Enumerate
+Note that 
+\begin_inset Formula $U$
+\end_inset
+
+, the value from the contract, seems to strictly decrease with 
+\begin_inset Formula $\theta$
+\end_inset
+
+ (i.e.
+ we solve for the implied 
+\begin_inset Formula $Y$
+\end_inset
+
+ and 
+\begin_inset Formula $U$
+\end_inset
+
+, given a 
+\begin_inset Formula $\theta).$
+\end_inset
+
+ So not unreasonable to suspect solution is unique, given that there should
+ be a single crossing with 
+\begin_inset Formula $\omega(z_{0})?$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section*
@@ -622,25 +703,62 @@ We can also then do this without guessing a
 
 \end_deeper
 \begin_layout Enumerate
-Local optimization Extensions:
+Local optimization Issues/Extensions:
 \end_layout
 
 \begin_deeper
 \begin_layout Enumerate
-turn off varying 
+Optim NM: 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+How to incorporate bound constraints?
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+logistic transformation around the initial point to incorporate parameter
+ bounds?
+\end_layout
+
+\begin_layout Enumerate
+Alternatively, we can bound transformation so that the initial point is
+ midpoint of implied bounds (more local search)?
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Provide input for simplex or use Matlab simplex from fminsearch?
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+I turned off using 
 \begin_inset Formula $\gamma$
 \end_inset
 
- and labor share if still running into issues...
+ to calibrate the labor share since I was running into issues with this...
 \end_layout
 
 \begin_layout Enumerate
-Provide input for simplex or use Matlab simplex from fminbox.
- 
+Try NLOpt Nelder Mead or DFLNS.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+NLOpt includes bound constraints for N-M.
 \end_layout
 
 \begin_layout Enumerate
-Try NLOPT Nelder Mead or DFLNS.
+Maybe use Subplex algorithm
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Tik-Tak reccommends parameter bounds.
+ Could do unconstrained local optimization but only use thebounds for creating
+ Sobol sequences.
 \end_layout
 
 \end_deeper

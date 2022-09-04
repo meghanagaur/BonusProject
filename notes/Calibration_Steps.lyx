@@ -188,7 +188,19 @@ Compute
 \begin_inset Formula $y(z,\eta,z_{1})\coloneqq a(z|z_{1})(z+\eta).$
 \end_inset
 
+ Note that this value will be negative if 
+\begin_inset Formula $z+\eta<0.$
+\end_inset
 
+ For now, just take 
+\begin_inset Formula $y=\max(a(z|z_{1})(z+\eta),\epsilon)$
+\end_inset
+
+, for some 
+\begin_inset Formula $\epsilon>0$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Enumerate

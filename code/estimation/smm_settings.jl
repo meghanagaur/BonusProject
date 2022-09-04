@@ -1,68 +1,49 @@
 """
-Objective function to be minimized during SMM. 
-Variable descriptions below.
-xx           = evaluate objFunction @ these parameters (before transformation)
-endogParams2 = evaluate objFunction @ these parameters (after transformation)
-endogParams  = actual starting point for local optimization
-zshocks      = z shocks for the simulation
-pb           = parameter bounds
-data_mom     = data moments
-W            = weight matrix for SMM
-    ORDERING OF PARAMETERS/MOMENTS
-ε            = 1st param
-σ_η          = 2nd param
-χ            = 3rd param
-γ            = 4th param
-var_Δlw      = 1st moment (variance of log wage changes)
-dlw1_du      = 2nd moment (dlog w_1 / d u)
-dΔlw_dy      = 3rd moment (d Δ log w_it / y_it)
-w_y          = 4th moment (PV of labor share)
+Logit transformation to achieve desired bounds.
 """
-function objFunction(xx, x0, endogParams, pb, zshocks, data_mom, W)
-
-    endogParams2 = [ transform(xx[i], pb[i], x0[i], endogParams[i]) for i = 1:length(endogParams) ] 
-    baseline     = model(ε = endogParams2[1] , σ_η = endogParams2[2], χ = endogParams2[3], γ = endogParams2[4]) 
-
-    # Simulate the model and compute moments
-    out     = simulate(baseline, zshocks)
-    mod_mom = [out.var_Δlw, out.dlw1_du, out.dΔlw_dy, out.w_y]
-    d       = (mod_mom - data_mom)./2(mod_mom + data_mom) # arc percentage differences
-    f       = out.flag < 1 ? d'*W*d : 10000
-    println(string(f))
-    return f, mod_mom, out.flag
+function logit(x; x0 = 0, min =-1, max=1, λ = 1.0)
+    (max - min)/(1 + exp(-(x - x0)/λ)) + min
 end
 
 """ 
-Transform parameters to lie within bounds
+Transform parameters to lie within specified bounds in pb.
+xx = current (transformed) position
+x1 = current (actual) position
+p0 = actual initial position
 """
-function transform(xx, pb, x0, p0; λ = 2)
-    # rescales all of the parameters to lie between -1 and 1 
-    xx2          = 2 ./(1 .+ exp.(-(xx .- x0)./λ) ) .- 1
-    # Transform function so that boundrary conditions are satisfied 
+function transform(xx, pb, p0; λ = 1)
+    # Rescales ALL of the parameters to lie between -1 and 1 
+    xx2          =   logit.(xx) 
+
+    # Transform each parameter, so that the boundrary conditions are satisfied 
     if xx2 > 0
         x1 = xx2*(pb[2] - p0) + p0
     else
         x1 = xx2*(p0 - pb[1]) + p0  
     end
 
+    # Can also force localize the search even further
+    #δ  = min(pb[2] - p0, p0 - pb[1])
+    #x1 = xx2*δ + p0
+
     return x1
 end
 
 # initial parameter values
-endogParams    = zeros(4)
+endogParams    = zeros(3)
 endogParams[1] = 0.5   # ε
 endogParams[2] = 0.05  # σ_η
 endogParams[3] = 0.3   # χ
-endogParams[4] = 0.66  # γ
+#endogParams[4] = 0.66  # γ
 
 ## Moments we are targeting
-data_mom       =[0.53^2, -0.5, .05, 0.6]  # may need to update 
+data_mom       =[0.53^2, -0.5, .05] ##, 0.6]  # may need to update 
 J              = length(data_mom)
 
 ## Parameter bounds and weight matrix
 W              = Matrix(1.0I, J, J)       # inverse of covariance matrix of data_mom?
 pb             = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
-                (1, [0  , 3.0]),
+                (1, [0  , 1.0]),
                 (2, [0.0, .36]),
                 (3, [-1, 1]),
                 (4, [0.3, 0.9]) ])
@@ -75,7 +56,7 @@ T            = 100
 burnin       = 1000
 
 # compute the invariant distribution of z
-A           = P_z- Matrix(1.0I, N_z, N_z)
+A           = P_z - Matrix(1.0I, N_z, N_z)
 A[:,end]   .= 1
 O           = zeros(1,N_z)
 O[end]      = 1
@@ -99,3 +80,18 @@ zstring  = simulateZShocks(baseline, N = 1, T = N + burnin)
 # create an ordered tuple for the zShocks
 zshocks = (z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, distr = distr, N = N,
 T = T, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
+
+#=
+# checks
+plot(x->logit(x;x0=0),-10,10)
+hline!([-1])
+hline!([1])
+
+i=4
+init_x = 10*ones(4)
+δ=0.5*init_x[1]
+plot(x -> transform(x, pb[i], init_x[i], endogParams[i], λ = 1), init_x[i] - δ, init_x[i] + δ,legend=:false)
+hline!([pb[i][1]])
+hline!([pb[i][2]])
+hline!([endogParams[i]])
+=#

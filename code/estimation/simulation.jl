@@ -40,11 +40,11 @@ function simulate(baseline, zshocks; u0 = 0.06)
         
         flag_z[iz]    = maximum([exit_flag1, exit_flag2, exit_flag3, wage_flag, effort_flag])
 
-        if flag_z[iz] < 1 
-            z_idx         = modd.z0_idx # index of z on the productivity grid
+        if flag_z[iz] < 1             
             
             # log wage of new hires, given z0 = z
-            lw1_z[iz]     = log(w_0) - 0.5*(ψ*hp(az[z_idx])*σ_η)^2 
+            lw1_z[iz]     = log(w_0) - 0.5*(ψ*hp(az[iz])*σ_η)^2 
+           
             # tightness, given z0 = z
             θ_z[iz]       = θ             
             w_y_z[iz]     = (w_0./ψ)/Y
@@ -56,15 +56,17 @@ function simulate(baseline, zshocks; u0 = 0.06)
             
             start_idx    = (iz==1) ? 1 : indexes[iz-1] + 1 
             end_idx      = indexes[iz]
-            hp_z0        = hp.(az)  # h'(a(z | z_0 = z_ss))
+            hp_z0        = hp.(az)  # h'(a(z' | z_0 = z))
             @views hp_az = hp_z0[z_shocks_idx_z]
+
             t1           = ψ*hp_az.*η_shocks 
             t2           = 0.5*(ψ*hp_az*σ_η).^2 
+            Δlw[start_idx:end_idx]  = t1 - t2
+
             @views y     = yz[z_shocks_idx_z]
             ηz           = z_shocks_z.*η_shocks
 
-            Δlw[start_idx:end_idx]  = t1 - t2
-            ly[start_idx:end_idx]   = log.(y + ηz)
+            ly[start_idx:end_idx]   = log.(max.(y + ηz,eps())) # avoid run-time error
         end
     end
 
@@ -82,8 +84,8 @@ function simulate(baseline, zshocks; u0 = 0.06)
 
         # Compute simulated series (trim to post-burn-in for z_t when computing moments)
         @unpack z_shocks_idx = zstring
-        @views lw1_t  = lw1_z[z_shocks_idx]   # E[log w_1 | z_t]
-        @views θ_t    = θ_z[z_shocks_idx]     # θ(z_t)
+        @views lw1_t         = lw1_z[z_shocks_idx]   # E[log w_1 | z_t]
+        @views θ_t           = θ_z[z_shocks_idx]     # θ(z_t)
 
         # Compute evolution of unemployment for the different z_t paths
         T        = length(θ_t)

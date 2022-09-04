@@ -121,7 +121,7 @@ Evaluate the function value at each of these
 
 \begin_deeper
 \begin_layout Itemize
-100000/(24*60*100) = 0.69 days for 
+10000/(24*60*100) = 0.69 days for 
 \begin_inset Formula $N=100,000.$
 \end_inset
 
