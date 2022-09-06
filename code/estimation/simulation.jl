@@ -1,5 +1,4 @@
 # Define important functions for the SMM.
-
 """
 Simulate EGSS, given parameters defined in tuple m.
 Solve the model with finite horizon contract. Solve 
@@ -11,10 +10,10 @@ track of the time period t. Note: u0 = initial unemployment rate.
 function simulate(baseline, zshocks; u0 = 0.06)
     
     # initialize moments to export
-    var_Δlw = 0 
-    dlw1_du = 0 
-    dΔlw_dy = 0 
-    w_y     = 0 
+    var_Δlw = NaN
+    dlw1_du = NaN
+    dΔlw_dy = NaN
+    w_y     = NaN
 
     # Get all of the relevant parameters for the model
     @unpack β, s, κ, hp, zgrid, N_z, ψ, z0_idx, f, ε, σ_η, χ, γ = baseline 

@@ -492,20 +492,7 @@ For the latter case, PNZ set
 \end_layout
 
 \begin_layout Itemize
-For the former, technically could increase 
-\begin_inset Formula $\bar{\theta}$
-\end_inset
-
- (right now, 
-\begin_inset Formula $\bar{\theta}$
-\end_inset
-
- is around 15).
- 
-\end_layout
-
-\begin_layout Itemize
-Should I keep these solutions when the constraint holds 
+Should I keep these solutions when the constraint does hold 
 \emph on
 strictly (so 
 \begin_inset Formula $q=0$
@@ -517,11 +504,11 @@ strictly (so
 \emph on
 need
 \emph default
- equality for TIOLI assumption to make sense?
+ equality for the TIOLI assumption to make sense?
 \end_layout
 
 \begin_layout Itemize
-If we need equality, penalize these parameter vectors in the SMM.
+If we need equality, we can penalize these parameter vectors in the SMM.
  This is what we are currently doing.
 \end_layout
 

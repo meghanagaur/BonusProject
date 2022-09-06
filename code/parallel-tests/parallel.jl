@@ -4,11 +4,11 @@ cd("/Users/meghanagaur/BonusProject/code/parallel-tests")
 addprocs(3)
 
 # practice using distributed loop
-@everywhere f(x) = x
+@everywhere g(x) = x
 
 a = SharedArray{Float64}(10)
 @distributed for i = 1:10
-    a[i] = f(i)
+    a[i] = g(i)
 end
 
 # practice using pmap

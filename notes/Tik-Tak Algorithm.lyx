@@ -76,7 +76,7 @@
 \begin_body
 
 \begin_layout Section
-Tik-Tak Algorithm
+Tik-Tak Algorithm,following Guvenen (2011)
 \end_layout
 
 \begin_layout Standard
@@ -114,21 +114,9 @@ Evaluate the function value at each of these
 
  Sobol points.
  THIS CAN BE DONE IN PARALLEL.
- (100 CPUs).
- If possible, do shared memory.Otherwise, multiprocessing across nodes is
- fine.
+ Multiprocessing across nodes is fine.
 \end_layout
 
-\begin_deeper
-\begin_layout Itemize
-10000/(24*60*100) = 0.69 days for 
-\begin_inset Formula $N=100,000.$
-\end_inset
-
- Supposing 1 minute / function evaluation (no multitheading).
-\end_layout
-
-\end_deeper
 \begin_layout Enumerate
 Keep the set 
 \begin_inset Formula $N^{*}$
@@ -159,7 +147,11 @@ Save all of these to a JLD or CSV file.
 \end_layout
 
 \begin_layout Enumerate
-Set the global iteration number i=1.
+Set the global iteration number 
+\begin_inset Formula $i=1$
+\end_inset
+
+.
 \end_layout
 
 \end_deeper
@@ -191,13 +183,13 @@ saved_parameters..txt
 \begin_inset Quotes erd
 \end_inset
 
- the function values (and corresponding parameter vectors) of previously
+ the function values (and corresponding parameter vectors) of the previously
  found local minima.
  Denote the lowest function value found as of ieration 
 \begin_inset Formula $i-1$
 \end_inset
 
-as 
+ as 
 \begin_inset Formula $f_{i-1}^{low}$
 \end_inset
 
@@ -388,11 +380,15 @@ We can alternatively set the bounds implicitly (see old NYFed code) and
 \end_layout
 
 \begin_layout Subsection*
-Parallelizing the Algorithm
+Parallelizing (Steps 2-3 of) the Algorithm
 \end_layout
 
 \begin_layout Itemize
-Suppose we have N processes.
+Suppose we have 
+\begin_inset Formula $N$
+\end_inset
+
+ processes.
  
 \end_layout
 
@@ -401,12 +397,20 @@ We can distinguish between each process with an integer value
 \begin_inset Formula $n\in\{1,...,N\}.$
 \end_inset
 
- This will be a global variable (environment variable for SLURM job array).
+ This will be a global variable (this can also be a Slurm environment variable
+ if we end up using a SLURM job array instead of Julia's built-in 
+\begin_inset Quotes eld
+\end_inset
+
+pmap
+\begin_inset Quotes erd
+\end_inset
+
+ function).
 \end_layout
 
 \begin_layout Itemize
-Upon starting, each process will use the same Sobol sequence (saved to network,
- load at start of code).
+Upon starting, each process will load the same Sobol sequence.
 \end_layout
 
 \begin_layout Itemize
@@ -418,10 +422,11 @@ Let process
 \begin_inset Formula $n^{th}$
 \end_inset
 
- element of the sequence for its initial point, and launches a local search
+ element of the sequence for its initial point and launch a local search
  from that point.
  After completion, each run will open the same file and record the local
  minimum and parameter value it finds.
+ 
 \end_layout
 
 \begin_layout Itemize
@@ -434,43 +439,69 @@ number of local searches completed by all CPUS as
 \end_inset
 
 .
- Then we can link the increase in 
+ Then we can instead link the increase in 
 \begin_inset Formula $\theta_{i}$
 \end_inset
 
- to this iteration number.
- Could also select points using this iteration, but I think this might be
- risky since one process may read the file right after the current process,
- but the current process has not yet written to it.
+ to 
+\begin_inset Formula $N_{last}$
+\end_inset
+
+.
+ We can also select Sobol points using this iteration number, but this could
+ be risky since a second process may read the file right after the first
+ process reads it because the first process has not yet written to it.
 \end_layout
 
+\begin_deeper
+\begin_layout Itemize
+For now, let the 
+\begin_inset Formula $n^{th}$
+\end_inset
+
+ process use the 
+\begin_inset Formula $N\times k+n^{th}$
+\end_inset
+
+ Sobol number for setting it's initial point.
+\end_layout
+
+\end_deeper
 \begin_layout Section
 Questions/Issues
 \end_layout
 
 \begin_layout Itemize
-Ask Princeton IT about the best way to do file I/O in the global stage:
- can we lock the file?
+Would it be more performant to use a SLURM job array rather than Julia's
+ built in pmap functionality for Steps 2-3? The processes are 
+\emph on
+mostly
+\emph default
+ independent, except we need to keep track of the 
+\emph on
+lowest 
+\emph default
+function value across 
+\emph on
+all 
+\emph default
+past iterations (across all processors) to select the intiial point for
+ the local search.
+ 
 \end_layout
 
-\begin_deeper
 \begin_layout Itemize
-Ideally, 30 processess,4 CPUs/process? Can use a SLURM job array for the
- separate processes.
+What is the best way to do file I/O for this step,since there will be several
+ processors reading and writing to the same txt file? Is there a way to
+ lock the file?
 \end_layout
 
 \begin_layout Itemize
-1000*20*50/(24*60*60*30) = 0.386 days.
- This supposes 1000 starting points, 50 function evals / local minimization,
- 20 seconds / function evaluation using 4 threads for each function evaluation,
- and 30 separate processes for global minimization.
+Is it possible to multithread on each process in Julia on the cluster? If
+ so, how do I request this in the Slurm file and in Julia since the number
+ of threads utilized in Julia is an envrionment variable that is set when
+ starting up Julia (at least for the main task)?
 \end_layout
 
-\begin_layout Itemize
-Can skip multithreading and jack up number of cores (see what is more readily
- available on cluster).
-\end_layout
-
-\end_deeper
 \end_body
 \end_document

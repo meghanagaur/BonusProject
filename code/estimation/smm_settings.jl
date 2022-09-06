@@ -29,33 +29,33 @@ function transform(xx, pb, p0; λ = 1)
     return x1
 end
 
-# initial parameter values
-endogParams    = zeros(3)
-endogParams[1] = 0.5   # ε
-endogParams[2] = 0.05  # σ_η
-endogParams[3] = 0.3   # χ
-#endogParams[4] = 0.66  # γ
-
-## Moments we are targeting
-data_mom       =[0.53^2, -0.5, .05] ##, 0.6]  # may need to update 
-J              = length(data_mom)
+## Empirical moments we are targeting
+const data_mom       =[0.53^2, -0.5, .05] ##, 0.6]  # may need to update 
+const K              = length(data_mom)
 
 ## Parameter bounds and weight matrix
-W              = Matrix(1.0I, J, J)       # inverse of covariance matrix of data_mom?
-pb             = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
+const W              = Matrix(1.0I, K, K)       # inverse of covariance matrix of data_mom?
+
+#Parameters we are estimating
+const params         = OrderedDict{Int, Symbol}([ # parameter bounds
+                (1, :ε),
+                (2, :σ_η),
+                (3, :χ) ])
+const J              = length(params)
+const pb             = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
                 (1, [0  , 1.0]),
-                (2, [0.0, .36]),
+                (2, [0.0, 0.36]),
                 (3, [-1, 1]),
                 (4, [0.3, 0.9]) ])
 
-## Build zshocks
+## Build zshocks for the simulation
 baseline     = model()
 @unpack N_z, P_z, zgrid  = baseline
 N            = 100000
 T            = 100
 burnin       = 1000
 
-# compute the invariant distribution of z
+# Compute the invariant distribution of z
 A           = P_z - Matrix(1.0I, N_z, N_z)
 A[:,end]   .= 1
 O           = zeros(1,N_z)
@@ -63,7 +63,7 @@ O[end]      = 1
 z_ss_dist   = (O*inv(A))
 @assert(isapprox(sum(z_ss_dist),1))
 
-# create z shocks. do this out OUTSIDE of estimation.
+# Create z shocks
 distr        = floor.(Int64, N*z_ss_dist)
 z_shocks     = OrderedDict{Int, Array{Real,1}}()
 z_shocks_idx = OrderedDict{Int, Array{Real,1}}()
@@ -74,24 +74,10 @@ for iz = 1:length(zgrid)
     z_shocks_idx[iz]    = vec(temp.z_shocks_idx)
 end
 
-# create one z_t string: set z_1 to default value of 1.
+# Create one long z_t string: set z_1 to default value of 1.
 zstring  = simulateZShocks(baseline, N = 1, T = N + burnin)
 
-# create an ordered tuple for the zShocks
+# Create an ordered tuple for the zshocks
 zshocks = (z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, distr = distr, N = N,
 T = T, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
 
-#=
-# checks
-plot(x->logit(x;x0=0),-10,10)
-hline!([-1])
-hline!([1])
-
-i=4
-init_x = 10*ones(4)
-δ=0.5*init_x[1]
-plot(x -> transform(x, pb[i], init_x[i], endogParams[i], λ = 1), init_x[i] - δ, init_x[i] + δ,legend=:false)
-hline!([pb[i][1]])
-hline!([pb[i][2]])
-hline!([endogParams[i]])
-=#

@@ -2,15 +2,13 @@
 using DynamicModel, BenchmarkTools, DataStructures, Distributions, Plots, Optim,
 ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2
 
-include("simulation.jl")      # simulation functions
+include("simulation.jl")   # simulation functions
 include("smm_settings.jl") # smm functions
 
 """
 Objective function to be minimized during SMM. 
 Variable descriptions below.
-xx           = evaluate objFunction @ these parameters (before transformation)
-endogParams2 = evaluate objFunction @ these parameters (after transformation)
-endogParams  = actual starting point for local optimization
+xx           = evaluate objFunction @ these parameters 
 zshocks      = z shocks for the simulation
 pb           = parameter bounds
 data_mom     = data moments
@@ -36,12 +34,19 @@ function objFunction(xx, pb, zshocks, data_mom, W)
         # Simulate the model and compute moments
         out     = simulate(baseline, zshocks)
         mod_mom = [out.var_Δlw, out.dlw1_du, out.dΔlw_dy] #, out.w_y]
-        d       = (mod_mom - data_mom)./2(mod_mom + data_mom) # arc percentage differences
+        d       = (mod_mom - data_mom)./0.5(mod_mom + data_mom) # arc % differences
         f       = out.flag < 1 ? d'*W*d : 10000
     end
     println(string(f))
     return f, mod_mom, out.flag
 end
+
+# Initial parameter values
+endogParams    = zeros(3)
+endogParams[1] = 0.5   # ε
+endogParams[2] = 0.05  # σ_η
+endogParams[3] = 0.3   # χ
+#endogParams[4] = 0.66  # γ
 
 # evaluate the objective function 
 @time fval, mod_mom, flag = objFunction(endogParams, pb, zshocks, data_mom, W)
@@ -61,6 +66,8 @@ minimizer     = [ transform(minimizer_t[i], pb[i], endogParams2[i]) for i = 1:le
 #orig          = [ transform(init_x[i], pb[i], endogParams2[i]) for i = 1:length(endogParams2) ] 
 
 # save the results
-save("smm_test_v2.jld2", Dict("min" =>  Optim.minimum(opt), "argmin" =>  minimizer,
+save("jld/local_test_no_bounds.jld2", Dict("min" =>  Optim.minimum(opt), "argmin" =>  minimizer,
                         "initial_x" =>   endogParams2,
                         "truth" => endogParams, "opt" => opt))
+
+
