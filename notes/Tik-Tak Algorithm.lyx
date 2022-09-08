@@ -379,6 +379,11 @@ We can alternatively set the bounds implicitly (see old NYFed code) and
  Decide which setup makes more sense.
 \end_layout
 
+\begin_layout Standard
+NOTE: if we stick with Optim and use our own bounds, we can decrease search
+ area as number of iterations increases!
+\end_layout
+
 \begin_layout Subsection*
 Parallelizing (Steps 2-3 of) the Algorithm
 \end_layout

@@ -147,7 +147,7 @@ Compute the invariant distribution of
 \end_layout
 
 \begin_layout Enumerate
-Simulate implied wage changes (so we must simulate 
+Simulate implied wage changes (so we simulate 
 \begin_inset Formula $N_{z}\times T$
 \end_inset
 
@@ -156,10 +156,10 @@ Simulate implied wage changes (so we must simulate
 \end_inset
 
 -shocks for each 
-\begin_inset Formula $z.$
+\begin_inset Formula $z$
 \end_inset
 
- 
+):
 \begin_inset Formula 
 \[
 \Delta\log w(z,\eta,z_{1})=\psi h'(a(z|z_{1}))\eta-\cfrac{1}{2}(\psi h'(a(z|z_{1}))\sigma_{\eta})^{2}
@@ -171,7 +171,7 @@ Simulate implied wage changes (so we must simulate
 \end_layout
 
 \begin_layout Enumerate
-Calculate the unconditional variance of (pooled) wage growth 
+Calculate the unconditional variance of (pooled) log wage changes 
 \begin_inset Formula $Var(\Delta\log w_{it})$
 \end_inset
 
@@ -180,11 +180,12 @@ Calculate the unconditional variance of (pooled) wage growth
 \end_layout
 
 \begin_layout Enumerate
-Compute 
+Estimate 
 \begin_inset Formula $\frac{{d\Delta\log w_{it}}}{d\log y_{it}}$
 \end_inset
 
- by regressing log wage changes on log (individual) output 
+ by regressing log wage changes on a constant and log (individual) output
+ 
 \begin_inset Formula $y(z,\eta,z_{1})\coloneqq a(z|z_{1})(z+\eta).$
 \end_inset
 
@@ -203,14 +204,15 @@ Compute
 .
 \end_layout
 
+\begin_deeper
 \begin_layout Enumerate
 Calculate the present value labor share for each z on the zgrid as 
 \begin_inset Formula $\frac{W(z)}{Y(z)}=\frac{{\sum(\beta(1-s))^{t}E_{1}[w_{t}]}}{\sum(\beta(1-s))^{t}E_{1}[a_{t}(z_{t})z_{t}]}$
 \end_inset
 
 .
- Note that wages are a martingale, so this expression is straightforward
- to evaluate given our previous work.
+ Note that the wage process is a martingale, so this expression is straightforwa
+rd to evaluate given our previous work.
  Compute the expectation of the PV labor share using the invariant distribution
  over the initial 
 \begin_inset Formula $z_{1.}$
@@ -220,12 +222,16 @@ Calculate the present value labor share for each z on the zgrid as
 \end_layout
 
 \begin_layout Enumerate
+CHECK STEP (a)!!!
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
 Simulate a single long 
 \begin_inset Formula $z_{t}$
 \end_inset
 
  chain.
- 
 \end_layout
 
 \begin_layout Enumerate
@@ -237,7 +243,7 @@ Calculate the cyclicality of new hire wages.
 )
 \begin_inset Formula 
 \[
-\mathbb{E}[\log w_{1}|z_{1}=z]=\underbrace{\log\left[\psi\left(Y(z)-\cfrac{\kappa}{q(\theta(z))}\right)\right]}_{\log w_{0}}-\cfrac{1}{2}\left(\psi h'(a(z|z_{1}=z))\sigma_{\eta}\right)^{2}
+\mathbb{E}_{\eta}[\log w_{1}|z_{1}=z]=\underbrace{\log\left[\psi\left(Y(z)-\cfrac{\kappa}{q(\theta(z))}\right)\right]}_{\log w_{0}}-\cfrac{1}{2}\left(\psi h'(a(z|z_{1}=z))\sigma_{\eta}\right)^{2}
 \]
 
 \end_inset
@@ -262,7 +268,7 @@ Simulate unemployment
 \begin_inset Formula $u_{t+1}=(1-f(\theta(z_{t})))u_{t}+s(1-u_{t})$
 \end_inset
 
-, where 
+, given 
 \begin_inset Formula $u_{0}=6\%$
 \end_inset
 
@@ -274,11 +280,11 @@ Regress
 \begin_inset Formula $\mathbb{E}[\log w_{1}|z_{t}]$
 \end_inset
 
- on 
+ on a constant and 
 \begin_inset Formula $u_{t}$
 \end_inset
 
- in the simulated data to obtain 
+ in the simulated data to estimate 
 \begin_inset Formula $\frac{{dE[\log w_{1}|z_{t}]}}{du_{t}(z_{t})}$
 \end_inset
 

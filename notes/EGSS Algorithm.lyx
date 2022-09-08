@@ -79,16 +79,12 @@
 
 \series bold
 ALGORITHM FOR SOLVING T-PERIOD EGSS.
- Start 
-\begin_inset Formula $T=2$
-\end_inset
-
-.
+ 
 \end_layout
 
 \begin_layout Enumerate
 Guess 
-\begin_inset Formula $q(\theta_{0})$
+\begin_inset Formula $q(\theta_{1})$
 \end_inset
 
  and 
@@ -165,7 +161,7 @@ Discretize
 \end_deeper
 \begin_layout Enumerate
 Repeat 2-4 until convergence of 
-\begin_inset Formula $Y(\theta_{0})$
+\begin_inset Formula $Y(\theta_{1})$
 \end_inset
 
 

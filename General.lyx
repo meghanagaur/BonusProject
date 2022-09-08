@@ -76,7 +76,7 @@
 \begin_body
 
 \begin_layout Section*
-Important Details to Finalize for Estimation
+Most Important Details to Finalize for Estimation
 \end_layout
 
 \begin_layout Enumerate
@@ -84,7 +84,11 @@ Need to finalize the moments (and their
 \series bold
 quarterly
 \series default
- values) that we are matching:
+ 
+\series bold
+values
+\series default
+) that we are matching:
 \end_layout
 
 \begin_deeper
@@ -151,7 +155,9 @@ Note:
 \end_layout
 
 \begin_layout Enumerate
-Under new functional form assumption, define 
+Under the new functional form assumption (see John's previous work on the
+ isomorphism b/w procycylical unempyloement benefit and Nash bargaining),
+ define 
 \begin_inset Formula $b(z)=\gamma(z/z_{ss})^{\chi}.$
 \end_inset
 
@@ -215,8 +221,7 @@ This implies that
 \begin_inset Formula $U(z)=\frac{{\log\gamma}}{1-\beta}+\frac{{\chi}}{1-\beta\rho}\log z$
 \end_inset
 
- (see John's previous work on the isomorphism b/w procycylical unempyloement
- benefit and Nash bargaining).
+.
 \end_layout
 
 \begin_deeper
@@ -225,8 +230,8 @@ The above is not
 \emph on
 exactly
 \emph default
- the same as our unemployment value because approximate the continuous AR-1
- with a discrete grid, following Rouwenhurst.
+ the same as our unemployment value because we approximate the continuous
+ AR-1 with a discrete grid, following Rouwenhurst.
 \end_layout
 
 \end_deeper
@@ -444,7 +449,7 @@ where
 \begin_inset Formula $\kappa=0.474$
 \end_inset
 
-, approximately based on Hagedorn and Manovskii (2008) (match 
+, approximately based on Hagedorn and Manovskii (2008) (try to match 
 \begin_inset Formula $\theta_{ss}=1{\normalcolor }$
 \end_inset
 
@@ -487,8 +492,7 @@ For the latter case, PNZ set
 \end_inset
 
  , but this will not work for us, since the implied solution does not satisfy
- the IR constraint.
- 
+ the IR constraint?
 \end_layout
 
 \begin_layout Itemize
@@ -518,8 +522,15 @@ Important Details
 \end_layout
 
 \begin_layout Enumerate
-Note that the solution hits the bounds quite frequently for given parameter
- choices...
+Note that the solution hits the bounds on 
+\begin_inset Formula $q$
+\end_inset
+
+ for 
+\emph on
+many
+\emph default
+ parameter choices...
  so the objective function may have lots of kinks.
 \end_layout
 
@@ -537,7 +548,7 @@ highly
 \begin_inset Formula $\gamma.$
 \end_inset
 
- For now, I have turned off the estimation of 
+For now, I have turned off the estimation of 
 \begin_inset Formula $\gamma.$
 \end_inset
 
@@ -547,8 +558,7 @@ highly
 \end_deeper
 \begin_layout Enumerate
 Using the identity matrix as weight matrix for SMM.
- Efficiency concerns (i.e.
- do we have covariance matrxi for data moments)?
+ Efficiency concerns ( do we even have the covariance matrix for data moments)?
 \end_layout
 
 \begin_layout Enumerate
@@ -564,7 +574,7 @@ For
 
  I take the positive root (in practice, solve for this using a root finder,
  with a search interval of 
-\begin_inset Formula $[10^{-10},\bar{a}]$
+\begin_inset Formula $(10^{-10},\bar{a})$
 \end_inset
 
  to exclude the choice of zero effort).
@@ -572,12 +582,33 @@ For
 \begin_inset Formula $\bar{a},$
 \end_inset
 
-doesn't seem to make a huge difference.
+and it doesn't seem to make a difference for the returned root.
+ However, for larger 
+\begin_inset Formula $\varepsilon,$
+\end_inset
+
+the numerical solution is sensitive to 
+\begin_inset Formula $\text{\underbar{a}}$
+\end_inset
+
+ (i.e.
+ there is a returned root, which is 
+\emph on
+very 
+\emph default
+close to 
+\begin_inset Formula $0$
+\end_inset
+
+, if I exactly set 
+\begin_inset Formula $\text{\underbar{a}}=0.$
+\end_inset
+
  I flag the result if more than one root is found.
 \end_layout
 
 \begin_layout Enumerate
-Note that 
+From visual inspection, 
 \begin_inset Formula $U$
 \end_inset
 
@@ -586,7 +617,7 @@ Note that
 \end_inset
 
  (i.e.
- we solve for the implied 
+ solve for the implied 
 \begin_inset Formula $Y$
 \end_inset
 
@@ -594,16 +625,28 @@ Note that
 \begin_inset Formula $U$
 \end_inset
 
-, given a 
+, given a choice of 
 \begin_inset Formula $\theta).$
 \end_inset
 
- So not unreasonable to suspect solution is unique, given that there should
- be a single crossing with 
+ So it may not be unreasonable to conclude that the solution 
+\begin_inset Formula $\theta$
+\end_inset
+
+ , if it exists, is unique, given that there will be at most one crossing
+ with 
 \begin_inset Formula $\omega(z_{0})?$
 \end_inset
 
 
+\end_layout
+
+\begin_layout Enumerate
+I use arc-percentage deviations for the distance measure between model and
+ data moments.
+ This measure becomes problematic when the data moment is close to zero.
+ Maybe we can use standard deviation of log wage changes instead of variance
+ of log wage changes.
 \end_layout
 
 \begin_layout Section*
@@ -721,11 +764,20 @@ Provide input for simplex or use Matlab simplex from fminsearch?
 
 \end_deeper
 \begin_layout Enumerate
-I turned off using 
+I turned off calibrating 
 \begin_inset Formula $\gamma$
 \end_inset
 
- to calibrate the labor share since I was running into issues with this...
+ and targeting the labor share, since the results were very sensitive to
+ changes in 
+\begin_inset Formula $\gamma$
+\end_inset
+
+.Maybe we can estimate 
+\begin_inset Formula $\gamma$
+\end_inset
+
+ after we get a better handle on the rest of the parameters?
 \end_layout
 
 \begin_layout Enumerate
