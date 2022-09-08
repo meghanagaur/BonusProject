@@ -6,7 +6,7 @@ addprocs(num_tasks)
 
 @everywhere begin
 
-    include("smm_settings.jl") # smm functions
+    include("smm_settings.jl") # SMM inputs, settings, packages, etc.
 
     # Evalute objective function
     function evaluate!(i, sob_seq, pb, zshocks, data_mom, W)

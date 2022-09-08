@@ -1,4 +1,4 @@
-include("smm_settings.jl") # smm settings
+include("smm_settings.jl") # SMM inputs, settings, packages, etc.
 
 println(Threads.nthreads())
 
@@ -21,7 +21,7 @@ endogParams2 = [clamp(endogParams2[i], pb[i][1],pb[i][2]) for i=1:J] # make sure
 
 # NM from Optim WITHOUT bounds 
 objFunc(x) = objFunction(x, pb, zshocks, mod_mom, W)[1]
-opt        = optimize(objFunc, endogParams2, NelderMead(), 
+@time opt  = optimize(objFunc, endogParams2, NelderMead(), 
                     Optim.Options(g_tol = 1e-6, x_tol = 1e-6,  f_tol = 1e-6, iterations = 50, show_trace = true))
 
 # rescales all of the parameters 
