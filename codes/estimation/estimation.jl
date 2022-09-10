@@ -32,8 +32,6 @@ argmin_p    = dzeros( (nworkers(),J) , workers()[1:end], [nworkers(), 1] )
 # starting point for local optimization step (in (-1,1) interval for transformed parameters )
 init_x      = zeros(J)
 
-println("hello")
-
 # Run the parallel optimization code 
 @time spmd(tiktak_spmd, sob_d, fvals_d, argmin_d, min_p, argmin_p, iter_p, 
     init_x, pb, zshocks, data_mom, W; pids = workers()) # executes on all workers
@@ -46,7 +44,7 @@ println("hello")
 [@fetchfrom p localindices(argmin_p) for p in workers()]
 
 
-println(sob_d)
+sob_d
 fvals_d
 argmin_d
 argmin_p

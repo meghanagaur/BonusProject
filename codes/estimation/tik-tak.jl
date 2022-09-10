@@ -31,7 +31,7 @@ function tiktak_spmd(sob_d, fvals_d, argmin_d, min_p, argmin_p, iter_p, init_x, 
             # record results in big vectors
             fvals_d[:L][i]    = copy(min_f)      # function value
             argmin_d[:L][i,:] = copy(argmin_t)  # arg min 
-            # record results in small vectors if we have achieved the true min
+            # update the results in small vectors 
             if i ==1
                 min_p[:L]        = copy(min_f)
                 argmin_p[:L][:]  = copy(argmin_t)
@@ -63,7 +63,7 @@ function tiktak_spmd(sob_d, fvals_d, argmin_d, min_p, argmin_p, iter_p, init_x, 
             fvals_d[:L][i]    = copy(min_f)      # function value
             argmin_d[:L][i,:] = copy(argmin_t)   # arg min 
             
-            # record results in small vectors if we have achieved the true min
+            # update the results in small vectors 
             if min_f < min_p[:L]  
                 min_p[:L]        = copy(min_f)
                 argmin_p[:L][:]  = copy(argmin_t)
