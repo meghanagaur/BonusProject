@@ -23,7 +23,7 @@ dΔlw_dy      = 3rd moment (d Δ log w_it / y_it)
 w_y          = 4th moment (PV of labor share)
 """
 function objFunction(xx, pb, zshocks, data_mom, W)
-    inbounds = minimum( [ pb[i][1] <= xx[i] <= pb[i][2] for i = 1:length(xx) ]) >= 1
+    inbounds = minimum( [ pb[i][1] <= xx[i] <= pb[i][2] for i = 1:J]) >= 1
     if inbounds == 0
         f        = 10000
         mod_mom  = NaN
@@ -59,7 +59,7 @@ dΔlw_dy      = 3rd moment (d Δ log w_it / y_it)
 w_y          = 4th moment (PV of labor share)
 """
 function objFunction_WB(xx, x0, pb, zshocks, data_mom, W)
-    endogParams  = [ transform(xx[i], pb[i], x0[i]) for i = 1:length(x0)] 
+    endogParams  = [ transform_params(xx[i], pb[i], x0[i]) for i = 1:J] 
     baseline     = model(ε = endogParams[1] , σ_η = endogParams[2], χ = endogParams[3]) #, γ = endogParams[4]) 
 
     # Simulate the model and compute moments
@@ -83,7 +83,7 @@ xx = current (transformed) position
 x1 = current (actual) position
 p0 = actual initial position
 """
-function transform(xx, pb, p0; λ = 1)
+function transform_params(xx, pb, p0; λ = 1)
     # Rescales ALL of the parameters to lie between -1 and 1 
     xx2          =   logit.(xx) 
 
@@ -110,7 +110,7 @@ moms_key             = OrderedDict{Int, Symbol}([    # parameter bounds
 const K              = length(data_mom)
 
 ## Parameter bounds and weight matrix
-const W              = Matrix(1.0I, K, K) # inverse of covariance matrix of data_mom?
+W                    = Matrix(1.0I, K, K) # inverse of covariance matrix of data_mom?
 
 #Parameters we are estimating
 params_key           = OrderedDict{Int, Symbol}([ # parameter bounds
@@ -126,11 +126,11 @@ pb                   = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
 
 ## Build zshocks for the simulation
 baseline     = model()
-const N_z    = baseline.N_z
-const P_z    = baseline.P_z
-const zgrid  = baseline.zgrid
-const N      = 100000
-const T      = 100
+N_z          = baseline.N_z
+P_z          = baseline.P_z
+zgrid        = baseline.zgrid
+const N_sim  = 100000
+const T_sim  = 100
 const burnin = 1000
 
 # Compute the invariant distribution of z
@@ -142,20 +142,20 @@ z_ss_dist   = (O*inv(A))
 @assert(isapprox(sum(z_ss_dist),1))
 
 # Create z shocks
-λ_N_z        = floor.(Int64, N*z_ss_dist)
+λ_N_z        = floor.(Int64, N_sim*z_ss_dist)
 z_shocks     = OrderedDict{Int, Array{Real,1}}()
 z_shocks_idx = OrderedDict{Int, Array{Real,1}}()
 
 Threads.@threads for iz = 1:length(zgrid)
-    temp                = simulateZShocks(baseline, N = λ_N_z[iz], T = T, z_1_idx = iz, set_seed = true)
+    temp                = simulateZShocks(baseline, N = λ_N_z[iz], T = T_sim, z_1_idx = iz, set_seed = true)
     z_shocks[iz]        = vec(temp.z_shocks)
     z_shocks_idx[iz]    = vec(temp.z_shocks_idx)
 end
 
 # Create one long z_t string: set z_1 to default value of 1.
-zstring  = simulateZShocks(baseline, N = 1, T = N + burnin, set_seed = false)
+zstring  = simulateZShocks(baseline, N = 1, T = N_sim + burnin, set_seed = false)
 
 # Create an ordered tuple for the zshocks
-zshocks = (z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, λ_N_z = λ_N_z, N = N,
-T = T, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
+zshocks = (z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, λ_N_z = λ_N_z, N = N_sim,
+T = T_sim, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
 

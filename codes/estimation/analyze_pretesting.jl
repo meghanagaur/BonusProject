@@ -1,4 +1,4 @@
-# Produce preliminary binscatters of pretesting output.
+# Produce preliminary binscatters of the pretesting output.
 
 using LaTeXStrings, Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
 xguidefontsize =10, yguidefontsize=10, xtickfontsize=8, ytickfontsize=8,
@@ -7,23 +7,8 @@ linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,leg
 using DynamicModel, BenchmarkTools, DataStructures, Distributions, Optim, Sobol, DataFrames,
 ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2, Binscatters
 
-## Load the saved output
-output         = load("jld/pre-testing.jld2", "output")
-sob_seq        = load("jld/pre-testing.jld2", "sob_seq")
-baseline_model = load("jld/pre-testing.jld2", "baseline_model")
-
-# Retain the valid indices
-N_old   = length(output)
-indices = [output[i][3] == 0 for i =1:N_old]
-out_new = output[indices]
-N       = length(out_new)
-
-# Record the function values
-fvals   = [out_new[i][1] for i = 1:N]
-# Record the moments
-moms   = reduce(hcat, out_new[i][2] for i = 1:N)'
-# Record the parameters
-params = sob_seq[indices,:] 
+loc = "/Users/meghanagaur/BonusProject/codes/estimation/"
+@unpack moms, fvals, params = load(loc*"jld/pretesting_clean.jld2") 
 
 #= Note:
 var_Δlw      = 1st moment (variance of log wage changes)
@@ -50,7 +35,7 @@ p2 = binscatter(df, @formula(y ~ x),xlabel=L"\sigma_\eta")
 df = DataFrame(y = fvals, x = χ_vals )
 p3 = binscatter(df, @formula(y ~ x),xlabel=L"\chi")
 plot(p1, p2, p3, layout = (3, 1),legend=:false, ylabel=L"f")
-savefig("figs/fvals.png")
+savefig(loc*"figs/fvals.png")
 
 ## Plot model moments
 
@@ -62,7 +47,7 @@ p2 = binscatter(df, @formula(y ~ x),xlabel=L"\sigma_\eta")
 df = DataFrame(y = var_Δlw, x = χ_vals )
 p3 = binscatter(df, @formula(y ~ x),xlabel=L"\chi")
 plot(p1, p2, p3, layout = (3, 1),legend=:false,  ylabel=L"Var(\Delta \log w)")
-savefig("figs/var_dlw.png")
+savefig(loc*"figs/var_dlw.png")
 
 # 2) dlw1_du
 df = DataFrame(y = dlw1_du, x = ε_vals )
@@ -72,7 +57,7 @@ p2 = binscatter(df, @formula(y ~ x),xlabel=L"\sigma_\eta")
 df = DataFrame(y = dlw1_du, x = χ_vals )
 p3 = binscatter(df, @formula(y ~ x),xlabel=L"\chi")
 plot(p1, p2, p3, layout = (3, 1),legend=:false, ylabel=L"\frac{ d E[ \log w_1 | z_t ]}{ d u_t}")
-savefig("figs/dlw1_du.png")
+savefig(loc*"figs/dlw1_du.png")
 
 # 3) dΔlw_dy
 df = DataFrame(y = dΔlw_dy, x = ε_vals )
@@ -82,4 +67,5 @@ p2 = binscatter(df, @formula(y ~ x),xlabel=L"\sigma_\eta")
 df = DataFrame(y = dΔlw_dy, x = χ_vals )
 p3 = binscatter(df, @formula(y ~ x),xlabel=L"\chi")
 plot(p1, p2, p3, layout = (3, 1),legend=:false, ylabel=L"\frac{d \Delta \log w_{it} }{ d \log y_{it}}")
-savefig("figs/ddlw_dy.png")
+savefig(loc*"figs/ddlw_dy.png")
+

@@ -306,7 +306,12 @@ Otherwise, we could also discard such points from the Sobol points.
 \begin_inset Formula $\varepsilon\in[0,3]$
 \end_inset
 
- <- 3 seems large
+ <- 3 seems large.
+ I set it to 1 because we weren't converging for 
+\begin_inset Formula $\varepsilon>0.6-ish.$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Itemize

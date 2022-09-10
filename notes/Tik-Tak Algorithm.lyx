@@ -374,14 +374,20 @@ As noted, the Nelder-Mead algorithm requires J+1 candidate points as inputs
 \begin_layout Paragraph
 
 \series medium
-We can alternatively set the bounds implicitly (see old NYFed code) and
- rescale the parameters so the increments are normaliezed.
+We can alternatively set the bounds implicitly and rescale the parameters
+ so the increments are also normalized.
  Decide which setup makes more sense.
 \end_layout
 
 \begin_layout Standard
-NOTE: if we stick with Optim and use our own bounds, we can decrease search
- area as number of iterations increases!
+NOTE: if we stick with Optim and use our own bounds, we can decrease the
+ search area as the number of iterations increases using 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ in the parameter transformation.
+ ADD THIS LATER.
+ 
 \end_layout
 
 \begin_layout Subsection*
