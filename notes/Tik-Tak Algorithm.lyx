@@ -408,18 +408,26 @@ We can distinguish between each process with an integer value
 \begin_inset Formula $n\in\{1,...,N\}.$
 \end_inset
 
- This will be a global variable (this can also be a Slurm environment variable
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+This will be a local variable (can also be a Slurm environment variable
  if we end up using a SLURM job array instead of Julia's built-in 
 \begin_inset Quotes eld
 \end_inset
 
 pmap
+\backslash
+spmd
 \begin_inset Quotes erd
 \end_inset
 
- function).
+ functions).
 \end_layout
 
+\end_deeper
 \begin_layout Itemize
 Upon starting, each process will load the same Sobol sequence.
 \end_layout

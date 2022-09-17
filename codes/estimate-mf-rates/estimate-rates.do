@@ -1,7 +1,7 @@
-cd "/Users/meghanagaur/BonusProject/code/estimate-mf-rates"
+cd "/Users/meghanagaur/BonusProject/codes/estimate-mf-rates"
 
 * Download monthly SA unemp + emp data from CPS and vacancies from JOLTS (all in thousands)
-freduse UEMPLT5 CE16OV UNEMPLOY JTSJOL, clear
+freduse UEMPLT5 CE16OV UNEMPLOY JTSJOL UNRATE, clear
  
 * truncate covid for nows
 keep if year(daten) < 2020
@@ -15,30 +15,34 @@ rename UEMPLT5 st_unemp
 rename UNEMPLOY unemp
 rename CE16OV emp
 rename JTSJOL vacancies
+rename UNRATE urate 
 
-* gen mothly job-finding and separation rate, following Shimer
+* get mothly job-finding and separation rate, following Shimer
 gen frate   = 1 - (f.unemp - f.st_unemp)/unemp
 gen srate   = f.st_unemp/(emp*(1 - 0.5*frate))
 
-/* generate quarters
+* generate quarters
 gen qdate   = qofd(daten)
+format qdate %tq
 
-* take quarterly averages 
-collapse (mean) frate srate, by(qdate)
+* take quarterly averages to smooth data
+collapse (mean) urate frate srate vacancies unemp, by(qdate)
 
+/*
 * hp-filter the two series
 tsset qdate
 tsfilter hp frate_hp = frate, smooth(100000) trend(frate_trend)
 tsfilter hp srate_hp = srate, smooth(100000)  trend(srate_trend)
 */
 
-* compute the avg frate + sep rate
-egen avg_frate    = mean(frate) // if !missing(vacancies)
-egen avg_srate    = mean(srate) // if !missing(vacancies)
+* compute implied quarterly probabilities
+gen q_frate       = 1 - (1 - frate)^3
+gen q_srate       = 1 - (1 - srate)^3
 
-* compute quarterly probabilities
-gen q_frate       = 1 - (1 - avg_frate)^3
-gen q_srate       = 1 - (1 - avg_srate)^3
+* compute the avg frate + sep rate
+egen avg_qfrate    = mean(q_frate) // if !missing(vacancies)
+egen avg_qsrate    = mean(q_srate) // if !missing(vacancies)
+egen avg_urate     = mean(urate)
 
 * generate tightness
 gen tightness     = vacancies/unemp

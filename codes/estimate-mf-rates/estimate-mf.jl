@@ -1,25 +1,30 @@
 using CSV, DataFrames, Optim, StatsBase
 
-cd("/Users/meghanagaur/BonusProject/code/estimate-mf-rates")
+#cd("/Users/meghanagaur/BonusProject/codes/estimate-mf-rates")
 
 # Load the vacancy, unemploymentdatda
 df = DataFrame(CSV.File(pwd()*"/data/mf_rates.csv"))
 
 # get relevant data
-idx     = findfirst(!ismissing, df.q_frate)
-#frate   = 1 .- (1 .- df.frate[idx:end-1]).^3
-frate   = df.q_frate[idx]
-θ       = df.tightness[idx:end-1]
-f(θ, ι) = 1/(1 + θ^(-ι))^(1/ι)
+idx       = findfirst(!ismissing, df.tightness)
+frates    = df.q_frate[idx:end]
+tightness = df.tightness[idx:end]
+fr(θ, ι) = 1/(1 + θ^(-ι))^(1/ι)
 
-# define objective function to be minimized
-function ff(ι, θ, frate1)
-    frate2 = f.(θ, ι)
-    return (abs.(mean(frate2) - frate1))
+# objective function to be minimized,
+# compares implied frate to actual frate
+function obj(ι, θ, frate_d)
+    frate_m = fr.(θ, ι) # compute implied job-finding rate, given θ and ι
+    return (mean(abs.(frate_m - frate_d)))
 end
 
-# let's just match the quarterly job-finding rate for θ = 1
-opt     = optimize(ι -> ff(ι, 1, frate), 0.2, 20)
-ι_opt   = Optim.minimizer(opt)
 
-# ≈ 1.67
+# match the quarterly job-finding rate data, given tightness in the data
+opt     = optimize(ι -> obj(ι, tightness, frates), 0.2, 20)
+ι_opt   = Optim.minimizer(opt)
+#3.5249128585043454
+
+# match average quarterly job-finding rate, for θ=1
+opt     = optimize(ι -> obj(ι, 1, df.avg_qfrate[1]), 0.2, 20)
+ι_opt   = Optim.minimizer(opt)
+#2.7960718186676154

@@ -93,16 +93,10 @@ values
 
 \begin_deeper
 \begin_layout Enumerate
-\begin_inset Formula $\frac{{\sum(\beta(1-s))^{t}E_{1}[w_{t}]}}{\sum(\beta(1-s))^{t}E_{1}[a_{t}(z_{t})z_{t}]}$
+\begin_inset Formula $u_{ss}=0.06$
 \end_inset
 
- <- PV labor share? (is 0.6 the right value?) Note: this moment is equal
- to 
-\begin_inset Formula $\frac{{w_{0}}}{\psi Y_{1}}=1-\frac{{\kappa}}{Y_{1}q(\theta_{1})}$
-\end_inset
-
- in our EGSS model since wages are a martingale.
- 
+ <- steady state unemployment rate
 \end_layout
 
 \begin_layout Enumerate
@@ -110,15 +104,15 @@ values
 \end_inset
 
  <- Variance of wage growth.
- We need a quarterly value (John is looking for this).
+ NOTE: we need a quarterly value (John was looking for this).
 \end_layout
 
 \begin_layout Enumerate
 \begin_inset Formula $\frac{{d\Delta\log w_{it}}}{d\log y_{it}}$
 \end_inset
 
- <- Passthrough.
- Range is 
+ <- Passthrough of output to wage changes.
+ Target ange is 
 \begin_inset Formula $[0.05,0.5]$
 \end_inset
 
@@ -130,7 +124,7 @@ values
 \end_inset
 
  <- Cyclicality of new wage hires.
- Range is 
+ Target range is 
 \begin_inset Formula $[-1,-0.5$
 \end_inset
 
@@ -150,7 +144,7 @@ Note:
 \begin_inset Formula $b(z)=\gamma+\chi(z-z_{ss})$
 \end_inset
 
- for original affine specification in the code.
+ for the previous affine specification in the code.
  
 \end_layout
 
@@ -284,7 +278,7 @@ Otherwise, we could also discard such points from the Sobol points.
 \begin_inset Formula $\gamma\in[\text{\underbar{\ensuremath{\gamma}}},\bar{\gamma}]$
 \end_inset
 
- for some small 
+ for 
 \begin_inset Formula $\text{\underbar{\ensuremath{\gamma}}}>0$
 \end_inset
 
@@ -303,22 +297,36 @@ Otherwise, we could also discard such points from the Sobol points.
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\varepsilon\in[0,3]$
+\begin_inset Formula $\varepsilon\in[0,1]$
 \end_inset
 
- <- 3 seems large.
- I set it to 1 because we weren't converging for 
+ <- we aren't really converging for 
 \begin_inset Formula $\varepsilon>0.6-ish.$
 \end_inset
 
 
 \end_layout
 
+\begin_deeper
+\begin_layout Itemize
+for high values of 
+\begin_inset Formula $\varepsilon$
+\end_inset
+
+, 
+\begin_inset Formula $\theta$
+\end_inset
+
+ goes to 0 and we do not have an equilbrium solution (no convergence)
+\end_layout
+
+\end_deeper
 \begin_layout Itemize
 \begin_inset Formula $\sigma_{\eta}\in[0,0.36]$
 \end_inset
 
- <- 0.36 seems large
+ <- 0.36 seems large <- bound by the standard deviation of log wage changes
+ for job stayers (check this moment with John)
 \end_layout
 
 \begin_layout Itemize
@@ -389,12 +397,16 @@ Say
 \begin_inset Formula $\chi$
 \end_inset
 
- always satisfies these restrictions.DOUBLE-CHECK BEFORE FINAL ESTIMATION.
+ always satisfies these restrictions.DOUBLE-CHECK BEFORE RUNNING FINAL ESTIMATION.
 \end_layout
 
 \begin_deeper
 \begin_layout Itemize
-Note: that the strictest bounds occur for 
+Note: that the strictest bounds on 
+\begin_inset Formula $\chi$
+\end_inset
+
+ occur for 
 \begin_inset Formula $\gamma=0.9.$
 \end_inset
 
@@ -402,7 +414,7 @@ Note: that the strictest bounds occur for
 \begin_inset Formula $\chi$
 \end_inset
 
-.
+? See below comments.
 \end_layout
 
 \end_deeper
@@ -425,22 +437,22 @@ Need to finalize externally calibrated parameters:
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $s=0.1$
+\begin_inset Formula $s=0.088$
 \end_inset
 
- - Shimer (2005), the quarterly exogenous separation rate (can re-estimate)
+ - estimate basically following Shimer (2005), note that Shimer uses 0.1.
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\iota=1.67$
+\begin_inset Formula $\iota=3.52$
 \end_inset
 
  - Chosen so that 
-\begin_inset Formula $f(1)=0.79.$
+\begin_inset Formula $f(\theta_{data})=f_{quarterly,}^{data}$
 \end_inset
 
-Note that 
-\begin_inset Formula $0.79=1-(1-f_{monthly})^{3},$
+ where 
+\begin_inset Formula $f_{quarterly}^{data}=1-(1-f_{monthly}^{data})^{3},$
 \end_inset
 
 where 
@@ -451,14 +463,18 @@ where
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\kappa=0.474$
+\begin_inset Formula $\kappa=0.45$
 \end_inset
 
-, approximately based on Hagedorn and Manovskii (2008) (try to match 
-\begin_inset Formula $\theta_{ss}=1{\normalcolor }$
+, taken from PNZ (monthly) (ultimately may try to match 
+\begin_inset Formula $\theta=1{\normalcolor }$
 \end_inset
 
-, may need to update this or include explicitly in the calibration)
+, so we may need to update 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ to target this ex-post)
 \end_layout
 
 \begin_layout Enumerate
@@ -473,8 +489,8 @@ Productivity process is estimated using HP-filtered (smoothing parameter
 \begin_inset Formula $\sigma_{\epsilon}$
 \end_inset
 
- to match the unconditional variance (so ignoring potential autocorrelation
- in residuals for now).
+ to match the unconditional variance (ignoring serial autocorrelation in
+ residuals).
 \end_layout
 
 \end_deeper
@@ -497,19 +513,29 @@ For the latter case, PNZ set
 \end_inset
 
  , but this will not work for us, since the implied solution does not satisfy
- the IR constraint?
+ the IR constraint.
+ Note: the worker's value from the is contract decreasing in 
+\begin_inset Formula $\theta$
+\end_inset
+
+ (and increasing in 
+\begin_inset Formula $q(\theta)).$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Itemize
-Should I keep these solutions when the constraint does hold 
+The constraint holds 
 \emph on
-strictly (so 
+strictly (when we hit 
 \begin_inset Formula $q=0$
 \end_inset
 
 )
 \emph default
- ? Or do we 
+ .
+ But we 
 \emph on
 need
 \emph default
@@ -563,7 +589,7 @@ For now, I have turned off the estimation of
 \end_deeper
 \begin_layout Enumerate
 Using the identity matrix as weight matrix for SMM.
- Efficiency concerns ( do we even have the covariance matrix for data moments)?
+ Efficiency concerns (do we have the covariance matrix for data moments)?
 \end_layout
 
 \begin_layout Enumerate
@@ -596,8 +622,7 @@ the numerical solution is sensitive to
 \begin_inset Formula $\text{\underbar{a}}$
 \end_inset
 
- (i.e.
- there is a returned root, which is 
+ (there are two returned roots, one of which is 
 \emph on
 very 
 \emph default
@@ -605,11 +630,12 @@ close to
 \begin_inset Formula $0$
 \end_inset
 
-, if I exactly set 
-\begin_inset Formula $\text{\underbar{a}}=0.$
+, if I set 
+\begin_inset Formula $\text{\underbar{a}}=0).$
 \end_inset
 
- I flag the result if more than one root is found.
+For now, flag the result in the code if more than one root is found (flag
+ <=> penalize).
 \end_layout
 
 \begin_layout Enumerate
@@ -649,9 +675,10 @@ From visual inspection,
 \begin_layout Enumerate
 I use arc-percentage deviations for the distance measure between model and
  data moments.
- This measure becomes problematic when the data moment is close to zero.
- Maybe we can use standard deviation of log wage changes instead of variance
- of log wage changes.
+ According to Guvenen at al (2021), this measure becomes problematic when
+ the data moment is close to zero.
+ We can use standard deviation of log wage changes instead of variance of
+ log wage changes, since this moment is the closest to zero.
 \end_layout
 
 \begin_layout Section*
@@ -659,7 +686,7 @@ To-Do
 \end_layout
 
 \begin_layout Enumerate
-Run test for local optimization:
+John's test for local optimization:
 \end_layout
 
 \begin_deeper
@@ -743,7 +770,7 @@ Local optimization Issues/Extensions:
 
 \begin_deeper
 \begin_layout Enumerate
-Optim NM: 
+Optim NM Simplex Algorithm: 
 \end_layout
 
 \begin_deeper
@@ -754,44 +781,34 @@ How to incorporate bound constraints?
 \begin_deeper
 \begin_layout Enumerate
 logistic transformation around the initial point to incorporate parameter
- bounds?
+ bounds
 \end_layout
 
-\begin_layout Enumerate
-Alternatively, we can bound transformation so that the initial point is
- midpoint of implied bounds (more local search)?
-\end_layout
-
-\end_deeper
-\begin_layout Enumerate
-Provide input for simplex or use Matlab simplex from fminsearch?
+\begin_deeper
+\begin_layout Itemize
+can implicitly change steepness of search 
 \end_layout
 
 \end_deeper
 \begin_layout Enumerate
-I turned off calibrating 
-\begin_inset Formula $\gamma$
-\end_inset
-
- and targeting the labor share, since the results were very sensitive to
- changes in 
-\begin_inset Formula $\gamma$
-\end_inset
-
-.Maybe we can estimate 
-\begin_inset Formula $\gamma$
-\end_inset
-
- after we get a better handle on the rest of the parameters?
+Alternatively, we can further bound transformation so that the initial point
+ is the midpoint of the search?
 \end_layout
 
+\end_deeper
+\begin_layout Enumerate
+Alternative options: Provide input for simplex or use thes Matlab simplex
+ from fminsearch?
+\end_layout
+
+\end_deeper
 \begin_layout Enumerate
 Try NLOpt Nelder Mead or DFLNS.
 \end_layout
 
 \begin_deeper
 \begin_layout Enumerate
-NLOpt includes bound constraints for N-M.
+NLOpt includes built-in bound constraints for N-M.
 \end_layout
 
 \begin_layout Enumerate
@@ -800,15 +817,15 @@ Maybe use Subplex algorithm
 
 \end_deeper
 \begin_layout Enumerate
-Tik-Tak reccommends parameter bounds.
- Could do unconstrained local optimization but only use thebounds for creating
- Sobol sequences.
+Tik-Tak uses parameter bounds for producing Sobol points.
+ Could do unconstrained local optimization but only use the bounds for creating
+ Sobol sequences, but seems like it would be better to add parameter bounds.
 \end_layout
 
 \end_deeper
 \begin_layout Enumerate
-Write and run pre-testing for Tik-Tak.
- Can be done on Adroit.
+Write and run pre-testing code.
+ This can be done on Adroit.
 \end_layout
 
 \begin_layout Enumerate
@@ -817,9 +834,63 @@ Write Tik-Tak code.
 \end_layout
 
 \begin_layout Enumerate
-Run Tik-Tak optimization on the Della cluster (also should request a Tigress
+Run Tik-Tak optimization on the Della cluster (should also request a Tigress
  acount).
 \end_layout
 
+\begin_layout Enumerate
+Try running tik-tak both with and without bound constraints in local optimizatio
+n.
+\end_layout
+
+\begin_layout Enumerate
+Add effort moment from Burda, Genadek & Hamermesh (2020).
+ However, some key differences:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+What is a unit of effort in our model?
+\end_layout
+
+\begin_layout Enumerate
+Their result says likelihood of non-work time decreases when unemployment
+ goes up, but non-work time, conditional on shirking, increases during high
+ unemployment times.
+ So on the extensive margin, effort is procyclial, and on the intensive
+ margin, effort is countercyclical.
+ 
+\end_layout
+
+\begin_layout Enumerate
+To compute the 
+\begin_inset Quotes eld
+\end_inset
+
+cyclicality of effort
+\begin_inset Quotes erd
+\end_inset
+
+, we can regress effort on unemployment <- this requires considering effort
+ of new hires.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+alternatively, could have different of cohorts of people with different
+ z paths (and initial z_0) and do pooled OLS of effort on current z.
+\end_layout
+
+\begin_layout Enumerate
+note: we already know the 
+\emph on
+exact
+\emph default
+ form of effort given initial z and current z using our optimal effort formula.
+ so can just compute this after estimation.
+\end_layout
+
+\end_deeper
+\end_deeper
 \end_body
 \end_document

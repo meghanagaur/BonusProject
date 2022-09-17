@@ -10,10 +10,10 @@ Note: u0 = initial unemployment rate.
 function simulate(baseline, zshocks; u0 = 0.06)
     
     # initialize moments to export (default to NaN)
-    var_Δlw = NaN
+    std_Δlw = NaN
     dlw1_du = NaN
     dΔlw_dy = NaN
-    w_y     = NaN
+    u_ss    = NaN
 
     # Get all of the relevant parameters for the model
     @unpack β, s, κ, hp, zgrid, N_z, ψ, z_1_idx, f, ε, σ_η, χ, γ = baseline 
@@ -46,7 +46,7 @@ function simulate(baseline, zshocks; u0 = 0.06)
            
             # tightness, given z_1 = z
             θ_z[iz]       = θ             
-            w_y_z[iz]     = (w_0./ψ)/Y
+            #w_y_z[iz]     = (w_0./ψ)/Y
 
             # now, let's think about wages and output for continuing hires
             @views z_shocks_z     = z_shocks[iz]
@@ -72,19 +72,19 @@ function simulate(baseline, zshocks; u0 = 0.06)
     # only compute moments for reasonable parameters
     if maximum(flag_z) < 1
         # Weighted average of labor share
-        w_y          = sum(w_y_z.*vec(z_ss_dist))
+        #w_y          = sum(w_y_z.*vec(z_ss_dist))
         
-        # Variance of wage changes for incumbents
+        # Standard deviation of wage changes for incumbents
         #histogram(Δlw)
-        var_Δlw      = var(Δlw) 
+        std_Δlw      = std(Δlw) 
         
-        # Regress wage changes Δ log w_it on a constant + individual log output log y_it
+        # Regress wage changes Δ log w_it on ndividual log output log y_it
         dΔlw_dy = ols(vec(Δlw), vec(ly))[2]
 
         # Compute long simulated time series  (trim to post-burn-in for z_t when computing moment)
         @unpack z_shocks_idx = zstring
-        @views lw1_t             = lw1_z[z_shocks_idx]   # E[log w_1 | z_t]
-        @views θ_t               = θ_z[z_shocks_idx]     # θ(z_t)
+        @views lw1_t         = lw1_z[z_shocks_idx]   # E[log w_1 | z_t]
+        @views θ_t           = θ_z[z_shocks_idx]     # θ(z_t)
 
         # Compute evolution of unemployment for the different z_t paths
         T        = length(θ_t)
@@ -96,10 +96,12 @@ function simulate(baseline, zshocks; u0 = 0.06)
 
         # Estimate d E[log w_1] / d u (pooled ols)
         @views dlw1_du = ols(vec(lw1_t[burnin+1:end]), vec(u_t[burnin+1:end]))[2]
+        # Compute u_ss as mean of unemployment rate post-burn period in for now
+        u_ss = mean(u_t[burnin+1:end])
     end
     
     # Return simulation results
-    return (var_Δlw = var_Δlw, dlw1_du = dlw1_du, dΔlw_dy = dΔlw_dy, w_y = w_y, flag = maximum(flag_z))
+    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dΔlw_dy = dΔlw_dy, u_ss = u_ss, flag = maximum(flag_z))
 end
 
 """
