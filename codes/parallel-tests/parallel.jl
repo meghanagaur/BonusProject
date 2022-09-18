@@ -1,5 +1,5 @@
 using Distributed, SharedArrays, DistributedArrays, CSV,  DelimitedFiles
-cd("/Users/meghanagaur/BonusProject/code/parallel-tests")
+cd("/Users/meghanagaur/BonusProject/codes/parallel-tests")
 
 addprocs(3)
 
@@ -13,7 +13,14 @@ end
 
 # practice using pmap
 @everywhere function g!(x,a)
-    a[x] = x*2
+    if x>1
+        if x >2
+        sleep(rand()*5)
+        end
+        a[x] = a[x-1]
+    else
+        a[x]=x
+    end
 end
 
 a = SharedArray{Float64}(10)
@@ -37,5 +44,9 @@ writedlm(file,"f",",") #note: last argument is the delimiter which should be the
    
  #  CSV.write(file, DataFrame(f=i), header = false, append = true,delim=',')
 end
+
+
+
+
 
 

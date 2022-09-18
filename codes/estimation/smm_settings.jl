@@ -17,33 +17,34 @@ W            = weight matrix for SMM
 σ_η          = 2nd param
 χ            = 3rd param
 γ            = 4th param
-var_Δlw      = 1st moment (variance of log wage changes)
+std_Δlw      = 1st moment (st dev of log wage changes)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
 dΔlw_dy      = 3rd moment (d Δ log w_it / y_it)
-w_y          = 4th moment (PV of labor share)
+u_ss         = 4th moment (SS unemployment rate)
 """
 function objFunction(xx, pb, zshocks, data_mom, W)
     inbounds = minimum( [ pb[i][1] <= xx[i] <= pb[i][2] for i = 1:J]) >= 1
     if inbounds == 0
         f        = 10000
-        mod_mom  = NaN
+        mod_mom  = ones(K)*NaN
         flag     = 1
     elseif inbounds == 1
         baseline = model(ε = xx[1] , σ_η = xx[2], χ = xx[3], γ = xx[4]) 
         # Simulate the model and compute moments
         out      = simulate(baseline, zshocks)
-        mod_mom  = [out.var_Δlw, out.dlw1_du, out.dΔlw_dy, out.u_ss]
+        flag     = out.flag
+        mod_mom  = [out.std_Δlw, out.dlw1_du, out.dΔlw_dy, out.u_ss]
         d        = (mod_mom - data_mom)./0.5(abs.(mod_mom) + abs.(data_mom)) # arc % change
-        f        = out.flag < 1 ? d'*W*d : 10000
+        f        = flag < 1 ? d'*W*d : 10000
     end
-    return [f, vec(mod_mom), out.flag]
+    return [f, mod_mom, flag]
 end
 
 """
 Objective function to be minimized during SMM -- WITH BOUNDS.
 Variable descriptions below.
-xx           = evaluate objFunction @ these parameters (before transformation)
-x0           = actual starting point for local optimization (after transformation)
+xx           = evaluate objFunction @ parameters = xx (before transformation)
+x0           = actual starting point for the local optimization (after transformation)
 zshocks      = z shocks for the simulation
 pb           = parameter bounds
 data_mom     = data moments
@@ -53,10 +54,10 @@ W            = weight matrix for SMM
 σ_η          = 2nd param
 χ            = 3rd param
 γ            = 4th param
-var_Δlw      = 1st moment (variance of log wage changes)
+std_Δlw      = 1st moment (st dev of log wage changes)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
 dΔlw_dy      = 3rd moment (d Δ log w_it / y_it)
-w_y          = 4th moment (PV of labor share)
+u_ss         = 4th moment (SS unemployment rate)
 """
 function objFunction_WB(xx, x0, pb, zshocks, data_mom, W)
     endogParams  = [ transform_params(xx[i], pb[i], x0[i]) for i = 1:J] 
@@ -71,21 +72,21 @@ function objFunction_WB(xx, x0, pb, zshocks, data_mom, W)
 end
 
 """
-Logit transformation to transform x to desired bounds.
+Logit transformation to transform x to [min,max].
 """
-function logit(x; x0 = 0, min =-1, max=1, λ = 1.0)
+function logit(x; x0 = 0, min = -1, max = 1, λ = 1.0)
     (max - min)/(1 + exp(-(x - x0)/λ)) + min
 end
 
 """ 
 Transform parameters to lie within specified bounds in pb.
-xx = current (transformed) position
+xx = current (logit transformed) position
 x1 = current (actual) position
 p0 = actual initial position
 """
 function transform_params(xx, pb, p0; λ = 1)
     # Rescales ALL of the parameters to lie between -1 and 1 
-    xx2          =   logit.(xx) 
+    xx2 =   logit.(xx) 
 
     # Transform each parameter, so that the boundrary conditions are satisfied 
     if xx2 > 0
@@ -101,11 +102,12 @@ function transform_params(xx, pb, p0; λ = 1)
 end
 
 ## Empirical moments that we are targeting
-data_mom             = [0.53, -0.5, .05, 0.06]      # may need to update 
+data_mom             = [0.035, -0.5, .05, 0.06]     # may need to update 
 moms_key             = OrderedDict{Int, Symbol}([   # parameter bounds
-                        (1, :var_Δlw),
+                        (1, :std_Δlw),
                         (2, :dlw1_du),
-                        (3, :dΔlw_dy) ])
+                        (3, :dΔlw_dy),
+                        (4,  :u_ss) ])
 const K              = length(data_mom)
 
 ## Parameter bounds and weight matrix
@@ -117,10 +119,10 @@ param_key            = OrderedDict{Int, Symbol}([
                         (2, :σ_η),
                         (3, :χ),
                         (4, :γ) ])
-const J              = length(params_key)
+const J              = length(param_key)
 param_bounds         = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
-                        (1, [0  , 1.0]),         # ε
-                        (2, [0.0,  0.36]),       # σ_η
+                        (1, [0 ,  3.0]),         # ε
+                        (2, [0.0, 0.5]),         # σ_η
                         (3, [-1, 1]),            # χ
                         (4, [0.3, 0.9]) ])       # γ
 

@@ -3,11 +3,11 @@ include("smm_settings.jl") # SMM inputs, settings, packages, etc.
 println(Threads.nthreads())
 
 # Initial parameter values
-endogParams    = zeros(4) 
+endogParams    = zeros(K) 
 endogParams[1] = 0.5      # ε
 endogParams[2] = 0.05     # σ_η
 endogParams[3] = 0.3      # χ
-endogParams[4] = 0.66    # γ
+endogParams[4] = 0.66     # γ
 
 # evaluate the objective function 
 @time out = objFunction(endogParams, param_bounds, zshocks, data_mom, W)
@@ -22,15 +22,10 @@ endogParams2 = [clamp(endogParams2[i], param_bounds[i][1], param_bounds[i][2]) f
 # NM from Optim WITHOUT bounds 
 objFunc(x) = objFunction(x, param_bounds, zshocks, mod_mom, W)[1]
 @time opt  = optimize(objFunc, endogParams2, NelderMead(), 
-                    Optim.Options(g_tol = 1e-6, x_tol = 1e-6,  f_tol = 1e-6, iterations = 50, show_trace = true))
-
-# rescales all of the parameters 
-minimizer_t   = Optim.minimizer(opt)  # transformed
-minimizer     = [ transform(minimizer_t[i], param_bounds[i], endogParams2[i]) for i = 1:length(endogParams2) ] 
-#orig          = [ transform(init_x[i], pb[i], endogParams2[i]) for i = 1:length(endogParams2) ] 
+                    Optim.Options(g_tol = 1e-6, x_tol = 1e-6, f_tol = 1e-6, iterations = 50, show_trace = true))
 
 # save the results
-save("jld/local_test_optim_no_bounds.jld2", Dict("min" =>  Optim.minimum(opt), "argmin" =>  minimizer,
+save("jld/local_test_optim_no_bounds.jld2", Dict("min" =>  Optim.minimum(opt), "argmin" =>  Optim.minimizer(opt),
                         "initial_x" =>   endogParams2, "mod_mom" => mod_mom,
                         "truth" => endogParams, "opt" => opt))
 

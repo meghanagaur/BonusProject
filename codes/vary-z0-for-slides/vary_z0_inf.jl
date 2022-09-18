@@ -27,8 +27,8 @@ z_1  = initial prod. (= z_ss by default)
 ψ    = pass-through parameters
 procyclical == (procyclical unemployment benefit) <- can also set χ = 0
 =#
-function model(; β = 0.99, s = 0.1, κ = 0.474, ι = 1.67, ε = 0.5, σ_η = 0.05, z_ss = 1.0,
-    ρ =  0.995, σ_ϵ = 0.001, χ = 0.0, γ = 0.658, z_1 = z_ss, μ_z = log(z_ss), N_z = 11, procyclical = false)
+function model(; β = 0.99, s = 0.088, κ = 0.474, ι = 1.67, ε = 0.5, σ_η = 0.05, z_ss = 1.0,
+    ρ =  0.995, σ_ϵ = 0.001, χ = 0.0, γ = 0.66, z_1 = z_ss, μ_z = log(z_ss), N_z = 11, procyclical = false)
 
     # Basic parameterization
     q(θ)    = 1/(1 + θ^ι)^(1/ι)                     # vacancy-filling rate
@@ -77,7 +77,7 @@ dz      = zgrid[2:end] - zgrid[1:end-1]
 # Solve the model for different z_0
 #@time @inbounds for (iz,z0) in enumerate(zgrid)
 @time Threads.@threads for iz = 1:length(zgrid)
-    modd[iz] =  solveModel(model(z_1 = zgrid[iz], procyclical = false), noisy = false)
+    modd[iz] =  solveModel(model(z_1 = zgrid[iz], procyclical = true), noisy = false)
 end
 
 ## Store series of interest

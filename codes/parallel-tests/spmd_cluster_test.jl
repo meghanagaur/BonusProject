@@ -25,7 +25,7 @@ d_out  = ddata();
     localsum = d_in[:L]
 
     Threads.@threads for i = 1:n
-        sleep(2)
+        sleep(10)
     end
     # finally store the sum in d_out
      d_out[:L] =  Threads.nthreads()
@@ -44,10 +44,10 @@ println(d_out)
     localsum = d_in[:L]
     localsum  = 3
     for i = 1:n
-       # sleep(2)
+       sleep(10)
     end
     # finally store the sum in d_out
-     d_out[:L] = d_in[1,2] #Threads.nthreads()
+     d_out[:L] = Threads.nthreads()
 end
 
 

@@ -112,7 +112,7 @@ values
 \end_inset
 
  <- Passthrough of output to wage changes.
- Target ange is 
+ Target range is 
 \begin_inset Formula $[0.05,0.5]$
 \end_inset
 
@@ -144,7 +144,7 @@ Note:
 \begin_inset Formula $b(z)=\gamma+\chi(z-z_{ss})$
 \end_inset
 
- for the previous affine specification in the code.
+ for the older affine specification in the code.
  
 \end_layout
 

@@ -22,9 +22,9 @@ function simulate(baseline, zshocks; u0 = 0.06)
     @unpack z_shocks, z_shocks_idx, λ_N_z, zstring, burnin, z_ss_dist = zshocks
 
     # Loop through every point on zgrid
-    indexes = cumsum(λ_N_z, dims=2)*zshocks.T
-    Δlw     = zeros(indexes[end])        # Δlog w_it, given z_1 and z_t
-    ly      = zeros(indexes[end])        # log y_it, given z_1 and z_t
+    indices = cumsum(λ_N_z, dims=2)*zshocks.T
+    Δlw     = zeros(indices[end])        # Δlog w_it, given z_1 and z_t
+    ly      = zeros(indices[end])        # log y_it, given z_1 and z_t
     w_y_z   = zeros(length(zgrid))       # PV of W/Y, given z_1
     θ_z     = zeros(length(zgrid))       # θ(z_1)
     lw1_z   = zeros(length(zgrid))       # E[log w1|z] <- wages of new hires
@@ -46,15 +46,14 @@ function simulate(baseline, zshocks; u0 = 0.06)
            
             # tightness, given z_1 = z
             θ_z[iz]       = θ             
-            #w_y_z[iz]     = (w_0./ψ)/Y
 
             # now, let's think about wages and output for continuing hires
             @views z_shocks_z     = z_shocks[iz]
             @views z_shocks_idx_z = z_shocks_idx[iz]
             η_shocks              = simulateEShocks(σ_η; N = length(z_shocks_idx_z), T = 1)
             
-            start_idx    = (iz==1) ? 1 : indexes[iz-1] + 1 
-            end_idx      = indexes[iz]
+            start_idx    = (iz==1) ? 1 : indices[iz-1] + 1 
+            end_idx      = indices[iz]
             hpz_z1       = hp.(az)  # h'(a(z|z_1))
             @views hp_az = hpz_z1[z_shocks_idx_z]
 
@@ -65,29 +64,27 @@ function simulate(baseline, zshocks; u0 = 0.06)
             @views y     = yz[z_shocks_idx_z] # a(z|z_1)*z
             ηz           = z_shocks_z.*η_shocks
 
-            ly[start_idx:end_idx]   = log.(max.(y + ηz, eps())) # avoid run-time error
+            ly[start_idx:end_idx]   = log.(max.(y + ηz, 0.01)) # avoid run-time error
         end
     end
 
     # only compute moments for reasonable parameters
     if maximum(flag_z) < 1
-        # Weighted average of labor share
-        #w_y          = sum(w_y_z.*vec(z_ss_dist))
         
-        # Standard deviation of wage changes for incumbents
+        # Standard deviation of wage changes for job-stayers
         #histogram(Δlw)
-        std_Δlw      = std(Δlw) 
+        std_Δlw = std(Δlw) 
         
         # Regress wage changes Δ log w_it on ndividual log output log y_it
         dΔlw_dy = ols(vec(Δlw), vec(ly))[2]
 
         # Compute long simulated time series  (trim to post-burn-in for z_t when computing moment)
-        @unpack z_shocks_idx = zstring
-        @views lw1_t         = lw1_z[z_shocks_idx]   # E[log w_1 | z_t]
-        @views θ_t           = θ_z[z_shocks_idx]     # θ(z_t)
+        z_shocks_idx_str     = zstring.z_shocks_idx
+        @views lw1_t         = lw1_z[z_shocks_idx_str]   # E[log w_1 | z_t]
+        @views θ_t           = θ_z[z_shocks_idx_str]     # θ(z_t)
 
         # Compute evolution of unemployment for the different z_t paths
-        T        = length(θ_t)
+        T        = zstring.T
         u_t      = zeros(T)
         u_t[1]   = u0
         @views @inbounds for t=2:T
@@ -111,7 +108,7 @@ function ols(Y, X; intercept = true)
     if intercept == true
         X = hcat(ones(size(X,1)), X)
     end
-    return inv(X'X)*X'*Y
+    return (X'X)\(X'*Y) #inv(X'X)*(X'*Y)
 end
 
 """
