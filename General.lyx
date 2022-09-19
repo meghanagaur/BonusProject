@@ -99,6 +99,68 @@ values
  <- steady state unemployment rate
 \end_layout
 
+\begin_deeper
+\begin_layout Enumerate
+Right now, using the simulation results for 
+\begin_inset Formula $u_{t}$
+\end_inset
+
+ and averaging over the post burn-in period.
+ Note: 
+\begin_inset Formula $u_{ss}=\frac{{s}}{s+f}$
+\end_inset
+
+ , but 
+\begin_inset Formula $u_{ss}=0.06$
+\end_inset
+
+ requires 
+\begin_inset Formula $f>1.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+This is impossible with the current matching function from PNZ/H&M, which
+ bounds 
+\begin_inset Formula $f,q$
+\end_inset
+
+ between 
+\begin_inset Formula $0$
+\end_inset
+
+ and 
+\begin_inset Formula $1.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+We could switch to a Cobb-Douglas matching function, as in Shimer, and iterate
+ on 
+\begin_inset Formula $\theta?$
+\end_inset
+
+ Depends on interpretation of 
+\begin_inset Formula $\theta.$
+\end_inset
+
+ In Shimer, the value of tightness doesn't matter and he normalizes the
+ vacancy posting cost 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ to target mean 
+\begin_inset Formula $\theta$
+\end_inset
+
+ of 1.
+\end_layout
+
+\end_deeper
 \begin_layout Enumerate
 \begin_inset Formula $Var(\Delta\log w_{it})$
 \end_inset
@@ -129,6 +191,56 @@ values
 \end_inset
 
 ].
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Untargeted moment: cyclicality of effort.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Burda, Genadek & Hamermesh (2020) find extensive margin of effort (less
+ effort = spending time on activitiy at work) is procyclical, whereas the
+ intensive margin of effort (less effort = how much time you spend on non-work
+ activity at work, conditional on any) is countercyclical.
+ 
+\end_layout
+
+\begin_layout Enumerate
+They regress effort on 
+\begin_inset Formula $u_{t},$
+\end_inset
+
+ with a two-step tobit to model choice to spend any time on non-work activity
+ 
+\end_layout
+
+\begin_layout Enumerate
+We have an explicit form for effort as a function of both initial 
+\begin_inset Formula $z_{1}$
+\end_inset
+
+ and current 
+\begin_inset Formula $z.$
+\end_inset
+
+ Could use simulation of 
+\begin_inset Formula $u_{t}$
+\end_inset
+
+ to run a regression of effort on 
+\begin_inset Formula $u_{t},$
+\end_inset
+
+but note that this fixes 
+\begin_inset Formula $z_{1}.$
+\end_inset
+
+so it is really only new hires' effort.
+ Could also run this regression on pooled data to include continuing workers,
+  similar to how we are computing the variance....
 \end_layout
 
 \end_deeper
@@ -297,7 +409,7 @@ Otherwise, we could also discard such points from the Sobol points.
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\varepsilon\in[0,1]$
+\begin_inset Formula $\varepsilon\in[0,3]$
 \end_inset
 
  <- we aren't really converging for 
@@ -317,7 +429,8 @@ for high values of
 \begin_inset Formula $\theta$
 \end_inset
 
- goes to 0 and we do not have an equilbrium solution (no convergence)
+ goes to 0 and we do not have an equilbrium solution (no convergence), so
+ for now I am bounding at 1
 \end_layout
 
 \end_deeper
@@ -325,8 +438,8 @@ for high values of
 \begin_inset Formula $\sigma_{\eta}\in[0,0.36]$
 \end_inset
 
- <- 0.36 seems large <- bound by the standard deviation of log wage changes
- for job stayers (check this moment with John)
+ <- 0.36 seems a bit large <- bound by the standard deviation of log wage
+ changes for job stayers (check this moment with John)
 \end_layout
 
 \begin_layout Itemize
@@ -563,30 +676,17 @@ many
 \emph default
  parameter choices...
  so the objective function may have lots of kinks.
-\end_layout
-
-\begin_deeper
-\begin_layout Enumerate
-In particular,
+ In particular,
 \begin_inset Formula $\theta$
 \end_inset
 
- is 
-\emph on
-highly
-\emph default
- sensitive to 
+ is very sensitive to 
 \begin_inset Formula $\gamma.$
 \end_inset
 
-For now, I have turned off the estimation of 
-\begin_inset Formula $\gamma.$
-\end_inset
-
-
+ 
 \end_layout
 
-\end_deeper
 \begin_layout Enumerate
 Using the identity matrix as weight matrix for SMM.
  Efficiency concerns (do we have the covariance matrix for data moments)?
@@ -673,12 +773,11 @@ From visual inspection,
 \end_layout
 
 \begin_layout Enumerate
-I use arc-percentage deviations for the distance measure between model and
- data moments.
+I use percentage deviations of data moments from the model moments.
  According to Guvenen at al (2021), this measure becomes problematic when
  the data moment is close to zero.
- We can use standard deviation of log wage changes instead of variance of
- log wage changes, since this moment is the closest to zero.
+ Therefore, I use the standard deviation of log wage changes, instead of
+ the variance of log wage changes.
 \end_layout
 
 \begin_layout Section*

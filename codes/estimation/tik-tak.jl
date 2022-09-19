@@ -2,7 +2,7 @@
 Workhouse function for the global multistart optimization algorithm
 """
 function tiktak_spmd(sobol, fvals_d, argmin_d, min_p, argmin_p, iter_p, 
-    init_x, param_bounds, zshocks, data_mom, W; I_min  = 1, real = true, bounds = true)
+    init_x, param_bounds, zshocks, data_mom, W; I_min  = 1, test = false, bounds = true)
     
     #init_points = @fetchfrom 2 sob_d[:L] 
     #init_points = sob_d[:L] 
@@ -23,7 +23,7 @@ function tiktak_spmd(sobol, fvals_d, argmin_d, min_p, argmin_p, iter_p,
             start     = @views (1-θ)*init_points[:,i] + θ*argmin_p[:,idx] # set new start value
         end
             
-        if real == true
+        if test == false
             # LOCAL OPTIMIZATION STEP
             if bounds == true
                 opt       = optimize(x -> objFunction_WB(x, start, param_bounds, zshocks, data_mom, W)[1], init_x, NelderMead(), 
@@ -32,12 +32,12 @@ function tiktak_spmd(sobol, fvals_d, argmin_d, min_p, argmin_p, iter_p,
                 arg_min_t = Optim.minimizer(opt)
                 arg_min   = [ transform_params(arg_min_t[j], param_bounds[j], start[j]) for j = 1:length(param_bounds) ] 
             else
-                opt       = optimize(x -> objFunction(x, param_bounds, zshocks, mod_mom, W)[1], start, NelderMead(), 
+                opt       = optimize(x -> objFunction(x, param_bounds, zshocks, data_mom, W)[1], start, NelderMead(), 
                         Optim.Options(g_tol = 1e-5, x_tol = 1e-5, f_tol = 1e-5, iterations = 50))
                 arg_min   = Optim.minimizer(opt)
             end
             min_f         = Optim.minimum(opt) 
-        else
+        elseif test == true
             arg_min  = start
             min_f    = id == 2 ? 0 : 3 
         end

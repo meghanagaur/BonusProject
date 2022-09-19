@@ -12,7 +12,7 @@ addprocs(SlurmManager())
 
     # Evalute objective function at i-th parameter vector
     function evaluate!(i, sob_seq, pb, zshocks, data_mom, W)
-        return objFunction(sob_seq[i,:], pb, zshocks, data_mom, W)
+        return objFunction(sob_seq[:,i], pb, zshocks, data_mom, W)
     end
 
     # Sample I Sobol vectors from the parameter space
@@ -25,7 +25,7 @@ addprocs(SlurmManager())
     end
     s             = SobolSeq(lb, ub)
     seq           = skip(s, 10000, exact=true)
-    sob_seq       = reduce(hcat, next!(seq) for i = 1:I_max)'
+    sob_seq       = reduce(hcat, next!(seq) for i = 1:I_max)
 end
 
 # Let's evaluate the objective function for each parameter value
@@ -35,7 +35,7 @@ end
 rmprocs(nprocs())
 
 # Save the raw results
-save(loc*"jld/pretesting.jld2", Dict("output" => output, "sob_seq" => sob_seq, "baseline_model" => model() ))
+save(loc*"jld/pretesting.jld2", Dict("output" => output, "sob_seq" => sob_seq', "baseline_model" => model() ))
 
 # Clean the results 
 #@unpack output, sob_seq = load(loc*"jld/pretesting.jld2")

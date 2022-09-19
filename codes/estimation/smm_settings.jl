@@ -34,7 +34,7 @@ function objFunction(xx, pb, zshocks, data_mom, W)
         out      = simulate(baseline, zshocks)
         flag     = out.flag
         mod_mom  = [out.std_Δlw, out.dlw1_du, out.dΔlw_dy, out.u_ss]
-        d        = (mod_mom - data_mom)./0.5(abs.(mod_mom) + abs.(data_mom)) # arc % change
+        d        = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % change
         f        = flag < 1 ? d'*W*d : 10000
     end
     return [f, mod_mom, flag]
@@ -66,7 +66,7 @@ function objFunction_WB(xx, x0, pb, zshocks, data_mom, W)
     # Simulate the model and compute moments
     out     = simulate(baseline, zshocks)
     mod_mom = [out.std_Δlw, out.dlw1_du, out.dΔlw_dy, out.u_ss]
-    d       = (mod_mom - data_mom)./0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
+    d       = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
     f       = out.flag < 1 ? d'*W*d : 10000
     return [f, mod_mom, out.flag]
 end
@@ -124,11 +124,10 @@ param_bounds         = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
                         (1, [0 ,  3.0]),         # ε
                         (2, [0.0, 0.5]),         # σ_η
                         (3, [-1, 1]),            # χ
-                        (4, [0.3, 0.9]) ])       # γ
+                        (4, [0.4, 0.9]) ])       # γ
 
 ## Build zshocks for the simulation
-baseline     = model()
-@unpack N_z, P_z, zgrid = baseline
+@unpack N_z, P_z, zgrid = model()
 const N_sim  = 100000
 const T_sim  = 100
 const burnin = 1000
@@ -147,13 +146,13 @@ z_shocks     = OrderedDict{Int, Array{Real,1}}()
 z_shocks_idx = OrderedDict{Int, Array{Real,1}}()
 
 Threads.@threads for iz = 1:length(zgrid)
-    temp                = simulateZShocks(baseline, N = λ_N_z[iz], T = T_sim, z_1_idx = iz, set_seed = true)
+    temp                = simulateZShocks(P_z, zgrid, N = λ_N_z[iz], T = T_sim, z_1_idx = iz, set_seed = true)
     z_shocks[iz]        = vec(temp.z_shocks)
     z_shocks_idx[iz]    = vec(temp.z_shocks_idx)
 end
 
 # Create one long z_t string: set z_1 to default value of 1.
-zstring  = simulateZShocks(baseline, N = 1, T = N_sim + burnin, set_seed = false)
+zstring  = simulateZShocks(P_z, zgrid, N = 1, T = N_sim + burnin, set_seed = false)
 
 # Create an ordered tuple that contains the zshocks
 zshocks = (z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, λ_N_z = λ_N_z, N = N_sim,

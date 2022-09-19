@@ -1,12 +1,12 @@
 using Distributed, SlurmClusterManager
 
 #addprocs(SlurmManager())
-addprocs(2)
+#addprocs(2)
 
 @everywhere begin
     using DistributedArrays, DistributedArrays.SPMD
-    loc = "/Users/meghanagaur/BonusProject/codes/estimation/"
-    #loc = ""
+    #loc = "/Users/meghanagaur/BonusProject/codes/estimation/"
+    loc = ""
     include(loc*"smm_settings.jl") # SMM inputs, settings, packages, etc.
 end  
 
@@ -21,8 +21,7 @@ end
     sorted_indices = sortperm(fvals)
     Nend           = nworkers()*N_string #ceil(Int64, 0.1*length(fvals))
     sobol_sort     = pars[sorted_indices,:]
-    #sobol_sort    = sobol_sort[1:Nend,:] 
-    sobol_sort     = hcat(sobol_sort, 0.66*ones(size(sobol_sort,1)) )[1:Nend,:] 
+    sobol_sort     = sobol_sort[1:Nend,:] 
     sob_int        = reshape(sobol_sort,  (N_procs, N_string, size(sobol_sort,2) )) # NWORKERS X NSTRING X K
 
    sobol = zeros(J, N_string, N_procs)
@@ -47,7 +46,7 @@ init_x      = zeros(J)
 
 # Run the parallel optimization code 
 @time spmd(tiktak_spmd, sobol, fvals_d, argmin_d, min_p, argmin_p, iter_p, 
-    init_x, param_bounds, zshocks, data_mom, W, real = false; pids = workers()) # executes on all workers
+    init_x, param_bounds, zshocks, data_mom, W; pids = workers()) # executes on all workers
 
 [@fetchfrom p localindices(fvals_d) for p in workers()]
 [@fetchfrom p localindices(argmin_d) for p in workers()]

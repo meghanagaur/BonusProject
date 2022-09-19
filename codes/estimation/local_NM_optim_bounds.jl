@@ -19,10 +19,9 @@ objFunc(x) = objFunction_WB(x, endogParams, param_bounds, zshocks, data_mom, W)[
 
 # rescales all of the parameters 
 minimizer_t   = Optim.minimizer(opt)  # transformed
-minimizer     = [ transform_params(minimizer_t[i], param_bounds[i], endogParams[i]) for i = 1:length(endogParams2) ] 
+minimizer     = [ transform_params(minimizer_t[i], param_bounds[i], endogParams[i]) for i = 1:length(endogParams) ] 
 
 # save the results
 save("jld/local_NM_optim_bounds.jld2", Dict("min" =>  Optim.minimum(opt), "argmin" =>  minimizer,
-                        "initial_x" =>   endogParams, "mod_mom" => mod_mom,
-                        "truth" => endogParams, "opt" => opt))
+                        "initial_x" =>   endogParams, "opt" => opt))
 
