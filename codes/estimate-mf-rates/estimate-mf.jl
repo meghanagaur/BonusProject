@@ -28,3 +28,8 @@ opt     = optimize(ι -> obj(ι, tightness, frates), 0.2, 20)
 opt     = optimize(ι -> obj(ι, 1, df.avg_qfrate[1]), 0.2, 20)
 ι_opt   = Optim.minimizer(opt)
 #2.7960718186676154
+
+# match average quarterly job-finding rate, for θ=1.5
+opt     = optimize(ι -> obj(ι, 1.5, df.avg_qfrate[1]), 0.2, 20)
+ι_opt   = Optim.minimizer(opt)
+#1.6617854469779452

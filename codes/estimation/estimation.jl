@@ -63,6 +63,6 @@ min_p     = convert( Vector{Float64}, min_p)
 rmprocs(workers())
 
 # Save the output
-save(loc*"jld/estimation.jld2", Dict("sobol" => sobol, "fvals_d" => fvals_d,
+save(loc*"jld/estimation.jld2", Dict("sobol" => sobol, "fvals_d" => fvals_d, 
     "argmin_d" => argmin_d, "argmin_p" => argmin_p, "min_p" => min_p))
 

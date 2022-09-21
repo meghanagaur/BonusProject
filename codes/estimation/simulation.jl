@@ -31,7 +31,7 @@ function simulate(baseline, zshocks; u0 = 0.06)
     flag_z  = zeros(Int64,length(zgrid)) # error flags
 
     Threads.@threads for iz = 1:N_z
-        
+
         modd          = model(z_1 = zgrid[iz], ε = ε, σ_η = σ_η, χ = χ, γ = γ)
         sol           = solveModel(modd; noisy = false)
 
@@ -93,6 +93,10 @@ function simulate(baseline, zshocks; u0 = 0.06)
 
         # Estimate d E[log w_1] / d u (pooled ols)
         @views dlw1_du = ols(vec(lw1_t[burnin+1:end]), vec(u_t[burnin+1:end]))[2]
+        #@views dlw1_dz = ols(vec(lw1_t[burnin+1:end]), vec(zstring.z_shocks[burnin+1:end]))[2]
+        #@views du_dz   = ols(vec(u_t[burnin+1:end]), vec(zstring.z_shocks[burnin+1:end]))[2]
+        #dlw1_dz/du_dz
+
         # Compute u_ss as mean of unemployment rate post-burn period in for now
         u_ss = mean(u_t[burnin+1:end])
     end

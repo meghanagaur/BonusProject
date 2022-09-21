@@ -1,4 +1,4 @@
- # vary z_0 <-> vary μ_z
+ # vary z_0 <-> vary μ_z, works well for almost random walk in logz.
 
 using LaTeXStrings, Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
 xguidefontsize =13, yguidefontsize=13, xtickfontsize=8, ytickfontsize=8,
@@ -30,7 +30,7 @@ z_1  = initial prod. (= z_ss by default)
 procyclical == (procyclical unemployment benefit) <- can also set χ = 0
 =#
 function model(; β = 0.99, s = 0.1, κ = 0.474, ι = 1.67, ε = 0.5, σ_η = 0.05, z_ss = 1.0,
-    ρ =  0.995, σ_ϵ = 0.001, χ = 0.0, γ = 0.658, z_1 = z_ss, μ_z = log(z_1), N_z = 11, procyclical = false)
+    ρ =  0.995, σ_ϵ = 0.001, χ = 0.1, γ = 0.658, z_1 = z_ss, μ_z = log(z_1), N_z = 11, procyclical = false)
 
     # Basic parameterization
     q(θ)    = 1/(1 + θ^ι)^(1/ι)                     # vacancy-filling rate
@@ -88,10 +88,8 @@ idx       = floor(Int64,median(1:length(z1_grid))) # SS
 modd      = OrderedDict{Int64, Any}()
 
 # Solve the model for different z_0
-#@time @inbounds for (iz,z0) in enumerate(z1_grid)
 Threads.@threads for iz = 1:length(z1_grid)
-    modd[iz] =  solveModel(model(z_1 = z1_grid[iz] , procyclical = false), noisy = false)
-    #modd[iz] =  solveModel(model(z_1 = zgrid[iz] , procyclical = false), noisy = false)
+    modd[iz] =  solveModel(model(z_1 = z1_grid[iz]), noisy = false)
 end
 
 
@@ -174,7 +172,6 @@ plot!(z1_grid[1:end-1], -(κ./(q.(xx)).^2).*tt.*qq.(xx), label=L"d  J_0 d / z_0 
 # Solve for expected PV of z_t's
 exp_z = zeros(length(z1_grid)) 
 Threads.@threads for iz = 1:length(z1_grid)
-#@inbounds for (iz,z0) in enumerate(z1_grid)
     @unpack zgrid, P_z, N_z = modd[iz].mod
     z_1_idx  = findfirst(isequal(z1_grid[iz]), zgrid)  # index of z0 on zgrid
     

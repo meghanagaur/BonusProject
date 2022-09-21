@@ -86,7 +86,7 @@ p0 = actual initial position
 """
 function transform_params(xx, pb, p0; λ = 1)
     # Rescales ALL of the parameters to lie between -1 and 1 
-    xx2 =   logit.(xx) 
+    xx2 =   logit.(xx; λ = λ) 
 
     # Transform each parameter, so that the boundrary conditions are satisfied 
     if xx2 > 0
@@ -129,10 +129,10 @@ param_bounds         = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
 ## Build zshocks for the simulation
 @unpack N_z, P_z, zgrid = model()
 const N_sim  = 100000
-const T_sim  = 100
+const T_sim  = 80 # 20 years
 const burnin = 1000
 
-# Compute the invariant distribution of z
+# Compute the invariant distribution of logz
 A           = P_z - Matrix(1.0I, N_z, N_z)
 A[:,end]   .= 1
 O           = zeros(1,N_z)

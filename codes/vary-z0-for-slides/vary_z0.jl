@@ -5,8 +5,7 @@ linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,leg
 using DataStructures, Distributions, ForwardDiff, Interpolations,
  LinearAlgebra, Parameters, Random, Roots, StatsBase, DynamicModel
 
-#=
-Set up the dynamic EGSS model, where m(u,v) = (uv)/(u^ι + v^⟦)^(1/ι),
+#= Set up the dynamic EGSS model, where m(u,v) = (uv)/(u^ι + v^⟦)^(1/ι),
 η ∼ N(0, σ_η^2), log(z_t) = μ_z + ρ*log(z_t-1) + u_t, u_t ∼ N(0, σ_z^2),
 and y_t = z_t(a_t + η_t).
 β    = discount factor
@@ -18,17 +17,19 @@ s    = exogenous separation rate
 χ    = prop. of unemp benefit to z / actual unemp benefit
 γ    = intercept for unemp benefit w/ procyclical benefit
 z_ss = steady state of productivity (this is a definition)
+z_0  = value of initial z; MUST BE ON ZGRID.
+σ_η  = st dev of η distribution
 μ_z  = unconditional mean of log prod. process (= log(z_ss) by default)
 z_1  = initial prod. (= z_ss by default)
 ρ    = persistence of log prod. process
 σ_ϵ  = variance of innovation in log prod. process
-σ_η  = st dev of η distribution
 ε    = Frisch elasticity: disutility of effort
 ψ    = pass-through parameters
-procyclical == (procyclical unemployment benefit) <- can also set χ = 0
+
+procyclical == (procyclical unemployment benefit)
 =#
 function model(; β = 0.99, s = 0.088, κ = 0.474, ι = 1.67, ε = 0.5, σ_η = 0.05, z_ss = 1.0,
-    ρ =  0.995, σ_ϵ = 0.001, χ = 0.0, γ = 0.66, z_1 = z_ss, μ_z = log(z_ss), N_z = 11, procyclical = false)
+    ρ =  0.87, σ_ϵ = 0.008, χ = 0.1, γ = 0.66, z_1 = z_ss, μ_z = log(z_ss), N_z = 11, procyclical = false)
 
     # Basic parameterization
     q(θ)    = 1/(1 + θ^ι)^(1/ι)                     # vacancy-filling rate
@@ -43,7 +44,7 @@ function model(; β = 0.99, s = 0.088, κ = 0.474, ι = 1.67, ε = 0.5, σ_η = 
     if (iseven(N_z)) error("N_z must be odd") end 
     logz, P_z = rouwenhorst(μ_z, ρ, σ_ϵ, N_z)        # discretized logz grid & transition probabilties
     zgrid     = exp.(logz)                           # actual productivity grid
-    z_1_idx   = findfirst(isapprox(z_1), zgrid)       # index of z0 on zgrid
+    z_1_idx   = findfirst(isapprox(z_1), zgrid)      # index of z0 on zgrid
 
     # Pass-through parameter
     ψ    = 1 - β*(1-s)
@@ -59,23 +60,22 @@ function model(; β = 0.99, s = 0.088, κ = 0.474, ι = 1.67, ε = 0.5, σ_η = 
     if procyclical == false
         ω = log(ξ)/(1-β) # scalar
     elseif procyclical == true
-        println("Solving for value of unemployment...")
+        #println("Solving for value of unemployment...")
         ω = unemploymentValue(β, ξ, u, zgrid, P_z).v0 # N_z x 1
     end
     
-    return (β = β, r = r, s = s, κ = κ, ι = ι, ε = ε, σ_η = σ_η, ρ = ρ, σ_ϵ = σ_ϵ, 
+    return (β = β, r = r, s = s, κ = κ, ι = ι, ε = ε, σ_η = σ_η, ρ = ρ, σ_ϵ = σ_ϵ, z_ss = z_ss,
     ω = ω, μ_z = μ_z, N_z = N_z, q = q, f = f, ψ = ψ, z_1 = z_1, h = h, u = u, hp = hp, 
     z_1_idx = z_1_idx, zgrid = zgrid, P_z = P_z, ξ = ξ, χ = χ, γ = γ, procyclical = procyclical)
 end
 
 # Define the main object
 modd    = OrderedDict{Int64, Any}()
-@unpack β,s,ψ,ρ,σ_ϵ,hp,σ_η,q,κ,ι,ε, zgrid  = model()
+@unpack β,s,ψ,ρ,σ_ϵ,hp,σ_η,q,κ,ι,ε,zgrid,N_z,P_z  = model()
 idx     = model().z_1_idx # z_SS index
 dz      = zgrid[2:end] - zgrid[1:end-1]
 
 # Solve the model for different z_0
-#@time @inbounds for (iz,z0) in enumerate(zgrid)
 @time Threads.@threads for iz = 1:length(zgrid)
     modd[iz] =  solveModel(model(z_1 = zgrid[iz], procyclical = true), noisy = false)
 end
@@ -160,7 +160,6 @@ plot!(zgrid[1:end-1], -(κ./(q.(xx)).^2).*tt.*qq.(xx), label=L"d  J_0 d / z_0 *"
 # Solve for expected PV of z_t's
 exp_z = zeros(length(zgrid)) 
 @inbounds for (iz,z0) in enumerate(zgrid)
-    @unpack zgrid, P_z, N_z = modd[iz].mod
     z0_idx  = findfirst(isequal(z0), zgrid)  # index of z0 on zgrid
     
     # initialize guesses
@@ -191,7 +190,7 @@ p4= plot(zgrid, JJ, label="Hall: Fixed w and fixed a", linecolor=:blue)
 plot!(p4,zgrid, J, label="Bonus economy: Variable w and variable a", linecolor=:red, legend=:topleft)
 xlabel!(L"z_0")
 ylabel!(L"J_0")
-savefig("figs/dynamic_model_vary_z_1_mu.pdf")
+savefig("figs/dynamic_model_vary_z_1.pdf")
 
 # isolate effort/wage movements
 p1 = plot( zgrid, Y , label="Variable a", linecolor=:red, linewidth=3)
@@ -221,6 +220,6 @@ ZZ   = slope(exp_z,dz) # slope of ∑ z_t (β(1-s))^(t-1)
 # Check partial derivative
 plot(zgrid[1:end-1], JJ_H, label="Hall: Fixed w and fixed a", linecolor=:cyan, linewidth=3,legend=:outerbottom, ylabel=L"dJ_0/ dz_0")
 plot!(zgrid[1:end-1], JJ_B, label="Bonus economy: Variable w and variable a", linecolor=:black)
-plot!(zgrid[1:end-1], a_opt*ZZ, label="Check 1")
+plot!(zgrid[1:end-1], a_opt*ZZ, label="Check")
 xlabel!(L"z_0")
 

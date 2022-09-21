@@ -158,6 +158,12 @@ We could switch to a Cobb-Douglas matching function, as in Shimer, and iterate
 \end_inset
 
  of 1.
+ Note that his quarterly job finding flow arrival rate is around 1.35 (giving
+ 
+\begin_inset Formula $u\approx0.06).$
+\end_inset
+
+
 \end_layout
 
 \end_deeper
@@ -774,12 +780,27 @@ From visual inspection,
 
 \begin_layout Enumerate
 I use percentage deviations of data moments from the model moments.
- According to Guvenen at al (2021), this measure becomes problematic when
- the data moment is close to zero.
- Therefore, I use the standard deviation of log wage changes, instead of
- the variance of log wage changes.
+ 
 \end_layout
 
+\begin_deeper
+\begin_layout Enumerate
+According to Guvenen at al (2021), using arc pentage deviations becomes
+ problematic when the data moment is close to zero.
+ So this is why I use the 
+\emph on
+standard deviation
+\emph default
+ of log wage changes, instead of the 
+\emph on
+variance
+\emph default
+ of log wage changes.
+ I use percentage deviations instead of arc percentage deviations because
+ some parameterizations result in unrealistic moment values.
+\end_layout
+
+\end_deeper
 \begin_layout Section*
 To-Do
 \end_layout
@@ -880,29 +901,38 @@ How to incorporate bound constraints?
 \begin_deeper
 \begin_layout Enumerate
 logistic transformation around the initial point to incorporate parameter
- bounds
+ bounds.
+ Extensions to try later:
 \end_layout
 
 \begin_deeper
 \begin_layout Itemize
-can implicitly change steepness of search 
+implicitly change steepness of the search with 
+\begin_inset Formula $\lambda$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+could also further localize the search so that the initial point is the
+ midpoint of the bounds
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Alternative options: Provide initial simplex or use the Matlab simplex from
+ fminsearch?
 \end_layout
 
 \end_deeper
 \begin_layout Enumerate
-Alternatively, we can further bound transformation so that the initial point
- is the midpoint of the search?
-\end_layout
 
-\end_deeper
-\begin_layout Enumerate
-Alternative options: Provide input for simplex or use thes Matlab simplex
- from fminsearch?
-\end_layout
-
-\end_deeper
-\begin_layout Enumerate
-Try NLOpt Nelder Mead or DFLNS.
+\series bold
+Later: we can also
+\series default
+ try NLOpt optimizers: Nelder Mead or DFLNS (robustness)
 \end_layout
 
 \begin_deeper
@@ -911,25 +941,22 @@ NLOpt includes built-in bound constraints for N-M.
 \end_layout
 
 \begin_layout Enumerate
-Maybe use Subplex algorithm
+Alternatively could use Subplex algorithm
 \end_layout
 
 \end_deeper
 \begin_layout Enumerate
 Tik-Tak uses parameter bounds for producing Sobol points.
- Could do unconstrained local optimization but only use the bounds for creating
- Sobol sequences, but seems like it would be better to add parameter bounds.
+ We could do unconstrained local optimization and only use the bounds for
+ creating Sobol sequences, but the local optimization step seems (heuristically)
+ to work better when explicitly incororating parameter bounds.
 \end_layout
 
 \end_deeper
 \begin_layout Enumerate
-Write and run pre-testing code.
+Write and run pre-testing.
+ Write and debug tik-tak code.
  This can be done on Adroit.
-\end_layout
-
-\begin_layout Enumerate
-Write Tik-Tak code.
- Debug on Adroit?
 \end_layout
 
 \begin_layout Enumerate
@@ -937,11 +964,13 @@ Run Tik-Tak optimization on the Della cluster (should also request a Tigress
  acount).
 \end_layout
 
+\begin_deeper
 \begin_layout Enumerate
-Try running tik-tak both with and without bound constraints in local optimizatio
-n.
+20 tasks, 11 threads per task.
+ Sequences of length 20.
 \end_layout
 
+\end_deeper
 \begin_layout Enumerate
 Add effort moment from Burda, Genadek & Hamermesh (2020).
  However, some key differences:
@@ -953,9 +982,9 @@ What is a unit of effort in our model?
 \end_layout
 
 \begin_layout Enumerate
-Their result says likelihood of non-work time decreases when unemployment
- goes up, but non-work time, conditional on shirking, increases during high
- unemployment times.
+Their result: likelihood of non-work time decreases when unemployment goes
+ up, but non-work time, conditional on shirking, increases during high unemploym
+ent times.
  So on the extensive margin, effort is procyclial, and on the intensive
  margin, effort is countercyclical.
  
@@ -970,14 +999,26 @@ cyclicality of effort
 \begin_inset Quotes erd
 \end_inset
 
-, we can regress effort on unemployment <- this requires considering effort
- of new hires.
+, we could regress effort on unemployment <- this includes only effort of
+ new hires.
 \end_layout
 
 \begin_deeper
 \begin_layout Enumerate
 alternatively, could have different of cohorts of people with different
- z paths (and initial z_0) and do pooled OLS of effort on current z.
+ 
+\begin_inset Formula $z$
+\end_inset
+
+paths (and initial 
+\begin_inset Formula $z_{0}$
+\end_inset
+
+) and do pooled OLS of effort on current 
+\begin_inset Formula $z$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Enumerate
