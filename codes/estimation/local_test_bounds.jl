@@ -11,7 +11,7 @@ endogParams[4] = 0.66    # γ
 
 ## evaluate the objective function 
 init_x    = zeros(J)
-@time out = objFunction_WB(init_x, endogParams, param_bounds, zshocks, data_mom, W)
+@time out = objFunction_WB(init_x, endogParams, param_bounds, shocks, data_mom, W)
 fval      = out[1]
 mod_mom   = out[2]
 flag      = out[3]
@@ -21,7 +21,7 @@ endogParams2 = endogParams + rand(Normal(0, 0.005), J)               # add some 
 endogParams2 = [clamp(endogParams2[i], param_bounds[i][1], param_bounds[i][2]) for i=1:J] # make sure new initial guess lies within the bounds
 
 # NM from Optim WITH bounds 
-objFunc(x) = objFunction_WB(x, endogParams2, param_bounds, zshocks, mod_mom, W)[1]
+objFunc(x) = objFunction_WB(x, endogParams2, param_bounds, shocks, mod_mom, W)[1]
 @time opt  = optimize(objFunc, init_x, NelderMead(), 
                     Optim.Options(g_tol = 1e-6, x_tol = 1e-6,  f_tol = 1e-6, iterations = 50, show_trace = true))
 

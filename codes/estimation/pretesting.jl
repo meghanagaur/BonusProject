@@ -12,8 +12,8 @@ addprocs(SlurmManager())
     include(loc*"smm_settings.jl") # SMM inputs, settings, packages, etc.
 
     # Evalute objective function at i-th parameter vector
-    function evaluate!(i, sob_seq, pb, zshocks, data_mom, W)
-        return objFunction(sob_seq[:,i], pb, zshocks, data_mom, W)
+    function evaluate!(i, sob_seq, pb, shocks, data_mom, W)
+        return objFunction(sob_seq[:,i], pb, shocks, data_mom, W)
     end
 
     # Sample I Sobol vectors from the parameter space
@@ -30,7 +30,7 @@ addprocs(SlurmManager())
 end
 
 # Evaluate the objective function for each parameter vector
-@time output = pmap(i -> evaluate!(i, sob_seq, param_bounds, zshocks, data_mom, W), 1:I_max) 
+@time output = pmap(i -> evaluate!(i, sob_seq, param_bounds, shocks, data_mom, W), 1:I_max) 
 
 # Kill the processes
 rmprocs(nprocs())

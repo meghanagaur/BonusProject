@@ -22,7 +22,7 @@ dlw1_du      = 2nd moment (dlog w_1 / d u)
 dΔlw_dy      = 3rd moment (d Δ log w_it / y_it)
 u_ss         = 4th moment (SS unemployment rate)
 """
-function objFunction(xx, pb, zshocks, data_mom, W)
+function objFunction(xx, pb, shocks, data_mom, W)
     inbounds = minimum( [ pb[i][1] <= xx[i] <= pb[i][2] for i = 1:J]) >= 1
     if inbounds == 0
         f        = 10000
@@ -31,7 +31,7 @@ function objFunction(xx, pb, zshocks, data_mom, W)
     elseif inbounds == 1
         baseline = model(ε = xx[1] , σ_η = xx[2], χ = xx[3], γ = xx[4]) 
         # Simulate the model and compute moments
-        out      = simulate(baseline, zshocks)
+        out      = simulate(baseline, shocks)
         flag     = out.flag
         mod_mom  = [out.std_Δlw, out.dlw1_du, out.dΔlw_dy, out.u_ss]
         d        = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % change
@@ -59,12 +59,12 @@ dlw1_du      = 2nd moment (dlog w_1 / d u)
 dΔlw_dy      = 3rd moment (d Δ log w_it / y_it)
 u_ss         = 4th moment (SS unemployment rate)
 """
-function objFunction_WB(xx, x0, pb, zshocks, data_mom, W)
+function objFunction_WB(xx, x0, pb, shocks, data_mom, W)
     endogParams  = [ transform_params(xx[i], pb[i], x0[i]) for i = 1:J] 
     baseline     = model(ε = endogParams[1] , σ_η = endogParams[2], χ = endogParams[3], γ = endogParams[4]) 
 
     # Simulate the model and compute moments
-    out     = simulate(baseline, zshocks)
+    out     = simulate(baseline, shocks)
     mod_mom = [out.std_Δlw, out.dlw1_du, out.dΔlw_dy, out.u_ss]
     d       = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
     f       = out.flag < 1 ? d'*W*d : 10000
@@ -140,21 +140,22 @@ O[end]      = 1
 z_ss_dist   = (O*inv(A))
 @assert(isapprox(sum(z_ss_dist),1))
 
-# Create z shocks
+# Create z and η shocks
 λ_N_z        = floor.(Int64, N_sim*z_ss_dist)
 z_shocks     = OrderedDict{Int, Array{Real,1}}()
 z_shocks_idx = OrderedDict{Int, Array{Real,1}}()
-
+η_shocks     = OrderedDict{Int, Array{Real,1}}()
 Threads.@threads for iz = 1:length(zgrid)
     temp                = simulateZShocks(P_z, zgrid, N = λ_N_z[iz], T = T_sim, z_1_idx = iz, set_seed = true)
     z_shocks[iz]        = vec(temp.z_shocks)
     z_shocks_idx[iz]    = vec(temp.z_shocks_idx)
+    η_shocks[iz]        = rand(Normal(0, 1), length(z_shocks[iz])) # N x T 
 end
 
 # Create one long z_t string: set z_1 to default value of 1.
 zstring  = simulateZShocks(P_z, zgrid, N = 1, T = N_sim + burnin, set_seed = false)
 
 # Create an ordered tuple that contains the zshocks
-zshocks = (z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, λ_N_z = λ_N_z, N = N_sim,
-T = T_sim, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
+shocks = (η_shocks = η_shocks, z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, 
+    λ_N_z = λ_N_z, N = N_sim, T = T_sim, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
 

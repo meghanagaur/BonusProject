@@ -13,7 +13,7 @@ endogParams[4] = 0.66     # γ
 init_x    = zeros(J)
 
 # NM from Optim WITH bounds 
-objFunc(x) = objFunction_WB(x, endogParams, param_bounds, zshocks, data_mom, W)[1]
+objFunc(x) = objFunction_WB(x, endogParams, param_bounds, shocks, data_mom, W)[1]
 @time opt  = optimize(objFunc, init_x, NelderMead(), 
                     Optim.Options(g_tol = 1e-6, x_tol = 1e-6,  f_tol = 1e-6, iterations = 50, show_trace = true))
 
