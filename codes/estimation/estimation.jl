@@ -5,8 +5,8 @@ using Distributed, SlurmClusterManager
 
 @everywhere begin
     using DistributedArrays, DistributedArrays.SPMD
-    #loc = "/Users/meghanagaur/BonusProject/codes/estimation/"
-    loc = ""
+    loc = "/Users/meghanagaur/BonusProject/codes/estimation/"
+    #loc = ""
     include(loc*"smm_settings.jl") # SMM inputs, settings, packages, etc.
 end  
 
@@ -34,7 +34,13 @@ end
 
    # define new simplexer for NM without explicit bound constraints
    struct RandSimplexer <: Optim.Simplexer end
-   Optim.simplexer(S::RandSimplexer) = [ draw_params(param_bounds) for i = 1:K+1]
+   function Optim.simplexer(S::RandSimplexer, initial_x::AbstractArray{T, N}) where {T, N}
+        initial_simplex = Array{T, N}[initial_x for i = 1:K+1]
+        for j = 2:K+1
+            initial_simplex[j] .= draw_params(param_bounds) 
+        end
+        initial_simplex
+    end
 end
 
 # initialize the big distributed vectors 
