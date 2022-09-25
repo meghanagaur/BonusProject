@@ -126,11 +126,11 @@ param_bounds         = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
                         (3, [-1, 1]),            # χ
                         (4, [0.4, 0.9]) ])       # γ
 
-## Build zshocks for the simulation
+## Build shocks for the simulation
 @unpack N_z, P_z, zgrid = model()
-const N_sim  = 100000
-const T_sim  = 80 # 20 years
-const burnin = 1000
+N_sim  = 100000 
+T_sim  = 80 # 20 years
+burnin = 1000
 
 # Compute the invariant distribution of logz
 A           = P_z - Matrix(1.0I, N_z, N_z)
@@ -159,3 +159,12 @@ zstring  = simulateZShocks(P_z, zgrid, N = 1, T = N_sim + burnin, set_seed = fal
 shocks = (η_shocks = η_shocks, z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, 
     λ_N_z = λ_N_z, N = N_sim, T = T_sim, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
 
+## Define a new simplexer for NM without explicit bound constraints
+struct RandSimplexer <: Optim.Simplexer end
+function Optim.simplexer(S::RandSimplexer, initial_x::AbstractArray{T, N}) where {T, N}
+    initial_simplex = Array{T, N}[initial_x for i = 1:K+1]
+    for k = 2:K+1
+        initial_simplex[k] .= draw_params(param_bounds) 
+    end
+    initial_simplex
+end

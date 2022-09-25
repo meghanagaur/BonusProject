@@ -34,7 +34,7 @@ function tiktak_spmd(sobol, fvals_d, argmin_d, min_p, argmin_p, iter_p,
                 opt       = optimize(x -> objFunction(x, param_bounds, shocks, data_mom, W)[1], start, 
                             NelderMead(initial_simplex = RandSimplexer()), 
                             Optim.Options(g_tol = 1e-5, x_tol = 1e-5, f_tol = 1e-5, iterations = 50, show_trace = true))
-                            
+
                 arg_min   = Optim.minimizer(opt)
             end
             min_f         = Optim.minimum(opt) 
@@ -62,7 +62,7 @@ function tiktak_spmd(sobol, fvals_d, argmin_d, min_p, argmin_p, iter_p,
 end
 
 """
-Draw random points in parameter space
+Draw random points in the parameter space
 """
 function draw_params(pb)
     pars = zeros(K)

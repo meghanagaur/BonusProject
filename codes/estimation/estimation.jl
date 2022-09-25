@@ -31,16 +31,6 @@ end
             sobol[:,i,j] = sob_int[j,i,:]
         end
    end
-
-   # define new simplexer for NM without explicit bound constraints
-   struct RandSimplexer <: Optim.Simplexer end
-   function Optim.simplexer(S::RandSimplexer, initial_x::AbstractArray{T, N}) where {T, N}
-        initial_simplex = Array{T, N}[initial_x for i = 1:K+1]
-        for j = 2:K+1
-            initial_simplex[j] .= draw_params(param_bounds) 
-        end
-        initial_simplex
-    end
 end
 
 # initialize the big distributed vectors 
