@@ -142,6 +142,7 @@ z_ss_dist   = (O*inv(A))
 
 # Create z and η shocks
 λ_N_z        = floor.(Int64, N_sim*z_ss_dist)
+indices      = cumsum(λ_N_z, dims = 2)*T_sim
 z_shocks     = OrderedDict{Int, Array{Real,1}}()
 z_shocks_idx = OrderedDict{Int, Array{Real,1}}()
 η_shocks     = OrderedDict{Int, Array{Real,1}}()
@@ -156,10 +157,22 @@ end
 zstring  = simulateZShocks(P_z, zgrid, N = 1, T = N_sim + burnin, set_seed = false)
 
 # Create an ordered tuple that contains the zshocks
-shocks = (η_shocks = η_shocks, z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, 
+shocks = (η_shocks = η_shocks, z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, indices = indices,
     λ_N_z = λ_N_z, N = N_sim, T = T_sim, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
 
 ## Define a new simplexer for NM without explicit bound constraints
+#=
+"""
+Draw random points in the parameter space
+"""
+function draw_params(pb)
+    pars = zeros(K)
+    for i = 1:K
+        pars[i] = rand(Uniform(param_bounds[i][1], param_bounds[i][2]))
+    end
+    return pars
+end
+
 struct RandSimplexer <: Optim.Simplexer end
 function Optim.simplexer(S::RandSimplexer, initial_x::AbstractArray{T, N}) where {T, N}
     initial_simplex = Array{T, N}[initial_x for i = 1:K+1]
@@ -168,3 +181,4 @@ function Optim.simplexer(S::RandSimplexer, initial_x::AbstractArray{T, N}) where
     end
     initial_simplex
 end
+=#

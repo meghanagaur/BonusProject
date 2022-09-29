@@ -19,10 +19,9 @@ function simulate(baseline, shocks; u0 = 0.06)
     @unpack β, s, κ, hp, zgrid, N_z, ψ, z_1_idx, f, ε, σ_η, χ, γ = baseline 
 
     # Unpack the relevant shocks
-    @unpack η_shocks, z_shocks, z_shocks_idx, λ_N_z, zstring, burnin, z_ss_dist = shocks
+    @unpack η_shocks, z_shocks, z_shocks_idx, λ_N_z, zstring, burnin, z_ss_dist, indices = shocks
 
     # Loop through every point on zgrid
-    indices = cumsum(λ_N_z, dims=2)*shocks.T
     Δlw     = zeros(indices[end])        # Δlog w_it, given z_1 and z_t
     ly      = zeros(indices[end])        # log y_it, given z_1 and z_t
     w_y_z   = zeros(length(zgrid))       # PV of W/Y, given z_1
@@ -50,7 +49,7 @@ function simulate(baseline, shocks; u0 = 0.06)
             # now, let's think about wages and output for continuing hires
             @views z_shocks_z     = z_shocks[iz]
             @views z_shocks_idx_z = z_shocks_idx[iz]
-            η_shocks_z            = σ_η*η_shocks[iz]
+            η_shocks_z            = σ_η*η_shocks[iz] # scale after 
             
             start_idx    = (iz==1) ? 1 : indices[iz-1] + 1 
             end_idx      = indices[iz]
@@ -75,7 +74,7 @@ function simulate(baseline, shocks; u0 = 0.06)
         #histogram(Δlw)
         std_Δlw = std(Δlw) 
         
-        # Regress wage changes Δ log w_it on ndividual log output log y_it
+        # Regress wage changes Δ log w_it on individual log output log y_it
         dΔlw_dy = ols(vec(Δlw), vec(ly))[2]
 
         # Compute long simulated time series  (trim to post-burn-in for z_t when computing moment)

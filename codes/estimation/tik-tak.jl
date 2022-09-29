@@ -3,7 +3,7 @@ Workhouse function for the global multistart optimization algorithm, following
 Guvenen et al (2019), with basic NM simplex algorithm for local optimization.
 """
 function tiktak_spmd(sobol, fvals_d, argmin_d, min_p, argmin_p, iter_p, 
-    init_x, param_bounds, shocks, data_mom, W; I_min  = 1, test = false, bounds = false)
+    init_x, param_bounds, shocks, data_mom, W; I_min  = 1, test = false, bounds = true)
     #init_points = @fetchfrom 2 test[:L] 
     #init_points = sob_d[:L] 
     #idx = @fetchfrom 2 myid()
@@ -32,8 +32,7 @@ function tiktak_spmd(sobol, fvals_d, argmin_d, min_p, argmin_p, iter_p,
                 arg_min   = [ transform_params(arg_min_t[j], param_bounds[j], start[j]) for j = 1:length(param_bounds) ] 
             else
                 opt       = optimize(x -> objFunction(x, param_bounds, shocks, data_mom, W)[1], start, 
-                            NelderMead(initial_simplex = RandSimplexer()), 
-                            Optim.Options(g_tol = 1e-5, x_tol = 1e-5, f_tol = 1e-5, iterations = 50, show_trace = true))
+                            NelderMead(), Optim.Options(g_tol = 1e-5, x_tol = 1e-5, f_tol = 1e-5, iterations = 50, show_trace = true))
 
                 arg_min   = Optim.minimizer(opt)
             end
@@ -61,13 +60,3 @@ function tiktak_spmd(sobol, fvals_d, argmin_d, min_p, argmin_p, iter_p,
     end 
 end
 
-"""
-Draw random points in the parameter space
-"""
-function draw_params(pb)
-    pars = zeros(K)
-    for i = 1:K
-        pars[i] = rand(Uniform(param_bounds[i][1], param_bounds[i][2]))
-    end
-    return pars
-end

@@ -967,7 +967,7 @@ Run Tik-Tak optimization on the Della cluster (should also request a Tigress
 \begin_deeper
 \begin_layout Enumerate
 20 tasks, 11 threads per task.
- Sequences of length 20.
+ Sequences of length 50.
 \end_layout
 
 \end_deeper

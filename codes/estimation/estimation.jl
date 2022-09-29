@@ -5,8 +5,8 @@ using Distributed, SlurmClusterManager
 
 @everywhere begin
     using DistributedArrays, DistributedArrays.SPMD
-    loc = "/Users/meghanagaur/BonusProject/codes/estimation/"
-    #loc = ""
+    #loc = "/Users/meghanagaur/BonusProject/codes/estimation/"
+    loc = ""
     include(loc*"smm_settings.jl") # SMM inputs, settings, packages, etc.
 end  
 

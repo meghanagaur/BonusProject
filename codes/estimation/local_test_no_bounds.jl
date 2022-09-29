@@ -21,7 +21,7 @@ endogParams2 = [clamp(endogParams2[i], param_bounds[i][1], param_bounds[i][2]) f
 
 # NM from Optim WITHOUT bounds 
 objFunc(x) = objFunction(x, param_bounds, shocks, mod_mom, W)[1]
-@time opt  = optimize(objFunc, endogParams2, NelderMead(initial_simplex = RandSimplexer()), 
+@time opt  = optimize(objFunc, endogParams2, NelderMead(), 
                     Optim.Options(g_tol = 1e-6, x_tol = 1e-6, f_tol = 1e-6, iterations = 50, show_trace = true))
 
 # save the results
