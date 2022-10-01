@@ -26,8 +26,6 @@ tsset
 */
 
 
-
-* useful check
 reg resid l.resid
 predict resid2, residuals
 reg resid l.resid, nocons

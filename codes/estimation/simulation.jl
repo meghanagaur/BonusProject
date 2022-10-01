@@ -10,21 +10,29 @@ Note: u0 = initial unemployment rate.
 function simulate(baseline, shocks; u0 = 0.06)
     
     # initialize moments to export (default to NaN)
-    std_Δlw = NaN
-    dlw1_du = NaN
-    dΔlw_dy = NaN
-    u_ss    = NaN
+    std_Δlw  = NaN  # st dev of quarterly log wage changes
+    dlw1_du  = NaN  # d log w_1 / d u
+    dW_du    = NaN  # d PV of wages / du
+    da_du    = NaN  # d effort / du
+    dly_dlw  = NaN  # d log y / d log w
+    u_ss     = NaN  # u_ss
 
     # Get all of the relevant parameters for the model
     @unpack β, s, κ, hp, zgrid, N_z, ψ, z_1_idx, f, ε, σ_η, χ, γ = baseline 
 
     # Unpack the relevant shocks
-    @unpack η_shocks, z_shocks, z_shocks_idx, λ_N_z, zstring, burnin, z_ss_dist, indices = shocks
+    @unpack η_shocks, z_shocks, z_shocks_idx, λ_N_z, zstring, burnin, z_ss_dist, indices, indices_q, T_sim = shocks
 
-    # Loop through every point on zgrid
-    Δlw     = zeros(indices[end])        # Δlog w_it, given z_1 and z_t
+    # Generate model data for every point on zgrid:
+    
+    # Results from panel simulation
+    lw      = zeros(indices[end])        # log w_it, given z_1 and z_t
     ly      = zeros(indices[end])        # log y_it, given z_1 and z_t
-    w_y_z   = zeros(length(zgrid))       # PV of W/Y, given z_1
+    Δlw_q   = zeros(indices_q[end])      # Δlog w_it <- QUARTERLY
+
+    # Values corresponding to new contracts (i.e. starting at z_t)
+    W_z    = zeros(length(zgrid))       # PV of wages, given z_1
+    a_z     = zeros(length(zgrid))       # a_1, given z_1
     θ_z     = zeros(length(zgrid))       # θ(z_1)
     lw1_z   = zeros(length(zgrid))       # E[log w1|z] <- wages of new hires
     flag_z  = zeros(Int64,length(zgrid)) # error flags
@@ -40,7 +48,13 @@ function simulate(baseline, shocks; u0 = 0.06)
 
         if flag_z[iz] < 1             
             
-            # log wage of new hires, given z_1 = z
+            # PV of wages, given z_1
+            W_z[iz]      = w_0/ψ
+
+            # Effort of new hires
+            a_z[iz]       = az[iz]
+
+            # expectation of the log wage of new hires, given z_1 = z
             lw1_z[iz]     = log(w_0) - 0.5*(ψ*hp(az[iz])*σ_η)^2 
            
             # tightness, given z_1 = z
@@ -49,37 +63,47 @@ function simulate(baseline, shocks; u0 = 0.06)
             # now, let's think about wages and output for continuing hires
             @views z_shocks_z     = z_shocks[iz]
             @views z_shocks_idx_z = z_shocks_idx[iz]
-            η_shocks_z            = σ_η*η_shocks[iz] # scale after 
+            η_shocks_z            = σ_η*η_shocks[iz] # scale η to avoid re-simulating 
             
+            # get indices for filling out log wages
             start_idx    = (iz==1) ? 1 : indices[iz-1] + 1 
             end_idx      = indices[iz]
+
             hpz_z1       = hp.(az)  # h'(a(z|z_1))
             @views hp_az = hpz_z1[z_shocks_idx_z]
 
-            t1           = ψ*hp_az.*η_shocks_z
-            t2           = 0.5*(ψ*hp_az*σ_η).^2 
-            Δlw[start_idx:end_idx]  = t1 - t2
+            # compute relevant terms for log wages
+            t1                      = ψ*hp_az.*η_shocks_z
+            t2                      = 0.5*(ψ*hp_az*σ_η).^2 
+            lw_mat                  = log(w_0) .+ cumsum(t1,dims=2) - cumsum(t2,dims=2)
+            lw[start_idx:end_idx]   = vec(lw_mat)
+            @views y                = yz[z_shocks_idx_z]     # a_t(z_t|z_1)*z_t
+            ηz                      = z_shocks_z.*η_shocks_z # η_t*z_t
+            ly[start_idx:end_idx]   = vec(log.(max.(y + ηz, 0.01))) # nudge up to avoid run-time error
 
-            @views y     = yz[z_shocks_idx_z] # a(z|z_1)*z
-            ηz           = z_shocks_z.*η_shocks_z
+            # make some adjustments for quarterly data
+            start_idx_q  = (iz==1) ? 1 : indices_q[iz-1] + 1 
+            end_idx_q    = indices_q[iz]
+            Δlw_q[start_idx_q:end_idx_q] = [lw_mat[i,t+3] - lw_mat[i,t] for  i = 1:size(z_shocks_z,1), t = 1:T_sim-3]
 
-            ly[start_idx:end_idx]   = log.(max.(y + ηz, 0.01)) # avoid run-time error
         end
     end
 
     # only compute moments for reasonable parameters
     if maximum(flag_z) < 1
         
-        # Standard deviation of wage changes for job-stayers
-        #histogram(Δlw)
-        std_Δlw = std(Δlw) 
+        # Standard deviation of QUARTERLY log wage changes for job-stayers
+        std_Δlw  = std(Δlw_q) 
+        #histogram(Δlw_q)
         
-        # Regress wage changes Δ log w_it on individual log output log y_it
-        dΔlw_dy = ols(vec(Δlw), vec(ly))[2]
+        # Regress log y_it on log w_it 
+        dly_dlw  = ols(vec(ly), vec(lw))[2]
 
         # Compute long simulated time series  (trim to post-burn-in for z_t when computing moment)
         z_shocks_idx_str     = zstring.z_shocks_idx
         @views lw1_t         = lw1_z[z_shocks_idx_str]   # E[log w_1 | z_t]
+        @views W_t           = W_z[z_shocks_idx_str]    # PV of wages | z_t
+        @views a_t           = a_z[z_shocks_idx_str]     # a_1 | z_t 
         @views θ_t           = θ_z[z_shocks_idx_str]     # θ(z_t)
 
         # Compute evolution of unemployment for the different z_t paths
@@ -92,16 +116,18 @@ function simulate(baseline, shocks; u0 = 0.06)
 
         # Estimate d E[log w_1] / d u (pooled ols)
         @views dlw1_du = ols(vec(lw1_t[burnin+1:end]), vec(u_t[burnin+1:end]))[2]
-        #@views dlw1_dz = ols(vec(lw1_t[burnin+1:end]), vec(zstring.z_shocks[burnin+1:end]))[2]
-        #@views du_dz   = ols(vec(u_t[burnin+1:end]), vec(zstring.z_shocks[burnin+1:end]))[2]
-        #dlw1_dz/du_dz
+        # Estimate d PV of wages / d u (pooled ols)
+        @views dW_du   = ols(vec(W_t[burnin+1:end]), vec(u_t[burnin+1:end]))[2]
+        # Estimate
+        @views da_du   = ols(vec(a_t[burnin+1:end]), vec(u_t[burnin+1:end]))[2]
 
         # Compute u_ss as mean of unemployment rate post-burn period in for now
         u_ss = mean(u_t[burnin+1:end])
     end
     
-    # Return simulation results
-    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dΔlw_dy = dΔlw_dy, u_ss = u_ss, flag = maximum(flag_z))
+    # Export the simulation results
+    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dly_dlw = dly_dlw, u_ss = u_ss, 
+            dW_du = dW_du, da_du = da_du, flag = maximum(flag_z))
 end
 
 """

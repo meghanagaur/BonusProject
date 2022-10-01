@@ -19,7 +19,7 @@ W            = weight matrix for SMM
 γ            = 4th param
 std_Δlw      = 1st moment (st dev of log wage changes)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
-dΔlw_dy      = 3rd moment (d Δ log w_it / y_it)
+dly_dΔlw     = 3rd moment (d log y_it / d Δ log w_it )
 u_ss         = 4th moment (SS unemployment rate)
 """
 function objFunction(xx, pb, shocks, data_mom, W)
@@ -33,7 +33,7 @@ function objFunction(xx, pb, shocks, data_mom, W)
         # Simulate the model and compute moments
         out      = simulate(baseline, shocks)
         flag     = out.flag
-        mod_mom  = [out.std_Δlw, out.dlw1_du, out.dΔlw_dy, out.u_ss]
+        mod_mom  = [out.std_Δlw, out.dlw1_du, out.dly_dlw, out.u_ss]
         d        = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % change
         f        = flag < 1 ? d'*W*d : 10000
     end
@@ -56,7 +56,7 @@ W            = weight matrix for SMM
 γ            = 4th param
 std_Δlw      = 1st moment (st dev of log wage changes)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
-dΔlw_dy      = 3rd moment (d Δ log w_it / y_it)
+dly_dΔlw     = 3rd moment (d log y_it / d Δ log w_it )
 u_ss         = 4th moment (SS unemployment rate)
 """
 function objFunction_WB(xx, x0, pb, shocks, data_mom, W)
@@ -65,7 +65,7 @@ function objFunction_WB(xx, x0, pb, shocks, data_mom, W)
 
     # Simulate the model and compute moments
     out     = simulate(baseline, shocks)
-    mod_mom = [out.std_Δlw, out.dlw1_du, out.dΔlw_dy, out.u_ss]
+    mod_mom = [out.std_Δlw, out.dlw1_du, out.dly_dlw, out.u_ss]
     d       = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
     f       = out.flag < 1 ? d'*W*d : 10000
     return [f, mod_mom, out.flag]
@@ -102,12 +102,12 @@ function transform_params(xx, pb, p0; λ = 1)
 end
 
 ## Empirical moments that we are targeting
-data_mom             = [0.035, -0.5, .05, 0.06]     # may need to update 
 moms_key             = OrderedDict{Int, Symbol}([   # parameter bounds
                         (1, :std_Δlw),
                         (2, :dlw1_du),
-                        (3, :dΔlw_dy),
-                        (4,  :u_ss) ])
+                        (3, :dy_dΔlw),
+                        (4,  :u_ss) ]) 
+data_mom             = [0.013, -0.5, 0.15, 0.06]    #  annual -> quarterly stdev 0.053/4
 const K              = length(data_mom)
 
 ## Parameter bounds and weight matrix
@@ -121,16 +121,16 @@ param_key            = OrderedDict{Int, Symbol}([
                         (4, :γ) ])
 const J              = length(param_key)
 param_bounds         = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
-                        (1, [0 ,  3.0]),         # ε
-                        (2, [0.0, 0.5]),         # σ_η
+                        (1, [0.15,  3.0]),       # ε
+                        (2, [0.001, 0.5]),       # σ_η 
                         (3, [-1, 1]),            # χ
-                        (4, [0.4, 0.9]) ])       # γ
+                        (4, [0.3, 0.95]) ])      # γ
 
 ## Build shocks for the simulation
 @unpack N_z, P_z, zgrid = model()
-N_sim  = 100000 
-T_sim  = 80 # 20 years
-burnin = 1000
+N_sim                   = 100000 
+T_sim                   = 80 # 20 years
+burnin                  = 1000
 
 # Compute the invariant distribution of logz
 A           = P_z - Matrix(1.0I, N_z, N_z)
@@ -143,22 +143,25 @@ z_ss_dist   = (O*inv(A))
 # Create z and η shocks
 λ_N_z        = floor.(Int64, N_sim*z_ss_dist)
 indices      = cumsum(λ_N_z, dims = 2)*T_sim
-z_shocks     = OrderedDict{Int, Array{Real,1}}()
-z_shocks_idx = OrderedDict{Int, Array{Real,1}}()
-η_shocks     = OrderedDict{Int, Array{Real,1}}()
+indices_q    = cumsum(λ_N_z, dims = 2)*(T_sim-3) # indices for quarterly log wage changes
+z_shocks     = OrderedDict{Int, Array{Real,2}}()
+z_shocks_idx = OrderedDict{Int, Array{Real,2}}()
+η_shocks     = OrderedDict{Int, Array{Real,2}}()
 Threads.@threads for iz = 1:length(zgrid)
     temp                = simulateZShocks(P_z, zgrid, N = λ_N_z[iz], T = T_sim, z_1_idx = iz, set_seed = true)
-    z_shocks[iz]        = vec(temp.z_shocks)
-    z_shocks_idx[iz]    = vec(temp.z_shocks_idx)
-    η_shocks[iz]        = rand(Normal(0, 1), length(z_shocks[iz])) # N x T 
+    z_shocks[iz]        = temp.z_shocks
+    z_shocks_idx[iz]    = temp.z_shocks_idx
+    η_shocks[iz]        = rand(Normal(0, 1), size(z_shocks[iz])) # N x T 
 end
 
 # Create one long z_t string: set z_1 to default value of 1.
 zstring  = simulateZShocks(P_z, zgrid, N = 1, T = N_sim + burnin, set_seed = false)
 
 # Create an ordered tuple that contains the zshocks
-shocks = (η_shocks = η_shocks, z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, indices = indices,
-    λ_N_z = λ_N_z, N = N_sim, T = T_sim, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
+shocks   = (η_shocks = η_shocks, z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, indices = indices, indices_q = indices_q,
+    λ_N_z = λ_N_z, N_sim = N_sim, T_sim = T_sim, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
+
+
 
 ## Define a new simplexer for NM without explicit bound constraints
 #=

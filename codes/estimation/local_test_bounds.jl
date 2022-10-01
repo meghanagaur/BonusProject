@@ -5,9 +5,9 @@ println(Threads.nthreads())
 # Initial parameter values
 endogParams    = zeros(K) # zeros(4)
 endogParams[1] = 0.5      # ε 
-endogParams[2] = 0.5     # σ_η
-endogParams[3] = 0.3      # χ
-endogParams[4] = 0.66    # γ
+endogParams[2] = 0.05     # σ_η
+endogParams[3] = 0.0      # χ
+endogParams[4] = 0.66     # γ
 
 ## evaluate the objective function 
 init_x    = zeros(J)
@@ -17,7 +17,7 @@ mod_mom   = out[2]
 flag      = out[3]
 
 ## test local optimization by setting the truth to the originally obtained model moments
-endogParams2 = endogParams + rand(Normal(0, 0.005), J)               # add some noise
+endogParams2 = endogParams + rand(Normal(0, 0.005), J) # add some noise
 endogParams2 = [clamp(endogParams2[i], param_bounds[i][1], param_bounds[i][2]) for i=1:J] # make sure new initial guess lies within the bounds
 
 # NM from Optim WITH bounds 

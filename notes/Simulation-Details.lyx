@@ -75,18 +75,26 @@
 
 \begin_body
 
+\begin_layout Section
+Simulation Procedure
+\end_layout
+
 \begin_layout Enumerate
-Establish a zgrid 
-\begin_inset Formula $z\in\{z^{1},...z^{N_{z}}\}$
+Establish a productivity grid 
+\begin_inset Formula $\{z^{1},...z^{N_{z}}\}$
 \end_inset
 
 .
- Note superscripts denote indicies, subscripts denote time period.
+ Superscripts denote indicies, subscripts denote time period.
  Time begins at period 1.
 \end_layout
 
 \begin_layout Enumerate
-For every point on that zgrid, solve
+For every point 
+\begin_inset Formula $z$
+\end_inset
+
+ on the productivity grid, solve
 \end_layout
 
 \begin_deeper
@@ -147,7 +155,7 @@ Compute the invariant distribution of
 \end_layout
 
 \begin_layout Enumerate
-Simulate implied wage changes (so we simulate 
+Simulate the implied wages (so we simulate 
 \begin_inset Formula $N_{z}\times T$
 \end_inset
 
@@ -159,10 +167,10 @@ Simulate implied wage changes (so we simulate
 \begin_inset Formula $z$
 \end_inset
 
-):
+):s
 \begin_inset Formula 
 \[
-\Delta\log w(z,\eta,z_{1})=\psi h'(a(z|z_{1}))\eta-\cfrac{1}{2}(\psi h'(a(z|z_{1}))\sigma_{\eta})^{2}
+\log w_{t}(z^{t},\eta^{t},z_{1})=\log w_{0}(z_{1})+\sum_{s=1}^{t}\psi h'(a_{s})\eta_{s}-\frac{1}{2}\sum_{s=1}^{t}(\psi h'(a_{s})\sigma_{\eta})^{2}
 \]
 
 \end_inset
@@ -170,31 +178,32 @@ Simulate implied wage changes (so we simulate
 
 \end_layout
 
-\begin_layout Enumerate
-Calculate the unconditional variance of (pooled) log wage changes 
-\begin_inset Formula $Var(\Delta\log w_{it})$
-\end_inset
-
-.
- 
+\begin_deeper
+\begin_layout Standard
+Note: we also need to compute the variance of 
+\series bold
+quarterly
+\series default
+ wage change using our monthly model data (see procedure below)
 \end_layout
 
+\end_deeper
 \begin_layout Enumerate
 Estimate 
-\begin_inset Formula $\frac{{d\Delta\log w_{it}}}{d\log y_{it}}$
+\begin_inset Formula $\frac{{d\log y_{it}}}{d\log w_{it}}$
 \end_inset
 
- by regressing log wage changes on a constant and log (individual) output
+ by regressing log (individual) output on the log wage and a constant, where
  
-\begin_inset Formula $y(z,\eta,z_{1})\coloneqq a(z|z_{1})(z+\eta).$
+\begin_inset Formula $y(z,\eta,z_{1})\coloneqq z(a(z|z_{1})+\eta).$
 \end_inset
 
  Note that this value will be negative if 
-\begin_inset Formula $z+\eta<0.$
+\begin_inset Formula $a(z|z_{1})+\eta<0.$
 \end_inset
 
  For now, just take 
-\begin_inset Formula $y=\max(a(z|z_{1})(z+\eta),\epsilon)$
+\begin_inset Formula $y=\max(z(a(z|z_{1})+\eta),\epsilon)$
 \end_inset
 
 , for some 
@@ -204,28 +213,6 @@ Estimate
 .
 \end_layout
 
-\begin_deeper
-\begin_layout Enumerate
-Calculate the present value labor share for each z on the zgrid as 
-\begin_inset Formula $\frac{W(z)}{Y(z)}=\frac{{\sum(\beta(1-s))^{t}E_{1}[w_{t}]}}{\sum(\beta(1-s))^{t}E_{1}[a_{t}(z_{t})z_{t}]}$
-\end_inset
-
-.
- Note that the wage process is a martingale, so this expression is straightforwa
-rd to evaluate given our previous work.
- Compute the expectation of the PV labor share using the invariant distribution
- over the initial 
-\begin_inset Formula $z_{1.}$
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Enumerate
-CHECK STEP (a)!!!
-\end_layout
-
-\end_deeper
 \begin_layout Enumerate
 Simulate a single long 
 \begin_inset Formula $z_{t}$
@@ -289,6 +276,62 @@ Regress
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Section
+Details on quarterly wage changes 
+\end_layout
+
+\begin_layout Standard
+To compute 
+\begin_inset Formula $\log w_{t+3}-\log w_{t}$
+\end_inset
+
+ in the data for our panel of continuing workers, we apply the recursive
+ formula for log wages:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\log w_{t+3}=\log w_{t+2}+\psi h'(a_{t+3})\eta_{t+3}-\frac{1}{2}(\psi h'(a_{t+3})\sigma_{2})^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\log w_{t+3}=\log w_{t}+\psi h'(a_{t+1})\eta_{t+1}-\frac{1}{2}(\psi h'(a_{t+1})\sigma_{\eta})^{2}+\psi h'(a_{t+2})\eta_{t+2}-\frac{1}{2}(\psi h'(a_{t+2})\sigma_{\eta})^{2}+\psi h'(a_{t+3})\eta_{t+3}-\frac{1}{2}(\psi h'(a_{t+3})\sigma_{\eta})^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\log w_{t+3}-\log w_{t}=\sum_{s=1}^{3}\psi h'(a_{t+s})\eta_{t+s}-\frac{1}{2}\sum_{s=1}^{3}(\psi h'(a_{t+s})\sigma_{\eta})^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We then calculate the unconditional variance of the (pooled) log wage changes
+ 
+\begin_inset Formula $Var(\Delta_{t+3}\log w_{i})$
+\end_inset
+
+.
+ 
 \end_layout
 
 \end_body

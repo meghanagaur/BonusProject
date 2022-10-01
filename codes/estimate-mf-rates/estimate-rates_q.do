@@ -25,6 +25,12 @@ gen srate   = f.st_unemp/(emp*(1 - 0.5*frate))
 gen qdate   = qofd(daten)
 format qdate %tq
 
+
+egen avg_frate    = mean(frate) 
+egen avg_srate    = mean(srate) 
+
+export delimited "data/mf_rates_monthly.csv", replace
+
 * take quarterly averages to smooth data
 collapse (mean) urate frate srate vacancies unemp, by(qdate)
 
@@ -47,4 +53,4 @@ egen avg_urate     = mean(urate)
 * generate tightness
 gen tightness     = vacancies/unemp
 
-export delimited "data/mf_rates.csv", replace
+export delimited "data/mf_rates_quarterly.csv", replace

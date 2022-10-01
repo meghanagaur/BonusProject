@@ -76,7 +76,7 @@
 \begin_body
 
 \begin_layout Section*
-Most Important Details to Finalize for Estimation
+Estimation Details (Log)
 \end_layout
 
 \begin_layout Enumerate
@@ -99,92 +99,24 @@ values
  <- steady state unemployment rate
 \end_layout
 
-\begin_deeper
-\begin_layout Enumerate
-Right now, using the simulation results for 
-\begin_inset Formula $u_{t}$
-\end_inset
-
- and averaging over the post burn-in period.
- Note: 
-\begin_inset Formula $u_{ss}=\frac{{s}}{s+f}$
-\end_inset
-
- , but 
-\begin_inset Formula $u_{ss}=0.06$
-\end_inset
-
- requires 
-\begin_inset Formula $f>1.$
-\end_inset
-
- 
-\end_layout
-
-\begin_layout Enumerate
-This is impossible with the current matching function from PNZ/H&M, which
- bounds 
-\begin_inset Formula $f,q$
-\end_inset
-
- between 
-\begin_inset Formula $0$
-\end_inset
-
- and 
-\begin_inset Formula $1.$
-\end_inset
-
- 
-\end_layout
-
-\begin_layout Enumerate
-We could switch to a Cobb-Douglas matching function, as in Shimer, and iterate
- on 
-\begin_inset Formula $\theta?$
-\end_inset
-
- Depends on interpretation of 
-\begin_inset Formula $\theta.$
-\end_inset
-
- In Shimer, the value of tightness doesn't matter and he normalizes the
- vacancy posting cost 
-\begin_inset Formula $\kappa$
-\end_inset
-
- to target mean 
-\begin_inset Formula $\theta$
-\end_inset
-
- of 1.
- Note that his quarterly job finding flow arrival rate is around 1.35 (giving
- 
-\begin_inset Formula $u\approx0.06).$
-\end_inset
-
-
-\end_layout
-
-\end_deeper
 \begin_layout Enumerate
 \begin_inset Formula $Var(\Delta\log w_{it})$
 \end_inset
 
- <- Variance of wage growth.
- NOTE: we need a quarterly value (John was looking for this).
+ <- Variance of quarterly wage growth.
+ 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\frac{{d\Delta\log w_{it}}}{d\log y_{it}}$
+\begin_inset Formula $\frac{{d\log y_{it}}}{d\log w_{it}}$
 \end_inset
 
- <- Passthrough of output to wage changes.
+ <- Passthrough of wages to output.
  Target range is 
 \begin_inset Formula $[0.05,0.5]$
 \end_inset
 
-.
+, realistically 0.15.
 \end_layout
 
 \begin_layout Enumerate
@@ -268,13 +200,13 @@ Note:
 
 \begin_layout Enumerate
 Under the new functional form assumption (see John's previous work on the
- isomorphism b/w procycylical unempyloement benefit and Nash bargaining),
- define 
+ isomorphism between the procycylical unemployment benefit benefit and Nash
+ bargaining), define 
 \begin_inset Formula $b(z)=\gamma(z/z_{ss})^{\chi}.$
 \end_inset
 
  Recall that 
-\begin_inset Formula $\logz=\rho\log z_{t-1}+\epsilon.$
+\begin_inset Formula $\log z=(1-\rho)\bar{z}+\rho\log z_{t-1}+\epsilon.$
 \end_inset
 
 
@@ -303,7 +235,7 @@ Then
 \uwave off
 \noun off
 \color none
-note: 
+
 \begin_inset Formula $z_{ss}$
 \end_inset
 
@@ -320,9 +252,8 @@ note:
 \uwave default
 \noun default
 \color inherit
- is actually just a definition; however, 1 is the unconditional mean of
- the 
-\begin_inset Formula $\log z$
+ is just a normalization = unconditional mean of the 
+\begin_inset Formula $z$
 \end_inset
 
  process).
@@ -330,7 +261,7 @@ note:
 
 \begin_layout Enumerate
 This implies that 
-\begin_inset Formula $U(z)=\frac{{\log\gamma}}{1-\beta}+\frac{{\chi}}{1-\beta\rho}\log z$
+\begin_inset Formula $U(z)\approx\frac{{\log\gamma}}{1-\beta}+\frac{{\chi}}{1-\beta\rho}\log z$
 \end_inset
 
 .
@@ -342,8 +273,16 @@ The above is not
 \emph on
 exactly
 \emph default
- the same as our unemployment value because we approximate the continuous
- AR-1 with a discrete grid, following Rouwenhurst.
+ the same as our unemployment value because we normalize the unconditional
+ mean of 
+\begin_inset Formula $\log z$
+\end_inset
+
+ to 
+\begin_inset Formula $\bar{z}$
+\end_inset
+
+ and approximate the AR-1 process via the Rouwenhurst method.
 \end_layout
 
 \end_deeper
@@ -371,13 +310,12 @@ We need a joint constraint on
 
 \begin_deeper
 \begin_layout Enumerate
-If the below work is correct, we do not need to separately consider the
- joint constraint.
+If the below work is correct, the joint constraint will always be satisfied.
  
 \end_layout
 
 \begin_layout Enumerate
-Otherwise, we could also discard such points from the Sobol points.
+We could also discard such points from the Sobol points.
  For local optimization and other stages, we can penalize these parameter
  choices in the function evaluation.
  Not sure if there any other alternatives? 
@@ -415,14 +353,10 @@ Otherwise, we could also discard such points from the Sobol points.
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\varepsilon\in[0,3]$
+\begin_inset Formula $\varepsilon\in[0.15,3]$
 \end_inset
 
- <- we aren't really converging for 
-\begin_inset Formula $\varepsilon>0.6-ish.$
-\end_inset
-
-
+ 
 \end_layout
 
 \begin_deeper
@@ -435,17 +369,15 @@ for high values of
 \begin_inset Formula $\theta$
 \end_inset
 
- goes to 0 and we do not have an equilbrium solution (no convergence), so
- for now I am bounding at 1
+ may go to 0 and we will not have an equilbrium (no convergence)
 \end_layout
 
 \end_deeper
 \begin_layout Itemize
-\begin_inset Formula $\sigma_{\eta}\in[0,0.36]$
+\begin_inset Formula $\sigma_{\eta}\in[0,0.1]$
 \end_inset
 
- <- 0.36 seems a bit large <- bound by the standard deviation of log wage
- changes for job stayers (check this moment with John)
+ <- bound by the standard deviation of monthly log wage changes?
 \end_layout
 
 \begin_layout Itemize
@@ -508,7 +440,7 @@ The last two can be condensed into
 \end_layout
 
 \begin_layout Itemize
-Say 
+Take 
 \begin_inset Formula $\text{\underbar{\ensuremath{\gamma}}}=0.3,\bar{\gamma}=0.9.$
 \end_inset
 
@@ -516,12 +448,12 @@ Say
 \begin_inset Formula $\chi$
 \end_inset
 
- always satisfies these restrictions.DOUBLE-CHECK BEFORE RUNNING FINAL ESTIMATION.
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Note: that the strictest bounds on 
+ always satisfies these restrictions.
+ 
+\series bold
+Note
+\series default
+: the strictest bounds on 
 \begin_inset Formula $\chi$
 \end_inset
 
@@ -529,18 +461,14 @@ Note: that the strictest bounds on
 \begin_inset Formula $\gamma=0.9.$
 \end_inset
 
- Perhaps we should decrease the range of 
-\begin_inset Formula $\chi$
-\end_inset
-
-? See below comments.
+ 
 \end_layout
 
 \end_deeper
 \end_deeper
-\end_deeper
 \begin_layout Enumerate
-Need to finalize externally calibrated parameters: 
+Need to finalize externally calibrated parameters for monthly calibration:
+ 
 \begin_inset Formula $\beta,s,\iota,\kappa,\rho,\sigma_{\epsilon}.$
 \end_inset
 
@@ -549,43 +477,31 @@ Need to finalize externally calibrated parameters:
 
 \begin_deeper
 \begin_layout Enumerate
-\begin_inset Formula $\beta=0.99$
+\begin_inset Formula $\beta=0.99^{(1/3)}$
 \end_inset
 
  - standard quarterly value
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $s=0.088$
+\begin_inset Formula $s=0.035$
 \end_inset
 
- - estimate basically following Shimer (2005), note that Shimer uses 0.1.
+ - taken from PNZ and Shimer (2005)
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\iota=3.52$
+\begin_inset Formula $\iota=0.7$
 \end_inset
 
- - Chosen so that 
-\begin_inset Formula $f(\theta_{data})=f_{quarterly,}^{data}$
-\end_inset
-
- where 
-\begin_inset Formula $f_{quarterly}^{data}=1-(1-f_{monthly}^{data})^{3},$
-\end_inset
-
-where 
-\begin_inset Formula $f_{monthly}$
-\end_inset
-
- is computed following Shimer (2005).
+ - estimated following H&M (2008)
 \end_layout
 
 \begin_layout Enumerate
 \begin_inset Formula $\kappa=0.45$
 \end_inset
 
-, taken from PNZ (monthly) (ultimately may try to match 
+ - taken from PNZ (ultimately try to match 
 \begin_inset Formula $\theta=1{\normalcolor }$
 \end_inset
 
@@ -597,14 +513,33 @@ where
 \end_layout
 
 \begin_layout Enumerate
-Productivity process is estimated using HP-filtered (smoothing parameter
- = 10^5) log quarterly average labor productivity.
- Regress HP-filtered log quarterly average labor productivity on its lag,
+NEW: 
+\begin_inset Formula $\rho,\sigma_{\varepsilon}$
+\end_inset
+
+ - 
+\series bold
+DOUBLE-CHECK WITH JOHN HOW TO TIME DISAGGREGATE AR-1
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Following Shimer, quarterly productivity process is estimated using HP-filtered
+ (smoothing parameter = 10^5) log quarterly average labor productivity.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Regress HP-filtered log quarterly average labor productivity on its lag,
  to obtain 
 \begin_inset Formula $\rho$
 \end_inset
 
-.Set 
+.
+\end_layout
+
+\begin_layout Enumerate
+Set 
 \begin_inset Formula $\sigma_{\epsilon}$
 \end_inset
 
@@ -612,6 +547,11 @@ Productivity process is estimated using HP-filtered (smoothing parameter
  residuals).
 \end_layout
 
+\begin_layout Enumerate
+Normalize the unconditional mean of actual productivity process to 1.
+\end_layout
+
+\end_deeper
 \end_deeper
 \begin_layout Enumerate
 How to handle when q gets stuck near either 0 or 1 for certain 
@@ -631,9 +571,9 @@ For the latter case, PNZ set
 \begin_inset Formula $\theta=0$
 \end_inset
 
- , but this will not work for us, since the implied solution does not satisfy
- the IR constraint.
- Note: the worker's value from the is contract decreasing in 
+ , but this will not work, since the implied solution does not satisfy the
+ IR constraint.
+ Note: the worker's value from the contract decreasing in 
 \begin_inset Formula $\theta$
 \end_inset
 
@@ -654,16 +594,13 @@ strictly (when we hit
 )
 \emph default
  .
- But we 
+ But do we 
 \emph on
 need
 \emph default
- equality for the TIOLI assumption to make sense?
-\end_layout
-
-\begin_layout Itemize
-If we need equality, we can penalize these parameter vectors in the SMM.
- This is what we are currently doing.
+ equality for the TIOLI assumption to make sense? If we need equality, we
+ can penalize these parameter vectors in the SMM.
+ 
 \end_layout
 
 \end_deeper
@@ -694,8 +631,7 @@ many
 \end_layout
 
 \begin_layout Enumerate
-Using the identity matrix as weight matrix for SMM.
- Efficiency concerns (do we have the covariance matrix for data moments)?
+Using the identity matrix as weight matrix for SMM
 \end_layout
 
 \begin_layout Enumerate
@@ -766,12 +702,11 @@ From visual inspection,
 \begin_inset Formula $\theta).$
 \end_inset
 
- So it may not be unreasonable to conclude that the solution 
-\begin_inset Formula $\theta$
+ So it may be reasonable to conclude that 
+\begin_inset Formula $\theta^{0}$
 \end_inset
 
- , if it exists, is unique, given that there will be at most one crossing
- with 
+ is unique, given that there will be at most one crossing with 
 \begin_inset Formula $\omega(z_{0})?$
 \end_inset
 
@@ -954,23 +889,13 @@ Tik-Tak uses parameter bounds for producing Sobol points.
 
 \end_deeper
 \begin_layout Enumerate
-Write and run pre-testing.
- Write and debug tik-tak code.
- This can be done on Adroit.
+Write and run pre-testing code (can be done on Adroit).
 \end_layout
 
 \begin_layout Enumerate
-Run Tik-Tak optimization on the Della cluster (should also request a Tigress
- acount).
+Run Tik-Tak optimization on Della: 25 tasks, 11 threads per task
 \end_layout
 
-\begin_deeper
-\begin_layout Enumerate
-20 tasks, 11 threads per task.
- Sequences of length 50.
-\end_layout
-
-\end_deeper
 \begin_layout Enumerate
 Add effort moment from Burda, Genadek & Hamermesh (2020).
  However, some key differences:
