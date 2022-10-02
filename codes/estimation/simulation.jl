@@ -1,11 +1,9 @@
-# Define important functions for the SMM.
 """
 Simulate EGSS, given parameters defined in tuple m.
 Solve the model with infinite horizon contract. Solve 
 for θ and Y on every point in the productivity grid.
 Then, compute the effort optimal effort a and wage w,
-as a(z|z_0) and w(z|z_0). 
-Note: u0 = initial unemployment rate.
+as a(z|z_0) and w(z|z_0). u0 = initial unemployment rate.
 """
 function simulate(baseline, shocks; u0 = 0.06)
     
@@ -13,8 +11,8 @@ function simulate(baseline, shocks; u0 = 0.06)
     std_Δlw  = NaN  # st dev of quarterly log wage changes
     dlw1_du  = NaN  # d log w_1 / d u
     dW_du    = NaN  # d PV of wages / du
-    da_du    = NaN  # d effort / du
-    dly_dlw  = NaN  # d log y / d log w
+    dY_du    = NaN  # d PV of output / du
+    dlw_dly  = NaN  # d log w_it / d log y_it
     u_ss     = NaN  # u_ss
 
     # Get all of the relevant parameters for the model
@@ -31,8 +29,8 @@ function simulate(baseline, shocks; u0 = 0.06)
     Δlw_q   = zeros(indices_q[end])      # Δlog w_it <- QUARTERLY
 
     # Values corresponding to new contracts (i.e. starting at z_t)
-    W_z    = zeros(length(zgrid))       # PV of wages, given z_1
-    a_z     = zeros(length(zgrid))       # a_1, given z_1
+    W_z     = zeros(length(zgrid))       # PV of wages, given z_1
+    Y_z     = zeros(length(zgrid))       # PV of Y, given z_1
     θ_z     = zeros(length(zgrid))       # θ(z_1)
     lw1_z   = zeros(length(zgrid))       # E[log w1|z] <- wages of new hires
     flag_z  = zeros(Int64,length(zgrid)) # error flags
@@ -51,37 +49,38 @@ function simulate(baseline, shocks; u0 = 0.06)
             # PV of wages, given z_1
             W_z[iz]      = w_0/ψ
 
-            # Effort of new hires
-            a_z[iz]       = az[iz]
+            # PV of Output given z_1
+            Y_z[iz]       = Y
 
-            # expectation of the log wage of new hires, given z_1 = z
+            # Expectation of the log wage of new hires, given z_1 = z
             lw1_z[iz]     = log(w_0) - 0.5*(ψ*hp(az[iz])*σ_η)^2 
            
-            # tightness, given z_1 = z
+            # Tightness, given z_1 = z
             θ_z[iz]       = θ             
 
-            # now, let's think about wages and output for continuing hires
+            # Get z, η-shocks to compute wages and output for continuing hires
             @views z_shocks_z     = z_shocks[iz]
             @views z_shocks_idx_z = z_shocks_idx[iz]
             η_shocks_z            = σ_η*η_shocks[iz] # scale η to avoid re-simulating 
             
-            # get indices for filling out log wages
+            # Get indices for filling out log wages
             start_idx    = (iz==1) ? 1 : indices[iz-1] + 1 
             end_idx      = indices[iz]
 
-            hpz_z1       = hp.(az)  # h'(a(z|z_1))
-            @views hp_az = hpz_z1[z_shocks_idx_z]
-
-            # compute relevant terms for log wages
+            # Compute relevant terms for log wages
+            hpz_z1                  = hp.(az)  # h'(a(z|z_1))
+            @views hp_az            = hpz_z1[z_shocks_idx_z]
             t1                      = ψ*hp_az.*η_shocks_z
             t2                      = 0.5*(ψ*hp_az*σ_η).^2 
             lw_mat                  = log(w_0) .+ cumsum(t1,dims=2) - cumsum(t2,dims=2)
             lw[start_idx:end_idx]   = vec(lw_mat)
+
+            # Compute log individual output
             @views y                = yz[z_shocks_idx_z]     # a_t(z_t|z_1)*z_t
             ηz                      = z_shocks_z.*η_shocks_z # η_t*z_t
             ly[start_idx:end_idx]   = vec(log.(max.(y + ηz, 0.01))) # nudge up to avoid run-time error
 
-            # make some adjustments for quarterly data
+            # Make some adjustments to compute quarterly wage changes
             start_idx_q  = (iz==1) ? 1 : indices_q[iz-1] + 1 
             end_idx_q    = indices_q[iz]
             Δlw_q[start_idx_q:end_idx_q] = [lw_mat[i,t+3] - lw_mat[i,t] for  i = 1:size(z_shocks_z,1), t = 1:T_sim-3]
@@ -89,21 +88,21 @@ function simulate(baseline, shocks; u0 = 0.06)
         end
     end
 
-    # only compute moments for reasonable parameters
+    # only compute moments if equilibria were found for all z
     if maximum(flag_z) < 1
         
         # Standard deviation of QUARTERLY log wage changes for job-stayers
         std_Δlw  = std(Δlw_q) 
         #histogram(Δlw_q)
         
-        # Regress log y_it on log w_it 
-        dly_dlw  = ols(vec(ly), vec(lw))[2]
+        # Regress log w_it on log y_it 
+        dlw_dly = ols(vec(lw), vec(ly))[2]
 
-        # Compute long simulated time series  (trim to post-burn-in for z_t when computing moment)
+        # Compute model data for long time series  (trim to post-burn-in when computing moment)
         z_shocks_idx_str     = zstring.z_shocks_idx
         @views lw1_t         = lw1_z[z_shocks_idx_str]   # E[log w_1 | z_t]
-        @views W_t           = W_z[z_shocks_idx_str]    # PV of wages | z_t
-        @views a_t           = a_z[z_shocks_idx_str]     # a_1 | z_t 
+        @views W_t           = W_z[z_shocks_idx_str]     # PV of wages | z_t
+        @views Y_t           = Y_z[z_shocks_idx_str]     # PV of output Y_1 | z_t 
         @views θ_t           = θ_z[z_shocks_idx_str]     # θ(z_t)
 
         # Compute evolution of unemployment for the different z_t paths
@@ -118,16 +117,16 @@ function simulate(baseline, shocks; u0 = 0.06)
         @views dlw1_du = ols(vec(lw1_t[burnin+1:end]), vec(u_t[burnin+1:end]))[2]
         # Estimate d PV of wages / d u (pooled ols)
         @views dW_du   = ols(vec(W_t[burnin+1:end]), vec(u_t[burnin+1:end]))[2]
-        # Estimate
-        @views da_du   = ols(vec(a_t[burnin+1:end]), vec(u_t[burnin+1:end]))[2]
+        # Estimate d PV of output / d u (pooled OLS)
+        @views dY_du   = ols(vec(Y_t[burnin+1:end]), vec(u_t[burnin+1:end]))[2]
 
         # Compute u_ss as mean of unemployment rate post-burn period in for now
         u_ss = mean(u_t[burnin+1:end])
     end
     
     # Export the simulation results
-    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dly_dlw = dly_dlw, u_ss = u_ss, 
-            dW_du = dW_du, da_du = da_du, flag = maximum(flag_z))
+    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, 
+            dW_du = dW_du, dY_du = dY_du, flag = maximum(flag_z))
 end
 
 """

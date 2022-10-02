@@ -13,16 +13,16 @@ loc = "/Users/meghanagaur/BonusProject/codes/estimation/"
 #= Note:
 var_Δlw      = 1st moment (variance of log wage changes)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
-dly_dlw      = 3rd moment (d Δ log w_it / y_it)
+dly_dlw      = 3rd moment (d log y_it / d log w_it)
 ε            = 1st param
 σ_η          = 2nd param
 χ            = 3rd param
 =#
 
-ε_vals   = pars[:,1]
-σ_η_vals = pars[:,2]
-χ_vals   = pars[:,3]
-γ_vals   = pars[:,4]
+ε_vals    = pars[:,1]
+σ_η_vals  = pars[:,2]
+χ_vals    = pars[:,3]
+γ_vals    = pars[:,4]
 
 std_Δlw   = moms[:,1]
 dlw1_du   = moms[:,2]

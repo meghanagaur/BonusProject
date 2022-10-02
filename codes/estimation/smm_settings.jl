@@ -33,7 +33,7 @@ function objFunction(xx, pb, shocks, data_mom, W)
         # Simulate the model and compute moments
         out      = simulate(baseline, shocks)
         flag     = out.flag
-        mod_mom  = [out.std_Δlw, out.dlw1_du, out.dly_dlw, out.u_ss]
+        mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
         d        = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % change
         f        = flag < 1 ? d'*W*d : 10000
     end
@@ -65,7 +65,7 @@ function objFunction_WB(xx, x0, pb, shocks, data_mom, W)
 
     # Simulate the model and compute moments
     out     = simulate(baseline, shocks)
-    mod_mom = [out.std_Δlw, out.dlw1_du, out.dly_dlw, out.u_ss]
+    mod_mom = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
     d       = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
     f       = out.flag < 1 ? d'*W*d : 10000
     return [f, mod_mom, out.flag]
@@ -107,7 +107,7 @@ moms_key             = OrderedDict{Int, Symbol}([   # parameter bounds
                         (2, :dlw1_du),
                         (3, :dy_dΔlw),
                         (4,  :u_ss) ]) 
-data_mom             = [0.013, -0.5, 0.15, 0.06]    #  annual -> quarterly stdev 0.053/4
+data_mom             = [0.016, -0.5, 0.15, 0.06]    # annual -> quarterly stdev 0.064/4
 const K              = length(data_mom)
 
 ## Parameter bounds and weight matrix
@@ -122,7 +122,7 @@ param_key            = OrderedDict{Int, Symbol}([
 const J              = length(param_key)
 param_bounds         = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
                         (1, [0.15,  3.0]),       # ε
-                        (2, [0.001, 0.5]),       # σ_η 
+                        (2, [0.001, 0.15]),      # σ_η 
                         (3, [-1, 1]),            # χ
                         (4, [0.3, 0.95]) ])      # γ
 
