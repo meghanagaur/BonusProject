@@ -311,13 +311,13 @@ Calculate present value of workers' utility, starting at time
 \begin_deeper
 \begin_layout Itemize
 Solve for 
-\begin_inset Formula $W\left(z,\theta^{0}\left(z\right)\right)$
+\begin_inset Formula $W\left(z,\theta^{n}\left(z\right)\right)$
 \end_inset
 
  via a contraction like 
 \begin_inset Formula 
 \[
-W\left(z,\theta^{0}\left(z_{1}\right)\right)=-\frac{1}{\psi}\frac{1}{2}(\psi h'(\tilde{a}\left(z,\theta^{n}(z_{1})\right))\sigma_{\eta})^{2}-h(\tilde{a}\left(z,\theta^{n}\left(z_{1}\right)\right))+\sum_{z'\in\mathcal{Z}}\left[\beta s\omega\left(z'\right)+\beta\left(1-s\right)W\left(z',\theta^{n}\left(z_{1}\right)\right)\right]\pi\left(z'|z\right)
+W\left(z,\theta^{n}\left(z_{1}\right)\right)=-\frac{1}{\psi}\frac{1}{2}(\psi h'(\tilde{a}\left(z,\theta^{n}(z_{1})\right))\sigma_{\eta})^{2}-h(\tilde{a}\left(z,\theta^{n}\left(z_{1}\right)\right))+\sum_{z'\in\mathcal{Z}}\left[\beta s\omega\left(z'\right)+\beta\left(1-s\right)W\left(z',\theta^{n}\left(z_{1}\right)\right)\right]\pi\left(z'|z\right)
 \]
 
 \end_inset
@@ -362,7 +362,11 @@ If
 
 \begin_layout Enumerate
 Iterate Steps (2)-(8) on n, until convergence of 
-\begin_inset Formula $\theta^{n}\left(z_{1}\right)$
+\begin_inset Formula $U$
+\end_inset
+
+ and 
+\begin_inset Formula $\omega(z_{1})$
 \end_inset
 
 .
@@ -377,13 +381,78 @@ Superscripts denote iterations , subscripts denote time periods.
 \end_layout
 
 \begin_layout Itemize
-There is no period 0!!!
+
+\series bold
+Note
+\series default
+: There is no period 0.
 \end_layout
 
 \begin_layout Itemize
 We can simulate for the path of wages in a separate block after solving
- the model.
+ the model
 \end_layout
 
+\begin_layout Itemize
+What happens when q gets stuck near either 0 or 1:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Note: the worker's value from the contract decreasing in 
+\begin_inset Formula $\theta$
+\end_inset
+
+ (and increasing in 
+\begin_inset Formula $q(\theta)).$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+For the latter case, PNZ set 
+\begin_inset Formula $q=1$
+\end_inset
+
+ and 
+\begin_inset Formula $\theta=0$
+\end_inset
+
+ , but the implied solution may not satisfy the IR constraint.
+ 
+\end_layout
+
+\begin_layout Itemize
+The constraint may hold 
+\emph on
+strictly (when we hit 
+\begin_inset Formula $q=0$
+\end_inset
+
+)
+\emph default
+ .
+ Do we need equality for the TIOLI assumption to make sense?
+\end_layout
+
+\begin_layout Itemize
+For now, stop iterating if 
+\begin_inset Formula $q$
+\end_inset
+
+ gets stuck near 
+\begin_inset Formula $0$
+\end_inset
+
+ or 
+\begin_inset Formula $1$
+\end_inset
+
+ and check if IR constraint is weakly satisfied.If not, penalize/throw away
+ the solution in SMM.
+\end_layout
+
+\end_deeper
 \end_body
 \end_document

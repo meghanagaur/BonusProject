@@ -94,7 +94,7 @@ For every point
 \begin_inset Formula $z$
 \end_inset
 
- on the productivity grid, solve
+ on the productivity grid, solve the model to obtain:
 \end_layout
 
 \begin_deeper
@@ -112,23 +112,21 @@ For every point
 
 \end_layout
 
-\end_deeper
 \begin_layout Enumerate
-Can calculate 
-\begin_inset Formula $a(z|z_{1})$
-\end_inset
-
- as
-\begin_inset Formula 
-\[
-a(z|z_{1})=\left[\cfrac{za(z|z_{1})}{\psi(Y(z_{1})-\frac{\kappa}{q(\theta(z_{1}))}}-\cfrac{\psi}{\epsilon}(h'(a(z|z_{1}))\sigma_{\eta})^{2}\right]^{\frac{{\varepsilon}}{\varepsilon+1}}
-\]
-
+\begin_inset Formula $w_{0}(z_{1}=z)$
 \end_inset
 
 
 \end_layout
 
+\begin_layout Enumerate
+\begin_inset Formula $a(z|z_{1})=\left[\cfrac{za(z|z_{1})}{\psi(Y(z_{1})-\frac{\kappa}{q(\theta(z_{1}))}}-\cfrac{\psi}{\epsilon}(h'(a(z|z_{1}))\sigma_{\eta})^{2}\right]^{\frac{{\varepsilon}}{\varepsilon+1}}$
+\end_inset
+
+ 
+\end_layout
+
+\end_deeper
 \begin_layout Enumerate
 Compute the invariant distribution of 
 \begin_inset Formula $z_{t}$
@@ -167,7 +165,7 @@ Simulate the implied wages (so we simulate
 \begin_inset Formula $z$
 \end_inset
 
-):s
+):
 \begin_inset Formula 
 \[
 \log w_{t}(z^{t},\eta^{t},z_{1})=\log w_{0}(z_{1})+\sum_{s=1}^{t}\psi h'(a_{s})\eta_{s}-\frac{1}{2}\sum_{s=1}^{t}(\psi h'(a_{s})\sigma_{\eta})^{2}
@@ -184,26 +182,30 @@ Note: we also need to compute the variance of
 \series bold
 quarterly
 \series default
- wage change using our monthly model data (see procedure below)
+ wage change using monthly model data (see new procedure below)
 \end_layout
 
 \end_deeper
 \begin_layout Enumerate
 Estimate 
-\begin_inset Formula $\frac{{d\log y_{it}}}{d\log w_{it}}$
+\begin_inset Formula $\frac{{d\log w_{it}}}{d\log y_{it}}$
 \end_inset
 
- by regressing log (individual) output on the log wage and a constant, where
- 
+ by regressing log (individual) wage on the log (individual) output and
+ a constant, where 
 \begin_inset Formula $y(z,\eta,z_{1})\coloneqq z(a(z|z_{1})+\eta).$
 \end_inset
 
- Note that this value will be negative if 
-\begin_inset Formula $a(z|z_{1})+\eta<0.$
+ Note that 
+\begin_inset Formula $y_{it}$
 \end_inset
 
- For now, just take 
-\begin_inset Formula $y=\max(z(a(z|z_{1})+\eta),\epsilon)$
+ may be negative if 
+\begin_inset Formula $a(z_{t}|z_{1})+\eta_{it}<0.$
+\end_inset
+
+ For now, take 
+\begin_inset Formula $y_{it}=\max(z_{t}(a(z_{t}|z_{1})+\eta_{it}),\epsilon)$
 \end_inset
 
 , for some 
@@ -222,8 +224,7 @@ Simulate a single long
 \end_layout
 
 \begin_layout Enumerate
-Calculate the cyclicality of new hire wages.
- To simulate new hire wages, calculate (for every 
+Simulate new hire wages, calculate (for every 
 \begin_inset Formula $z$
 \end_inset
 
@@ -235,15 +236,15 @@ Calculate the cyclicality of new hire wages.
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Enumerate
 Compute the new hire wage series as 
 \begin_inset Formula $\mathbb{E}[\log w_{1}|z_{t}]$
 \end_inset
 
-.
+ for the long 
+\begin_inset Formula $z_{t}$
+\end_inset
+
+ chain.
 \end_layout
 
 \begin_layout Enumerate
@@ -260,6 +261,19 @@ Simulate unemployment
 \end_inset
 
 .
+ 
+\end_layout
+
+\begin_layout Enumerate
+Compute 
+\begin_inset Formula $u_{ss}$
+\end_inset
+
+ as the average of 
+\begin_inset Formula $u_{t}$
+\end_inset
+
+ using post burn-in model data.
 \end_layout
 
 \begin_layout Enumerate
@@ -271,11 +285,11 @@ Regress
 \begin_inset Formula $u_{t}$
 \end_inset
 
- in the simulated data to estimate 
+ to estimate the cycality of new hire wage 
 \begin_inset Formula $\frac{{dE[\log w_{1}|z_{t}]}}{du_{t}(z_{t})}$
 \end_inset
 
-.
+ using post burn-in model data.
 \end_layout
 
 \begin_layout Section
@@ -316,7 +330,7 @@ To compute
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\log w_{t+3}-\log w_{t}=\sum_{s=1}^{3}\psi h'(a_{t+s})\eta_{t+s}-\frac{1}{2}\sum_{s=1}^{3}(\psi h'(a_{t+s})\sigma_{\eta})^{2}
+\Delta{}_{t+3}\log w_{t}\coloneqq\log w_{t+3}-\log w_{t}=\sum_{s=1}^{3}\psi h'(a_{t+s})\eta_{t+s}-\frac{1}{2}\sum_{s=1}^{3}(\psi h'(a_{t+s})\sigma_{\eta})^{2}
 \]
 
 \end_inset
@@ -325,13 +339,12 @@ To compute
 \end_layout
 
 \begin_layout Standard
-We then calculate the unconditional variance of the (pooled) log wage changes
- 
-\begin_inset Formula $Var(\Delta_{t+3}\log w_{i})$
+We calculate the unconditional variance of quarterly log wage changes as
+ the variance of the (pooled) log wage changes 
+\begin_inset Formula $Var(\Delta_{t+3}\log w_{t})$
 \end_inset
 
 .
- 
 \end_layout
 
 \end_body

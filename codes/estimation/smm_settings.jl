@@ -29,11 +29,11 @@ function objFunction(xx, pb, shocks, data_mom, W)
         mod_mom  = ones(K)*NaN
         flag     = 1
     elseif inbounds == 1
-        baseline = model(ε = xx[1] , σ_η = xx[2], χ = xx[3], γ = xx[4]) 
+        baseline = model(ε = xx[1] , σ_η = xx[2], χ = xx[3], γ = xx[4], hbar = xx[5]) 
         # Simulate the model and compute moments
         out      = simulate(baseline, shocks)
         flag     = out.flag
-        mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
+        mod_mom  = [out.std_Δlw, out.avg_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
         d        = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % change
         f        = flag < 1 ? d'*W*d : 10000
     end
@@ -61,11 +61,11 @@ u_ss         = 4th moment (SS unemployment rate)
 """
 function objFunction_WB(xx, x0, pb, shocks, data_mom, W)
     endogParams  = [ transform_params(xx[i], pb[i], x0[i]) for i = 1:J] 
-    baseline     = model(ε = endogParams[1] , σ_η = endogParams[2], χ = endogParams[3], γ = endogParams[4]) 
+    baseline     = model(ε = endogParams[1] , σ_η = endogParams[2], χ = endogParams[3], γ = endogParams[4], hbar = endogParams[5]) 
 
     # Simulate the model and compute moments
     out     = simulate(baseline, shocks)
-    mod_mom = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
+    mod_mom = [out.std_Δlw, out.avg_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
     d       = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
     f       = out.flag < 1 ? d'*W*d : 10000
     return [f, mod_mom, out.flag]
@@ -104,10 +104,11 @@ end
 ## Empirical moments that we are targeting
 moms_key             = OrderedDict{Int, Symbol}([   # parameter bounds
                         (1, :std_Δlw),
-                        (2, :dlw1_du),
-                        (3, :dy_dΔlw),
-                        (4,  :u_ss) ]) 
-data_mom             = [0.016, -0.5, 0.15, 0.06]    # annual -> quarterly stdev 0.064/4
+                        (2, :avg_Δlw),
+                        (3, :dlw1_du),
+                        (4, :dy_dΔlw),
+                        (5, :u_ss) ]) 
+data_mom             = [0.016, 0.01, -0.5, 0.15, 0.06]    # annual -> quarterly stdev 0.064/4
 const K              = length(data_mom)
 
 ## Parameter bounds and weight matrix
@@ -118,18 +119,20 @@ param_key            = OrderedDict{Int, Symbol}([
                         (1, :ε),
                         (2, :σ_η),
                         (3, :χ),
-                        (4, :γ) ])
+                        (4, :γ),
+                        (5, :hbar)])
 const J              = length(param_key)
 param_bounds         = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
                         (1, [0.15,  3.0]),       # ε
-                        (2, [0.001, 0.15]),      # σ_η 
+                        (2, [0.001, 0.5]),       # σ_η 
                         (3, [-1, 1]),            # χ
-                        (4, [0.3, 0.95]) ])      # γ
+                        (4, [0.3, 0.9]),        # γ
+                        (5, [1,10]) ])          # hbar
 
 ## Build shocks for the simulation
 @unpack N_z, P_z, zgrid = model()
-N_sim                   = 100000 
-T_sim                   = 80 # 20 years
+N_sim                   = 30000
+T_sim                   = 100 
 burnin                  = 1000
 
 # Compute the invariant distribution of logz
@@ -160,8 +163,6 @@ zstring  = simulateZShocks(P_z, zgrid, N = 1, T = N_sim + burnin, set_seed = fal
 # Create an ordered tuple that contains the zshocks
 shocks   = (η_shocks = η_shocks, z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, indices = indices, indices_q = indices_q,
     λ_N_z = λ_N_z, N_sim = N_sim, T_sim = T_sim, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
-
-
 
 ## Define a new simplexer for NM without explicit bound constraints
 #=

@@ -27,7 +27,6 @@ z_1  = initial prod. (= z_ss by default)
 ψ    = pass-through parameters
 
 procyclical == (procyclical unemployment benefit)
-=#
 function model(; β = 0.99, s = 0.088, κ = 0.474, ι = 1.67, ε = 0.5, σ_η = 0.05, z_ss = 1.0,
     ρ =  0.87, σ_ϵ = 0.008, χ = 0.1, γ = 0.66, z_1 = z_ss, μ_z = log(z_ss), N_z = 11, procyclical = false)
 
@@ -68,6 +67,7 @@ function model(; β = 0.99, s = 0.088, κ = 0.474, ι = 1.67, ε = 0.5, σ_η = 
     ω = ω, μ_z = μ_z, N_z = N_z, q = q, f = f, ψ = ψ, z_1 = z_1, h = h, u = u, hp = hp, 
     z_1_idx = z_1_idx, zgrid = zgrid, P_z = P_z, ξ = ξ, χ = χ, γ = γ, procyclical = procyclical)
 end
+=#
 
 # Define the main object
 modd    = OrderedDict{Int64, Any}()
@@ -77,7 +77,7 @@ dz      = zgrid[2:end] - zgrid[1:end-1]
 
 # Solve the model for different z_0
 @time Threads.@threads for iz = 1:length(zgrid)
-    modd[iz] =  solveModel(model(z_1 = zgrid[iz], procyclical = true), noisy = false)
+    modd[iz] =  solveModel(model(z_1 = zgrid[iz], χ=0), noisy = false)
 end
 
 ## Store series of interest

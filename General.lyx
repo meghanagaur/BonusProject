@@ -108,10 +108,10 @@ values
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\frac{{d\log y_{it}}}{d\log w_{it}}$
+\begin_inset Formula $\frac{{d\log w_{it}}}{d\log y_{it}}$
 \end_inset
 
- <- Passthrough of wages to output.
+ <- Passthrough of idiosyncratic shock to wage.
  Target range is 
 \begin_inset Formula $[0.05,0.5]$
 \end_inset
@@ -164,21 +164,22 @@ We have an explicit form for effort as a function of both initial
 \begin_inset Formula $z.$
 \end_inset
 
- Could use simulation of 
-\begin_inset Formula $u_{t}$
-\end_inset
-
- to run a regression of effort on 
+ Would to regress effort on 
 \begin_inset Formula $u_{t},$
 \end_inset
 
-but note that this fixes 
-\begin_inset Formula $z_{1}.$
+but note that this either fixes 
+\begin_inset Formula $z_{1}$
 \end_inset
 
-so it is really only new hires' effort.
- Could also run this regression on pooled data to include continuing workers,
-  similar to how we are computing the variance....
+ or it only captures new hires' effort.
+ Could run this regression on pooled data for continuing workers who started
+ with different intiial productivity,  similar to how we are computing the
+ variance of wage changes, but would need to make this consistent with 
+\begin_inset Formula $u_{t}.$
+\end_inset
+
+
 \end_layout
 
 \end_deeper
@@ -467,8 +468,7 @@ Note
 \end_deeper
 \end_deeper
 \begin_layout Enumerate
-Need to finalize externally calibrated parameters for monthly calibration:
- 
+Externally calibrated parameters for monthly calibration: 
 \begin_inset Formula $\beta,s,\iota,\kappa,\rho,\sigma_{\epsilon}.$
 \end_inset
 
@@ -494,18 +494,18 @@ Need to finalize externally calibrated parameters for monthly calibration:
 \begin_inset Formula $\iota=0.7$
 \end_inset
 
- - estimated following H&M (2008)
+ - estimated following a procedure similar to H&M (2008)
 \end_layout
 
 \begin_layout Enumerate
 \begin_inset Formula $\kappa=0.45$
 \end_inset
 
- - taken from PNZ (ultimately try to match 
+ - taken from PNZ (if try to match 
 \begin_inset Formula $\theta=1{\normalcolor }$
 \end_inset
 
-, so we may need to update 
+, we may need to update 
 \begin_inset Formula $\kappa$
 \end_inset
 
@@ -519,7 +519,8 @@ NEW:
 
  - 
 \series bold
-DOUBLE-CHECK WITH JOHN HOW TO TIME DISAGGREGATE AR-1
+Double-check with John on how to time disaggregate from quarterly AR-1 to
+ monthy AR-1 for ALP data
 \end_layout
 
 \begin_deeper
@@ -548,7 +549,20 @@ Set
 \end_layout
 
 \begin_layout Enumerate
-Normalize the unconditional mean of actual productivity process to 1.
+Time-disaggregate AR-1 process from quarterly to monthly.
+\end_layout
+
+\begin_layout Enumerate
+Normalize the unconditional mean of actual productivity process to 1 and
+ discretize 
+\begin_inset Formula $\log z$
+\end_inset
+
+ process following Rouwenhurst (with 
+\begin_inset Formula $N_{z}=11).$
+\end_inset
+
+
 \end_layout
 
 \end_deeper
@@ -631,10 +645,6 @@ many
 \end_layout
 
 \begin_layout Enumerate
-Using the identity matrix as weight matrix for SMM
-\end_layout
-
-\begin_layout Enumerate
 For 
 \begin_inset Formula $\varepsilon=1,$
 \end_inset
@@ -714,15 +724,16 @@ From visual inspection,
 \end_layout
 
 \begin_layout Enumerate
-I use percentage deviations of data moments from the model moments.
+I use squared percentage deviations of data moments from the model moments
+ for the objective function in SMM (identity weight matrix).
  
 \end_layout
 
 \begin_deeper
 \begin_layout Enumerate
-According to Guvenen at al (2021), using arc pentage deviations becomes
- problematic when the data moment is close to zero.
- So this is why I use the 
+According to Guvenen at al (2021), arc pentage deviations becomes problematic
+ when the data moment is close to zero.
+ So we can use 
 \emph on
 standard deviation
 \emph default
@@ -732,12 +743,12 @@ variance
 \emph default
  of log wage changes.
  I use percentage deviations instead of arc percentage deviations because
- some parameterizations result in unrealistic moment values.
+ some parameterizations result in very large moment values in absolute value.
 \end_layout
 
 \end_deeper
 \begin_layout Section*
-To-Do
+Estimation To-Do
 \end_layout
 
 \begin_layout Enumerate
@@ -884,7 +895,7 @@ Alternatively could use Subplex algorithm
 Tik-Tak uses parameter bounds for producing Sobol points.
  We could do unconstrained local optimization and only use the bounds for
  creating Sobol sequences, but the local optimization step seems (heuristically)
- to work better when explicitly incororating parameter bounds.
+ to work better when explicitly incorporating parameter bounds.
 \end_layout
 
 \end_deeper

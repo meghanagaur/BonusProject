@@ -13,7 +13,7 @@ loc = "/Users/meghanagaur/BonusProject/codes/estimation/"
 #= Note:
 var_Δlw      = 1st moment (variance of log wage changes)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
-dly_dlw      = 3rd moment (d log y_it / d log w_it)
+dlw_dly      = 3rd moment (d log w_it / d log y_it)
 ε            = 1st param
 σ_η          = 2nd param
 χ            = 3rd param
@@ -26,7 +26,7 @@ dly_dlw      = 3rd moment (d log y_it / d log w_it)
 
 std_Δlw   = moms[:,1]
 dlw1_du   = moms[:,2]
-dly_dlw   = moms[:,3]
+dlw_dly   = moms[:,3]
 u_ss      = moms[:,4]
 
 # make bins
@@ -42,7 +42,7 @@ p3 = binscatter(df, @formula(y ~ x), nbins, xlabel=L"\chi")
 df = DataFrame(y = fvals, x = γ_vals)
 p4 = binscatter(df, @formula(y ~ x), nbins, xlabel=L"\gamma")
 plot(p1, p2, p3, p4, layout = (2, 2),legend=:false, ylabel=L"f")
-savefig(loc*"figs/fvals.png")
+savefig(loc*"figs/pretesting/fvals.png")
 
 ## Plot model moments
 
@@ -56,7 +56,7 @@ p3 = binscatter(df, @formula(y ~ x), nbins, xlabel=L"\chi")
 df = DataFrame(y = std_Δlw, x = γ_vals )
 p4 = binscatter(df, @formula(y ~ x), nbins, xlabel=L"\gamma")
 plot(p1, p2, p3, p4, layout = (2, 2),legend=:false,  ylabel=L"Std(\Delta \log w)")
-savefig(loc*"figs/var_dlw.png")
+savefig(loc*"figs/pretesting/var_dlw.png")
 
 # 2) dlw1_du
 df = DataFrame(y = dlw1_du, x = ε_vals )
@@ -68,19 +68,19 @@ p3 = binscatter(df, @formula(y ~ x), nbins, xlabel=L"\chi")
 df = DataFrame(y = dlw1_du, x = γ_vals )
 p4 = binscatter(df, @formula(y ~ x), nbins, xlabel=L"\gamma")
 plot(p1, p2, p3, p4, layout = (2, 2),legend=:false, ylabel=L"\frac{ d E[ \log w_1 | z_t ]}{ d u_t}")
-savefig(loc*"figs/dlw1_du.png")
+savefig(loc*"figs/pretesting/dlw1_du.png")
 
-# 3) dly_dlw
-df = DataFrame(y = dly_dlw, x = ε_vals )
+# 3) dlw_dly
+df = DataFrame(y = dlw_dly, x = ε_vals )
 p1 = binscatter(df, @formula(y ~ x), nbins, xlabel=L"\varepsilon")
-df = DataFrame(y = dly_dlw, x = σ_η_vals )
+df = DataFrame(y = dlw_dly, x = σ_η_vals )
 p2 = binscatter(df, @formula(y ~ x), nbins, xlabel=L"\sigma_\eta")
-df = DataFrame(y = dly_dlw, x = χ_vals )
+df = DataFrame(y = dlw_dly, x = χ_vals )
 p3 = binscatter(df, @formula(y ~ x), nbins, xlabel=L"\chi")
-df = DataFrame(y = dly_dlw, x = γ_vals )
+df = DataFrame(y = dlw_dly, x = γ_vals )
 p4 = binscatter(df, @formula(y ~ x), nbins, xlabel=L"\gamma")
-plot(p1, p2, p3, p4, layout = (2, 2),legend=:false, ylabel=L"\frac{d \log y_{it} }{ d \log w_{it} }")
-savefig(loc*"figs/dly_dlw.png")
+plot(p1, p2, p3, p4, layout = (2, 2),legend=:false, ylabel=L"\frac{d \log w_{it} }{ d \log y_{it} }")
+savefig(loc*"figs/pretesting/dlw_dly.png")
 
 # 4) u_ss
 df = DataFrame(y = u_ss, x = ε_vals )
@@ -92,4 +92,4 @@ p3 = binscatter(df, @formula(y ~ x), nbins, xlabel=L"\chi")
 df = DataFrame(y = u_ss, x = γ_vals )
 p4 = binscatter(df, @formula(y ~ x), nbins, xlabel=L"\gamma")
 plot(p1, p2, p3, p4, layout = (2, 2),legend=:false, ylabel=L"u_{ss}")
-savefig(loc*"figs/u_ss.png")
+savefig(loc*"figs/pretesting/u_ss.png")
