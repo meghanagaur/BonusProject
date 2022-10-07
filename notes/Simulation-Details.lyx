@@ -136,8 +136,20 @@ Compute the invariant distribution of
 \begin_inset Formula $\lambda_{z}.$
 \end_inset
 
- Define N and T large.
- For each 
+ Let 
+\begin_inset Formula $N=30,000$
+\end_inset
+
+ and 
+\begin_inset Formula $T=100$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Enumerate
+For each 
 \begin_inset Formula $z\in\{z^{1},...z^{N_{z}}\}$
 \end_inset
 
@@ -161,7 +173,7 @@ Simulate the implied wages (so we simulate
 \begin_inset Formula $\eta$
 \end_inset
 
--shocks for each 
+-shocks for each initial 
 \begin_inset Formula $z$
 \end_inset
 
@@ -178,11 +190,11 @@ Simulate the implied wages (so we simulate
 
 \begin_deeper
 \begin_layout Standard
-Note: we also need to compute the variance of 
+Compute the average and variance of 
 \series bold
 quarterly
 \series default
- wage change using monthly model data (see new procedure below)
+ wage growth using the monthly model data (see procedure in Section 2).
 \end_layout
 
 \end_deeper
@@ -216,15 +228,19 @@ Estimate
 \end_layout
 
 \begin_layout Enumerate
-Simulate a single long 
+Simulate a long 
 \begin_inset Formula $z_{t}$
 \end_inset
 
- chain.
+ chain (
+\begin_inset Formula $T=30,000$
+\end_inset
+
+), with burn-in period of length 1000.
 \end_layout
 
 \begin_layout Enumerate
-Simulate new hire wages, calculate (for every 
+Compute new hire wages, calculate (for every 
 \begin_inset Formula $z$
 \end_inset
 
@@ -236,11 +252,11 @@ Simulate new hire wages, calculate (for every
 
 \end_inset
 
-Compute the new hire wage series as 
+Simulate the new hire wage series as 
 \begin_inset Formula $\mathbb{E}[\log w_{1}|z_{t}]$
 \end_inset
 
- for the long 
+ given the long 
 \begin_inset Formula $z_{t}$
 \end_inset
 
@@ -269,7 +285,7 @@ Compute
 \begin_inset Formula $u_{ss}$
 \end_inset
 
- as the average of 
+ as the average over 
 \begin_inset Formula $u_{t}$
 \end_inset
 
@@ -289,7 +305,7 @@ Regress
 \begin_inset Formula $\frac{{dE[\log w_{1}|z_{t}]}}{du_{t}(z_{t})}$
 \end_inset
 
- using post burn-in model data.
+ using the post burn-in model data.
 \end_layout
 
 \begin_layout Section
@@ -308,7 +324,7 @@ To compute
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\log w_{t+3}=\log w_{t+2}+\psi h'(a_{t+3})\eta_{t+3}-\frac{1}{2}(\psi h'(a_{t+3})\sigma_{2})^{2}
+\log w_{t+3}=\log w_{t+2}+\psi h'(a_{t+3})\eta_{t+3}-\frac{1}{2}(\psi h'(a_{t+3})\sigma_{\eta})^{2}
 \]
 
 \end_inset

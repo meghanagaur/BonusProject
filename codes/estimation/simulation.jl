@@ -102,7 +102,7 @@ function simulate(modd, shocks; u0 = 0.06)
         #histogram(Δlw_q)
         
         # Regress log w_it on log y_it 
-        dlw_dly = ols(vec(lw), vec(ly))[2]
+        dlw_dly  = ols(vec(lw), vec(ly))[2]
 
         # Compute model data for long time series  (trim to post-burn-in when computing moment)
         z_shocks_idx_str     = zstring.z_shocks_idx
@@ -135,8 +135,9 @@ function simulate(modd, shocks; u0 = 0.06)
         @views dlu_dlz  = ols(log.(vec(u_t[burnin+1:end])), vec(lz_shocks_str[burnin+1:end]))[2]
 
         # Compute u_ss as mean of unemployment rate post-burn period in for now
-        u_ss = mean(u_t[burnin+1:end])
+        u_ss   = mean(u_t[burnin+1:end])
 
+        # Compute some standard deviations
         std_u  = std(u_t)
         std_z  = std(z_shocks_str)
         std_Y  = std(Y_t)

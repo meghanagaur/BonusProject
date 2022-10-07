@@ -123,11 +123,15 @@ param_key            = OrderedDict{Int, Symbol}([
                         (5, :hbar)])
 const J              = length(param_key)
 param_bounds         = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
-                        (1, [0.15,  3.0]),       # ε
-                        (2, [0.001, 0.5]),       # σ_η 
-                        (3, [-1, 1]),            # χ
+                        (1, [0.15,  1.0]),      # ε
+                        (2, [0.001, 0.5]),      # σ_η 
+                        (3, [-1, 1]),           # χ
                         (4, [0.3, 0.9]),        # γ
-                        (5, [1,10]) ])          # hbar
+                        (5, [0.15, 2]) ])       # hbar
+
+# Corrction for the χ, γ bounds
+#param_bounds[3] = [ max(1 - log(param_bounds[4][2])/log(model().zgrid[1]), param_bounds[3][1]) ,
+#min(1 - log(param_bounds[4][2])/log(model().zgrid[end]), param_bounds[3][2])]
 
 ## Build shocks for the simulation
 @unpack N_z, P_z, zgrid = model()

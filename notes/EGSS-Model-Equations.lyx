@@ -1,0 +1,298 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Section
+Overview
+\end_layout
+
+\begin_layout Itemize
+Dynamic Bonus framework in the spirit of EGSS 
+\series bold
+without
+\series default
+ savings to compare with Wage Rigidity.
+\end_layout
+
+\begin_layout Itemize
+The utility function is
+\begin_inset Formula 
+\[
+u(c,a)=\log c-h(a),
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $h(a)=\frac{\bar{h}a^{1+1/\varepsilon}}{1+1/\varepsilon}$
+\end_inset
+
+ so that 
+\begin_inset Formula $h'(a)=\bar{h}a^{1/\varepsilon}.$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+The firm's output is 
+\begin_inset Formula 
+\[
+y_{it}=z_{t}(a_{it}+\eta_{it})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+The matching function is
+\begin_inset Formula 
+\[
+m(u,v)=\mu u^{\alpha}v^{1-\alpha}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+We make the effort after noise assumption as in EGSS and assume that a unique
+ level of effort 
+\begin_inset Formula $a(z^{t})$
+\end_inset
+
+ is implemented irrespective of the idiosyncratic shock.
+\end_layout
+
+\begin_layout Itemize
+We assume 
+\begin_inset Formula $\eta_{it}\sim\mathscr{\mathcal{N}}(0,\sigma_{\eta}^{2})$
+\end_inset
+
+ and 
+\begin_inset Formula $\log z_{t}=\mu_{z}+\log z_{t-1}+\epsilon,$
+\end_inset
+
+where 
+\begin_inset Formula $\epsilon\sim\mathcal{N}(0,\sigma_{\epsilon}^{2}).$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+The value of a firm's vacancy at time 1 is
+\begin_inset Formula 
+\[
+\pi_{i1}=E_{1}\left[\sum_{r=1}^{\infty}(\beta(1-s))^{r-1}(z_{r}(a_{ir}+\eta_{ir})-w_{ir})\right]-\frac{\kappa}{q(\theta_{1})}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+The unemployment benefit is 
+\begin_inset Formula $\xi(z)=\gamma\cdot z^{\chi}$
+\end_inset
+
+, and the value of unemployment is 
+\begin_inset Formula $\omega(z_{1})=E_{1}\left[\sum\beta^{t}\xi(z_{t})\right].$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Throughout this note, we take 
+\begin_inset Formula $z_{1}$
+\end_inset
+
+ as given.
+\end_layout
+
+\begin_layout Section
+Bonus Wage Economy 
+\end_layout
+
+\begin_layout Standard
+The firm maximizes the value of filling the vacancy 
+\begin_inset Formula 
+\[
+V(z_{1})=\max E_{1}\left[\sum_{r=1}^{\infty}(\beta(1-s))^{r-1}(z_{r}(a_{ir}+\eta_{ir})-w_{ir})\right]
+\]
+
+\end_inset
+
+subject to the IC and IR constraints.
+ The IC constraint has the form
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{1}\left[\sum_{t=1}^{\infty}(\beta(1-s))^{t-1}(\log(w_{t}(a_{t},\eta^{t}|z^{t})-h(a_{t}(z^{t}))+\beta s\omega(z_{t+1}))\right]\geq E_{1}\left[\sum_{t=1}^{\infty}(\beta(1-s))^{t-1}(\log(w_{t}(\tilde{a_{t}},\eta^{t}|z^{t})-h(\tilde{a_{t}}(z^{t}))+\beta s\omega(z_{t+1}))\right],
+\]
+
+\end_inset
+
+for any alternative strategy 
+\begin_inset Formula ${\tilde{a_{t}(z^{t},\eta^{t})}}$
+\end_inset
+
+.
+ The IR constraint has the form
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{1}\left[\sum_{t=1}^{\infty}(\beta(1-s))^{t-1}(\log(w_{t}(a_{t},\eta^{t}|z^{t})-h(a_{t}(z^{t}))+\beta s\omega(z_{t+1}))\right]\geq\omega(z_{1}).
+\]
+
+\end_inset
+
+There is free entry, so in equilbrium the value of creating a vacancy is
+ zero:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\pi_{i1}=0\Rightarrow V(z_{1})=\frac{\kappa}{q(\theta_{1})}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Optimal Contract
+\end_layout
+
+\begin_layout Standard
+The passthrough constant is equal to 
+\begin_inset Formula $\psi=1-\beta(1-s).$
+\end_inset
+
+The wage schedule follows
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\log w_{t}(a_{t},\eta^{t}|z^{t})=\log w_{t-1}(a_{t-1},\eta^{t-1}|z^{t-1})+\psi h'(a_{t})\eta_{t}-\frac{1}{2}(\psi h'(a_{t})\sigma_{\eta})^{2},
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $w_{0}\coloneqq\psi(Y-\frac{\kappa}{q(\theta_{1})}).$
+\end_inset
+
+ Note that wages are a martingale, so that 
+\begin_inset Formula $E[w_{t}]=w_{0}\forall t.$
+\end_inset
+
+ Define the present value of output as 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Y(z_{1})=\pi_{i0}=E_{1}\left[\sum_{r=1}^{\infty}(\beta(1-s))^{r-1}z_{r}a_{r}\right]
+\]
+
+\end_inset
+
+The optimal effort then satisfies 
+\begin_inset Formula 
+\[
+a_{t}(z_{t}|z_{1})=\left[\cfrac{z_{t}a_{t}(z_{t}|z_{1})}{\psi(Y(z_{1})-\frac{\kappa}{q(\theta(z_{1}))}}-\cfrac{\psi}{\varepsilon}(h'(a_{t}(z_{t}|z_{1}))\sigma_{\eta})^{2}\right]^{\frac{{\varepsilon}}{\varepsilon+1}}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

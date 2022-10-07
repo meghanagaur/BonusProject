@@ -1,6 +1,7 @@
 # Solve the model moments on a grid of ε and σ_η
 using Distributed, SlurmClusterManager
 addprocs(SlurmManager())
+#addprocs(2)
 
 @everywhere begin
     include("smm_settings.jl") # SMM inputs, settings, packages, etc.
@@ -13,7 +14,7 @@ addprocs(SlurmManager())
 
     # Simulate moments over 
     function simulate_moments(xx)
-        baseline = model(ε = xx[1] , σ_η = xx[2], hbar = xx[3], χ = 0, γ = .66) 
+        baseline = model(ε = xx[1] , σ_η = xx[2], hbar = xx[3], χ = 0) 
         out      = simulate(baseline, shocks)
         mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss, out.avg_Δlw,
         out.dlw1_dlz, out.dlY_dlz, out.dlu_dlz, out.std_u, out.std_z, out.std_Y, out.std_w0]

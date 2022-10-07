@@ -8,6 +8,7 @@ endogParams[1] = 0.5      # ε
 endogParams[2] = 0.05     # σ_η
 endogParams[3] = 0.0      # χ
 endogParams[4] = 0.66     # γ
+endogParams[5] = 1        # hbar
 
 ## evaluate the objective function 
 init_x    = zeros(J)
