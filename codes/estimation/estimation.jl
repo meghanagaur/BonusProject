@@ -1,7 +1,7 @@
 using Distributed, SlurmClusterManager
 
 #addprocs(SlurmManager())
-#addprocs(2)
+addprocs(2)
 
 @everywhere begin
     using DistributedArrays, DistributedArrays.SPMD
@@ -16,21 +16,22 @@ end
     @unpack moms, fvals, pars = load(loc*"jld/pretesting_clean.jld2") 
 
     # sort and reshape the parameters for distribution across worksers
-    N_string       = 10 # length of each worker string
-    N_procs        = nworkers()
-    sorted_indices = sortperm(fvals)
-    Nend           = nworkers()*N_string 
-    sorted_indices = reverse(sorted_indices[1:Nend]) # sort in descending order
-    sobol_sort     = pars[sorted_indices,:]
-    sob_int        = reshape(sobol_sort,  (N_procs, N_string, J )) # NWORKERS X NSTRING X J
+    N_string       = 50                                # length of each worker string
+    N_procs        = nworkers()                        # number of processes
+    Nend           = N_procs*N_string                  # number of initial points
+    sorted_indices = reverse(sortperm(fvals)[1:Nend])  # sort by function values in descending order
+    sobol_sort     = pars[sorted_indices,:]            # get paramter values: N_TASKS*NSTRING x J
+    # reshpae parameter vector 
+    sob_int        = reshape(sobol_sort,  (N_procs, N_string, J )) # N_TASKS x NSTRING x J
 
-   # final sobol matrix (reshape for column-memory access)
+   # final parameter matrix (reshape for column-memory access: NSTRING x J x N_TASKS
    sobol = zeros(J, N_string, N_procs)
-   @views @inbounds for j = 1:nworkers()
+   @views @inbounds for j = 1:N_procs
         @inbounds for i = 1:N_string
             sobol[:,i,j] = sob_int[j,i,:]
         end
    end
+
 end
 
 # initialize the big distributed vectors 
@@ -47,21 +48,23 @@ init_x      = zeros(J)
 
 # Run the parallel optimization code 
 @time spmd(tiktak_spmd, sobol, fvals_d, argmin_d, min_p, argmin_p, iter_p, 
-    init_x, param_bounds, shocks, data_mom, W; pids = workers()) # executes on all workers
+    init_x, param_bounds, shocks, data_mom, W; pids = workers()) # executes on all tasks
 
+# Look at indices to verify they match expected assignemnt
 [@fetchfrom p localindices(fvals_d) for p in workers()]
 [@fetchfrom p localindices(argmin_d) for p in workers()]
 [@fetchfrom p localindices(iter_p) for p in workers()]
 [@fetchfrom p localindices(min_p) for p in workers()]
 [@fetchfrom p localindices(argmin_p) for p in workers()]
 
+# Get estimation output (function values, arg mins)
 fvals_d   = convert( Matrix{Float64}, fvals_d)
 argmin_d  = convert( Array{Float64, 3}, argmin_d)
 argmin_p  = convert( Matrix{Float64}, argmin_p )
 min_p     = convert( Vector{Float64}, min_p)
 iter_p    = [@fetchfrom p iter_p[:L] for p in workers()]
 
-# kill processes
+# Kill all processes
 rmprocs(workers())
 
 # Save the output

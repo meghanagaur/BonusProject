@@ -7,7 +7,7 @@ endogParams    = zeros(K)
 endogParams[1] = 0.5      # ε
 endogParams[2] = 0.05     # σ_η
 endogParams[3] = 0.3      # χ
-endogParams[4] = 0.66     # γ
+endogParams[4] = 0.7      # γ
 
 # evaluate the objective function 
 @time out = objFunction(endogParams, param_bounds, shocks, data_mom, W)
