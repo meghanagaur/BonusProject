@@ -3,11 +3,11 @@ include("smm_settings.jl") # SMM inputs, settings, packages, etc.
 println(Threads.nthreads())
 
 # Initial parameter values
-endogParams    = zeros(K) # zeros(4)
-endogParams[1] = 0.5      # ε 
+endogParams    = zeros(K) 
+endogParams[1] = 0.3      # ε 
 endogParams[2] = 0.05     # σ_η
 endogParams[3] = 0.0      # χ
-endogParams[4] = 0.66     # γ
+endogParams[4] = 0.7      # γ
 endogParams[5] = 1        # hbar
 
 ## evaluate the objective function 

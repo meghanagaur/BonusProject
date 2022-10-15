@@ -100,6 +100,14 @@ values
 \end_layout
 
 \begin_layout Enumerate
+\begin_inset Formula $E[\Delta\log w_{it}]$
+\end_inset
+
+ <- Exoectation of quarterly wage growth (note: this may be very close to
+ zero) 
+\end_layout
+
+\begin_layout Enumerate
 \begin_inset Formula $Var(\Delta\log w_{it})$
 \end_inset
 

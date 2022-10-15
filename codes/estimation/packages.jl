@@ -9,7 +9,6 @@ Pkg.add("LinearAlgebra")
 Pkg.add("Parameters")
 Pkg.add("Random")
 Pkg.add("Roots")
-Pkg.add("Roots")
 Pkg.add("Distributed")
 Pkg.add("Sobol")
 Pkg.add("Optim")
@@ -17,6 +16,8 @@ Pkg.add("NLopt")
 Pkg.add("JLD2")
 Pkg.add("SlurmClusterManager")
 Pkg.add("DistributedArrays")
+Pkg.add("BenchmarkTools")
+
 
 
 

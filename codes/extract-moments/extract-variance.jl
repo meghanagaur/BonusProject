@@ -16,7 +16,7 @@ function get_std(file_str)
     exp_wchange2  = sum(df.freq_norm.*(df.wchange.^2))
 
     std_wchange   = sqrt(exp_wchange2 - exp_wchange.^2)
-    return std_wchange/100
+    return std_wchange/100, 
 end
 
 get_std("qtrly_wage_weighted")       # quarterly wage changes

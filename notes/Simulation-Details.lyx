@@ -157,13 +157,35 @@ For each
 \begin_inset Formula $N_{z}\coloneqq\lambda_{z}\times N$
 \end_inset
 
- panels of length T, where the initial 
+ panels of 
+\begin_inset Formula $z_{t}$
+\end_inset
+
+ and 
+\begin_inset Formula $\eta_{t}$
+\end_inset
+
+ of length T, where the initial 
 \begin_inset Formula $z_{1}=z.$
 \end_inset
 
 
 \end_layout
 
+\begin_deeper
+\begin_layout Enumerate
+Note: we could use same 
+\begin_inset Formula $z_{t}$
+\end_inset
+
+ chain for each initial 
+\begin_inset Formula $z_{1},$
+\end_inset
+
+but this shouldn't really matter.
+\end_layout
+
+\end_deeper
 \begin_layout Enumerate
 Simulate the implied wages (so we simulate 
 \begin_inset Formula $N_{z}\times T$

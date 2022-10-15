@@ -50,7 +50,7 @@ std_Y        = reshape(df.std_Y, length(ε_grid), length(σ_η_grid), length(hba
 std_w0       = reshape(df.std_w0, length(ε_grid), length(σ_η_grid), length(hbar_grid) )
 
 ############## FIX HBAR AT 1 ##########################
-idx = 1
+idx = findfirst(x -> x >= 1, hbar_grid)
 ############## FIRST SET OF MOMENTS ###################
 
 # Plot var_dlw
@@ -73,7 +73,7 @@ p4 = heatmap(ε_grid, σ_η_grid, u_ss[idx,:,:], title=L"u_{ss}")
 xlabel!(L"\varepsilon")
 ylabel!(L"\sigma_\eta")
 
-plot(p1, p2, p3, p4, layout = (2,2))
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\bar{h}="*string(round(hbar_grid[idx], digits=2)))
 savefig(loc*"figs/calibration/fix_hbar_1.pdf")
 
 ############## SECOND SET OF MOMENTS ###################
@@ -98,7 +98,7 @@ p4 = heatmap(ε_grid, σ_η_grid, dlu_dlz[idx,:,:], title=L"\frac{d \log u }{ d 
 xlabel!(L"\varepsilon")
 ylabel!(L"\sigma_\eta")
 
-plot(p1, p2, p3, p4, layout = (2,2))
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\bar{h}="*string(round(hbar_grid[idx], digits=2)))
 savefig(loc*"figs/calibration/fix_hbar_2.pdf")
 
 ############## THIRD SET OF MOMENTS ###################
@@ -123,7 +123,7 @@ p4 = heatmap(ε_grid, σ_η_grid, std_w0[idx,:,:], title=L"Std(w_0)")
 xlabel!(L"\varepsilon")
 ylabel!(L"\sigma_\eta")
 
-plot(p1, p2, p3, p4, layout = (2,2))
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\bar{h}="*string(round(hbar_grid[idx], digits=2)))
 savefig(loc*"figs/calibration/fix_hbar_3.pdf")
 
 ############## FIX SIGMA_ETA at 0.5 ###################
@@ -150,31 +150,32 @@ p3 = heatmap(ε_grid, hbar_grid, u_ss[:,idx,:], title=L"u_{ss}")
 xlabel!(L"\varepsilon")
 ylabel!(L"\bar{h}")
 
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\sigma_{\eta}="*string(round(σ_η_grid[idx], digits=2)))
 savefig(loc*"figs/calibration/fix_sigma_eta_1.pdf")
 
 ############## SECOND SET OF MOMENTS ###################
 
 # Plot E[dlw]
-p1 = heatmap(ε_grid, σ_η_grid, avg_Δlw[:,idx,:], title=L"E[\Delta \log w]")
+p1 = heatmap(ε_grid, hbar_grid, avg_Δlw[:,idx,:], title=L"E[\Delta \log w]")
 xlabel!(L"\varepsilon")
 ylabel!(L"\bar{h}")
 
 # Plot dlw1_dlz
-p2 = heatmap(ε_grid, σ_η_grid, dlw1_dlz[:,idx,:], title=L"\frac{ d E[ \log w_1 | z ]}{ d \log z }")
+p2 = heatmap(ε_grid, hbar_grid, dlw1_dlz[:,idx,:], title=L"\frac{ d E[ \log w_1 | z ]}{ d \log z }")
 xlabel!(L"\varepsilon")
 ylabel!(L"\bar{h}")
 
 # Plot dlY_dlz
-p3 = heatmap(ε_grid, σ_η_grid, dlY_dlz[:,idx,:],title=L"\frac{d \log Y }{ d \log z }")
+p3 = heatmap(ε_grid, hbar_grid, dlY_dlz[:,idx,:],title=L"\frac{d \log Y }{ d \log z }")
 xlabel!(L"\varepsilon")
 ylabel!(L"\bar{h}")
 
 # Plot dlu_dlz
-p4 = heatmap(ε_grid, σ_η_grid, dlu_dlz[:,idx,:], title=L"\frac{d \log u }{ d \log z }")
+p4 = heatmap(ε_grid, hbar_grid, dlu_dlz[:,idx,:], title=L"\frac{d \log u }{ d \log z }")
 xlabel!(L"\varepsilon")
 ylabel!(L"\bar{h}")
 
-plot(p1, p2, p3, p4, layout = (2,2))
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\sigma_{\eta}="*string(round(σ_η_grid[idx], digits=2)))
 savefig(loc*"figs/calibration/fix_sigma_eta_2.pdf")
 
 ############## THIRD SET OF MOMENTS ###################
@@ -199,11 +200,11 @@ p4 = heatmap(ε_grid, σ_η_grid, std_w0[:,idx,:], title=L"Std(w_0)")
 xlabel!(L"\varepsilon")
 ylabel!(L"\bar{h}")
 
-plot(p1, p2, p3, p4, layout = (2,2))
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\sigma_{\eta}="*string(σ_η_grid[idx]))
 savefig(loc*"figs/calibration/fix_sigma_eta_3.pdf")
 
 ############## FIX EPSILON at 0.3 #####################
-idx = 1
+idx = findfirst(x -> x >= 0.3, ε_grid)
 ############## FIRST SET OF MOMENTS ###################
 
 # Plot var_dlw
@@ -222,61 +223,61 @@ xlabel!(L"\sigma_\eta")
 ylabel!(L"\bar{h}")
 
 # Plot u_ss
-p3 = heatmap(σ_η_grid, hbar_grid, u_ss[:,:,idx], title=L"u_{ss}")
+p4 = heatmap(σ_η_grid, hbar_grid, u_ss[:,:,idx], title=L"u_{ss}")
 xlabel!(L"\sigma_\eta")
 ylabel!(L"\bar{h}")
 
-plot(p1, p2, p3, p4, layout = (2,2))
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\varepsilon="*string(round(ε_grid[idx], digits=2)))
 savefig(loc*"figs/calibration/fix_epsilon_1.pdf")
 
 ############## SECOND SET OF MOMENTS ###################
 
 # Plot E[dlw]
 p1 = heatmap(σ_η_grid, hbar_grid, avg_Δlw[:,:,idx], title=L"E[\Delta \log w]")
-xlabel!(L"\varepsilon")
+xlabel!(L"\sigma_\eta")
 ylabel!(L"\bar{h}")
 
 # Plot dlw1_dlz
 p2 = heatmap(σ_η_grid, hbar_grid, dlw1_dlz[:,:,idx], title=L"\frac{ d E[ \log w_1 | z ]}{ d \log z }")
-xlabel!(L"\varepsilon")
+xlabel!(L"\sigma_\eta")
 ylabel!(L"\bar{h}")
 
 # Plot dlY_dlz
 p3 = heatmap(σ_η_grid, hbar_grid, dlY_dlz[:,:,idx],title=L"\frac{d \log Y }{ d \log z }")
-xlabel!(L"\varepsilon")
+xlabel!(L"\sigma_\eta")
 ylabel!(L"\bar{h}")
 
 # Plot dlu_dlz
 p4 = heatmap(σ_η_grid, hbar_grid, dlu_dlz[:,:,idx], title=L"\frac{d \log u }{ d \log z }")
-xlabel!(L"\varepsilon")
+xlabel!(L"\sigma_\eta")
 ylabel!(L"\bar{h}")
 
-plot(p1, p2, p3, p4, layout = (2,2))
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\varepsilon="*string(round(ε_grid[idx], digits=2)))
 savefig(loc*"figs/calibration/fix_epsilon_2.pdf")
 
 ############## THIRD SET OF MOMENTS ###################
 
 # Std(u_t)
-p1 = heatmap(ε_grid, σ_η_grid, std_u[:,:,idx], title=L"Std(u_t)")
-xlabel!(L"\varepsilon")
+p1 = heatmap(σ_η_grid, hbar_grid, std_u[:,:,idx], title=L"Std(u_t)")
+xlabel!(L"\sigma_\eta")
 ylabel!(L"\bar{h}")
 
 # Std(z_t)
-p2 = heatmap(ε_grid, σ_η_grid, std_z[:,:,idx], title=L"Std(z_t)")
-xlabel!(L"\varepsilon")
+p2 = heatmap(σ_η_grid, hbar_grid, std_z[:,:,idx], title=L"Std(z_t)")
+xlabel!(L"\sigma_\eta")
 ylabel!(L"\bar{h}")
 
 # Std(Y_t)
-p3 = heatmap(ε_grid, σ_η_grid, std_Y[:,:,idx], title=L"Std(y_t)")
-xlabel!(L"\varepsilon")
+p3 = heatmap(σ_η_grid, hbar_grid, std_Y[:,:,idx], title=L"Std(y_t)")
+xlabel!(L"\sigma_\eta")
 ylabel!(L"\bar{h}")
 
 # Std(w_0)
-p4 = heatmap(ε_grid, σ_η_grid, std_w0[:,:,idx], title=L"Std(w_0)")
-xlabel!(L"\varepsilon")
+p4 = heatmap(σ_η_grid, hbar_grid, std_w0[:,:,idx], title=L"Std(w_0)")
+xlabel!(L"\sigma_\eta")
 ylabel!(L"\bar{h}")
 
-plot(p1, p2, p3, p4, layout = (2,2))
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\varepsilon="*string(round(ε_grid[idx], digits=2)))
 savefig(loc*"figs/calibration/fix_epsilon_3.pdf")
 
 

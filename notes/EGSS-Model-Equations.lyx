@@ -265,11 +265,11 @@ The wage schedule follows
 \end_inset
 
 where 
-\begin_inset Formula $w_{0}\coloneqq\psi(Y-\frac{\kappa}{q(\theta_{1})}).$
+\begin_inset Formula $w_{0}\coloneqq\psi(Y_{1}-\frac{\kappa}{q(\theta_{1})}).$
 \end_inset
 
  Note that wages are a martingale, so that 
-\begin_inset Formula $E[w_{t}]=w_{0}\forall t.$
+\begin_inset Formula $E[w_{t}]=w_{0},\forall t.$
 \end_inset
 
  Define the present value of output as 
@@ -278,7 +278,7 @@ where
 \begin_layout Standard
 \begin_inset Formula 
 \[
-Y(z_{1})=\pi_{i0}=E_{1}\left[\sum_{r=1}^{\infty}(\beta(1-s))^{r-1}z_{r}a_{r}\right]
+Y_{1}=Y(z_{1})=E_{1}\left[\sum_{r=1}^{\infty}(\beta(1-s))^{r-1}z_{r}a_{r}\right]
 \]
 
 \end_inset
@@ -286,8 +286,43 @@ Y(z_{1})=\pi_{i0}=E_{1}\left[\sum_{r=1}^{\infty}(\beta(1-s))^{r-1}z_{r}a_{r}\rig
 The optimal effort then satisfies 
 \begin_inset Formula 
 \[
-a_{t}(z_{t}|z_{1})=\left[\cfrac{z_{t}a_{t}(z_{t}|z_{1})}{\psi(Y(z_{1})-\frac{\kappa}{q(\theta(z_{1}))}}-\cfrac{\psi}{\varepsilon}(h'(a_{t}(z_{t}|z_{1}))\sigma_{\eta})^{2}\right]^{\frac{{\varepsilon}}{\varepsilon+1}}.
+a_{t}(z_{t}|z_{1})=\left[\cfrac{z_{t}a_{t}(z_{t}|z_{1})}{\psi(Y_{1}-\frac{\kappa}{q(\theta(z_{1}))}}-\cfrac{\psi}{\varepsilon}(h'(a_{t}(z_{t}|z_{1}))\sigma_{\eta})^{2}\right]^{\frac{{\varepsilon}}{\varepsilon+1}}.
 \]
+
+\end_inset
+
+The worker's wage at time 
+\begin_inset Formula $t$
+\end_inset
+
+ is therefore
+\begin_inset Formula 
+\[
+\log w_{t}(a_{t},\eta^{t}|z^{t})=\log w_{0}+\sum_{s=0}^{t}\psi h'(a_{s})\eta_{s}-\frac{1}{2}\sum_{s=0}^{t}(\psi h'(a_{s})\sigma_{\eta}).^{2}
+\]
+
+\end_inset
+
+This implies that a worker's expected PD utility from consumption (= wages
+ without savings)
+\begin_inset Formula 
+\begin{align*}
+U & =E_{1}\left[\sum_{t=1}^{\infty}(\beta(1-s))^{t-1}\log(w_{t}(a_{t},\eta^{t}|z^{t})\right]\\
+ & =\frac{1}{\psi}\log w_{0}-E_{1}\left[\sum_{t=1}^{\infty}(\beta(1-s))^{t-1}\frac{1}{2}\sum_{s=0}^{t}(\psi h'(a_{s})\sigma_{\eta})^{2}\right]\\
+ & =\frac{1}{\psi}\log w_{0}-E_{1}\left[\sum_{t=1}^{\infty}\sum_{s=t}^{\infty}(\beta(1-s))^{s-1}\frac{1}{2}(\psi h'(a_{t})\sigma_{\eta})^{2}\right]\\
+ & =\frac{1}{\psi}\log w_{0}-E_{1}\left[\sum_{t=1}^{\infty}\frac{1}{2}(\psi h'(a_{t})\sigma_{\eta})^{2}\sum_{s=t}^{\infty}(\beta(1-s))^{t-1}(\beta(1-s))^{s-t}\right]\\
+ & =\frac{1}{\psi}\log w_{0}-\frac{1}{2}E_{1}\left[\sum_{t=1}^{\infty}(\beta(1-s))^{t-1}(\psi h'(a_{t})\sigma_{\eta})^{2}\sum_{s=t}^{\infty}(\beta(1-s))^{s-t}\right]\\
+ & =\frac{1}{\psi}\log w_{0}-\frac{1}{2\psi}E_{1}\left[\sum_{t=1}^{\infty}(\beta(1-s))^{t-1}(\psi h'(a_{t})\sigma_{\eta})^{2}\right].
+\end{align*}
+
+\end_inset
+
+The worker's expected PDV from the contract is thus
+\begin_inset Formula 
+\begin{align*}
+U & =E_{1}\left[\sum_{t=1}^{\infty}(\beta(1-s))^{t-1}(\log(w_{t}(a_{t},\eta^{t}|z^{t})-h(a_{t}(z^{t}))+\beta s\omega(z_{t+1}))\right]\\
+ & =\frac{1}{\psi}\log w_{0}-E_{1}\left[\sum_{t=1}^{\infty}(\beta(1-s))^{t-1}\left(\frac{1}{2\psi}(\psi h'(a_{t})\sigma_{\eta})^{2}+h(a_{t}(z^{t})\right)\right]+E_{1}\left[\sum_{t=1}^{\infty}(\beta(1-s))^{t-1}\beta s\omega(z_{t+1}))\right].
+\end{align*}
 
 \end_inset
 

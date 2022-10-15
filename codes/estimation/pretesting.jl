@@ -17,7 +17,7 @@ addprocs(SlurmManager())
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 10000
+    I_max        = 30000
     lb           = zeros(J)
     ub           = zeros(J)
     for i = 1:J
@@ -25,7 +25,7 @@ addprocs(SlurmManager())
         ub[i] = param_bounds[i][2]
     end
     s             = SobolSeq(lb, ub)
-    seq           = skip(s, 20000, exact=true)
+    seq           = skip(s, 10000, exact=true)
     sob_seq       = reduce(hcat, next!(seq) for i = 1:I_max)
 end
 
@@ -39,7 +39,6 @@ rmprocs(nprocs())
 save(loc*"jld/pretesting.jld2", Dict("output" => output, "sob_seq" => sob_seq, "baseline_model" => model() ))
 
 # Clean the results 
-#@unpack output, sob_seq = load(loc*"jld/pretesting.jld2")
 
 # Retain the valid vectors (i.e. solutions without flags)
 N_old   = length(output)

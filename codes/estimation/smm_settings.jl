@@ -1,8 +1,15 @@
+#= 
+Main file to build required functions and random vectors for the estimation.
+Note: J = number of moments, K = number of parameters.
+=#
+
+# Load necessary packages
 #using Pkg; Pkg.add(url="https://github.com/meghanagaur/DynamicModel")
 using DynamicModel, BenchmarkTools, DataStructures, Distributions, Optim, Sobol,
 ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2
 
-include("simulation.jl")   # simulation functions
+# Load necessary helper functions for simulation
+include("simulation.jl")   
 
 """
 Objective function to be minimized during SMM -- WITHOUT BOUNDS.
@@ -12,18 +19,23 @@ zshocks      = z shocks for the simulation
 pb           = parameter bounds
 data_mom     = data moments
 W            = weight matrix for SMM
-    ORDERING OF PARAMETERS/MOMENTS
+    ORDERING OF PARAMETERS
 ε            = 1st param
 σ_η          = 2nd param
 χ            = 3rd param
 γ            = 4th param
+hbar         = 5th param
+    ORDERING OF MOMENTS
 std_Δlw      = 1st moment (st dev of log wage changes)
-dlw1_du      = 2nd moment (dlog w_1 / d u)
-dly_dΔlw     = 3rd moment (d log y_it / d Δ log w_it )
-u_ss         = 4th moment (SS unemployment rate)
+E[Δlw]       = 2nd moment (avg log wage change)
+dlw1_du      = 3rd moment (dlog w_1 / d u)
+dly_dΔlw     = 4th moment (d log y_it / d Δ log w_it )
+u_ss         = 5th moment (SS unemployment rate)
 """
 function objFunction(xx, pb, shocks, data_mom, W)
+
     inbounds = minimum( [ pb[i][1] <= xx[i] <= pb[i][2] for i = 1:J]) >= 1
+
     if inbounds == 0
         f        = 10000
         mod_mom  = ones(K)*NaN
@@ -34,9 +46,13 @@ function objFunction(xx, pb, shocks, data_mom, W)
         out      = simulate(baseline, shocks)
         flag     = out.flag
         mod_mom  = [out.std_Δlw, out.avg_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
-        d        = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % change
+        d        = (mod_mom - data_mom) #./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % change
         f        = flag < 1 ? d'*W*d : 10000
+        # add extra flags
+        flag     = isnan(f) ? 1 : flag
+        f        = isnan(f) ? 10000 : f
     end
+
     return [f, mod_mom, flag]
 end
 
@@ -49,25 +65,33 @@ zshocks      = z shocks for the simulation
 pb           = parameter bounds
 data_mom     = data moments
 W            = weight matrix for SMM
-    ORDERING OF PARAMETERS/MOMENTS
+    ORDERING OF PARAMETERS
 ε            = 1st param
 σ_η          = 2nd param
 χ            = 3rd param
 γ            = 4th param
+hbar         = 5th param
+    ORDERING OF MOMENTS
 std_Δlw      = 1st moment (st dev of log wage changes)
-dlw1_du      = 2nd moment (dlog w_1 / d u)
-dly_dΔlw     = 3rd moment (d log y_it / d Δ log w_it )
-u_ss         = 4th moment (SS unemployment rate)
+E[Δlw]       = 2nd moment (avg log wage change)
+dlw1_du      = 3rd moment (dlog w_1 / d u)
+dly_dΔlw     = 4th moment (d log y_it / d Δ log w_it )
+u_ss         = 5th moment (SS unemployment rate)
 """
 function objFunction_WB(xx, x0, pb, shocks, data_mom, W)
+
     endogParams  = [ transform_params(xx[i], pb[i], x0[i]) for i = 1:J] 
     baseline     = model(ε = endogParams[1] , σ_η = endogParams[2], χ = endogParams[3], γ = endogParams[4], hbar = endogParams[5]) 
 
     # Simulate the model and compute moments
     out     = simulate(baseline, shocks)
     mod_mom = [out.std_Δlw, out.avg_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
-    d       = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
+    d       = (mod_mom - data_mom) #./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
     f       = out.flag < 1 ? d'*W*d : 10000
+    f       = isnan(f) ? 10000 : f
+    # add extra flags
+    flag     = isnan(f) ? 1 : flag
+    f        = isnan(f) ? 10000 : f
     return [f, mod_mom, out.flag]
 end
 
@@ -79,7 +103,7 @@ function logit(x; x0 = 0, min = -1, max = 1, λ = 1.0)
 end
 
 """ 
-Transform parameters to lie within specified bounds in pb.
+Transform parameters to lie within their specified bounds in pb.
 xx = current (logit transformed) position
 x1 = current (actual) position
 p0 = actual initial position
@@ -95,9 +119,10 @@ function transform_params(xx, pb, p0; λ = 1)
         x1 = xx2*(p0 - pb[1]) + p0  
     end
 
-    # Can also force localize the search even further
-    #δ  = min(pb[2] - p0, p0 - pb[1])
-    #x1 = xx2*δ + p0
+    #= Could localize the search even further
+    δ  = min(pb[2] - p0, p0 - pb[1])
+    x1 = xx2*δ + p0=#
+
     return x1
 end
 
@@ -123,20 +148,20 @@ param_key            = OrderedDict{Int, Symbol}([
                         (5, :hbar)])
 const J              = length(param_key)
 param_bounds         = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
-                        (1, [0.15,  1.0]),      # ε
+                        (1, [0.15,  2.0]),      # ε
                         (2, [0.001, 0.5]),      # σ_η 
                         (3, [-1, 1]),           # χ
                         (4, [0.3, 0.9]),        # γ
                         (5, [0.15, 2]) ])       # hbar
 
-# Corrction for the χ, γ bounds
-#param_bounds[3] = [ max(1 - log(param_bounds[4][2])/log(model().zgrid[1]), param_bounds[3][1]) ,
-#min(1 - log(param_bounds[4][2])/log(model().zgrid[end]), param_bounds[3][2])]
+#= Corrction for the χ, γ bounds (enforce log b(z) < log z for all z)
+param_bounds[3] = [ max(1 - log(param_bounds[4][2])/log(model().zgrid[1]), param_bounds[3][1]) ,
+min(1 - log(param_bounds[4][2])/log(model().zgrid[end]), param_bounds[3][2])] =#
 
 ## Build shocks for the simulation
 @unpack N_z, P_z, zgrid = model()
 N_sim                   = 30000
-T_sim                   = 100 
+T_sim                   = 80         
 burnin                  = 1000
 
 # Compute the invariant distribution of logz
@@ -168,8 +193,7 @@ zstring  = simulateZShocks(P_z, zgrid, N = 1, T = N_sim + burnin, set_seed = fal
 shocks   = (η_shocks = η_shocks, z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, indices = indices, indices_q = indices_q,
     λ_N_z = λ_N_z, N_sim = N_sim, T_sim = T_sim, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
 
-## Define a new simplexer for NM without explicit bound constraints
-#=
+#= Define a new simplexer for NM without explicit bound constraints
 """
 Draw random points in the parameter space
 """

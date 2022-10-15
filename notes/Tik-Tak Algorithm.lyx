@@ -104,7 +104,11 @@ Determine parameter bounds for each parameter, outside of which the objective
 \end_layout
 
 \begin_layout Enumerate
-Generate a sequence of Sobol vectors with a sequence length of N.
+Generate a sequence of Sobol vectors with a sequence length of 
+\begin_inset Formula $N=10,000$
+\end_inset
+
+ (for example).
 \end_layout
 
 \begin_layout Enumerate
@@ -113,8 +117,7 @@ Evaluate the function value at each of these
 \end_inset
 
  Sobol points.
- THIS CAN BE DONE IN PARALLEL.
- Multiprocessing across nodes is fine.
+ Can be done in parallel.
 \end_layout
 
 \begin_layout Enumerate
@@ -135,7 +138,7 @@ Keep the set
 \end_inset
 
  is the number of restarts in the global stage.
- In one paper, they set 
+ For example, 
 \begin_inset Formula $N^{*}=0.1\times N.$
 \end_inset
 
@@ -143,7 +146,7 @@ Keep the set
 \end_layout
 
 \begin_layout Enumerate
-Save all of these to a JLD or CSV file.
+Save all of these to a JLD file.
 \end_layout
 
 \begin_layout Enumerate
@@ -175,17 +178,9 @@ Draw the
 \end_layout
 
 \begin_layout Enumerate
-Open and read from the text file 
-\begin_inset Quotes eld
-\end_inset
-
-saved_parameters..txt
-\begin_inset Quotes erd
-\end_inset
-
- the function values (and corresponding parameter vectors) of the previously
- found local minima.
- Denote the lowest function value found as of ieration 
+Among all previously found local minima (and corresponding parameter vectors)
+ across iterations, denote the lowest function value found as of ieration
+ 
 \begin_inset Formula $i-1$
 \end_inset
 
@@ -286,8 +281,7 @@ Using
 
  as a starting point, use the Nelder-Mead downhill simplex algorithm to
  search for a local minimum.
- (For the other vertices of the simplex, randomly draw starting points within
- the bounds of the parameter space.)
+ 
 \end_layout
 
 \begin_layout Enumerate
@@ -302,15 +296,7 @@ Stop when either (i) a certain tolerance is acheived (i.e.
 \end_layout
 
 \begin_layout Enumerate
-Open
-\begin_inset Quotes eld
-\end_inset
-
-saved_parameters.txt
-\begin_inset Quotes erd
-\end_inset
-
- and record the local minimum found (function value and parameters).
+Record the local minimum found (function value and parameters).
 \end_layout
 
 \end_deeper
@@ -332,62 +318,63 @@ Repeat Steps 2-3 until local searches are completed from starting points
 \end_layout
 
 \begin_layout Enumerate
-Return the point with the lowest function value from 
-\begin_inset Quotes eld
-\end_inset
-
-saved_parameters..txt
-\begin_inset Quotes erd
-\end_inset
-
- as the global minimum.
+Return the point with the lowest function value as the global minimum.
 \end_layout
 
 \end_deeper
 \begin_layout Section
-Extensions
+Additional Notes
 \end_layout
 
 \begin_layout Subsection*
-Narrowing Down the Search Area
+Handling Bound Constraints
 \end_layout
 
-\begin_layout Standard
-As noted, the Nelder-Mead algorithm requires J+1 candidate points as inputs
- (the vertices of the J-dimensional simplex).
- One of these points is given by 
-\begin_inset Formula $S_{i}$
+\begin_layout Itemize
+The Nelder-Mead simplex algorithm does not incorporate bound constraints.
+ Two ways to handle this: set function values very high outside bounds or
+ transform the search area into a K-cube conforming with our desired bound
+ constraints.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+To transform, set initial point to constant vector, perform a logistic transform
+ to 
+\begin_inset Formula $(-1,1)$
 \end_inset
 
-.
- The other vertices are drawn randomly.
- After a sufficiently large number of restarts have been compelted, rank
- all of the function values and take the lowest 10 or 20 percent of values.
- Then for each dimension, pick the minimum and maximum parameter values
- within this set of minima (in each dimension).
- To generate vertices, randomly sample points between the minimum and maximum
- in each dimension j.
- This allows the simplex algorithm to search more intensively in a narrower
- area.
+ interval, and then adjust search interval so the initial point (the constant
+ vector) indeed corresponds to the actual initial point and bounds correspond
+ to desierd parameter bounds.
 \end_layout
 
-\begin_layout Paragraph
-
-\series medium
-We can alternatively set the bounds implicitly and rescale the parameters
- so the increments are also normalized.
- Decide which setup makes more sense.
-\end_layout
-
-\begin_layout Standard
-NOTE: if we stick with Optim and use our own bounds, we can decrease the
- search area as the number of iterations increases using 
+\begin_layout Itemize
+If we stick with Optim's NM algorithm and implicitly incoroporate bound
+ constraints, we can decrease the search area as the number of iterations
+ increases by increasing 
 \begin_inset Formula $\lambda$
 \end_inset
 
- in the parameter transformation.
- ADD THIS LATER.
+ in the logistic transformation.
+ We can also play around with the level of the constant vector.
  
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+We can also test out other local minimizers, such as those belonging to
+ the NLSolve library.
+ 
+\end_layout
+
+\begin_layout Subsection*
+Objective Function
+\end_layout
+
+\begin_layout Standard
+Sum of squared errors (equal weight matrix).
 \end_layout
 
 \begin_layout Subsection*
@@ -411,23 +398,6 @@ We can distinguish between each process with an integer value
  
 \end_layout
 
-\begin_deeper
-\begin_layout Itemize
-This will be a local variable (can also be a Slurm environment variable
- if we end up using a SLURM job array instead of Julia's built-in 
-\begin_inset Quotes eld
-\end_inset
-
-pmap
-\backslash
-spmd
-\begin_inset Quotes erd
-\end_inset
-
- functions).
-\end_layout
-
-\end_deeper
 \begin_layout Itemize
 Upon starting, each process will load the same Sobol sequence.
 \end_layout
@@ -470,11 +440,7 @@ number of local searches completed by all CPUS as
  We can also select Sobol points using this iteration number, but this could
  be risky since a second process may read the file right after the first
  process reads it because the first process has not yet written to it.
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-For now, let the 
+ For now, let the 
 \begin_inset Formula $n^{th}$
 \end_inset
 
@@ -483,43 +449,6 @@ For now, let the
 \end_inset
 
  Sobol number for setting it's initial point.
-\end_layout
-
-\end_deeper
-\begin_layout Section
-Questions/Issues
-\end_layout
-
-\begin_layout Itemize
-Would it be more performant to use a SLURM job array rather than Julia's
- built in pmap functionality for Steps 2-3? The processes are 
-\emph on
-mostly
-\emph default
- independent, except we need to keep track of the 
-\emph on
-lowest 
-\emph default
-function value across 
-\emph on
-all 
-\emph default
-past iterations (across all processors) to select the intiial point for
- the local search.
- 
-\end_layout
-
-\begin_layout Itemize
-What is the best way to do file I/O for this step,since there will be several
- processors reading and writing to the same txt file? Is there a way to
- lock the file?
-\end_layout
-
-\begin_layout Itemize
-Is it possible to multithread on each process in Julia on the cluster? If
- so, how do I request this in the Slurm file and in Julia since the number
- of threads utilized in Julia is an envrionment variable that is set when
- starting up Julia (at least for the main task)?
 \end_layout
 
 \end_body

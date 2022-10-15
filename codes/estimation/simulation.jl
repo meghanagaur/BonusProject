@@ -111,7 +111,7 @@ function simulate(modd, shocks; u0 = 0.06)
         @views lw1_t         = lw1_z[z_shocks_idx_str]       # E[log w_1 | z_t]
         w_0_t                = w0_z[z_shocks_idx_str]        # E[w_0 | z_t]
         @views Y_t           = Y_z[z_shocks_idx_str]         # Y_1 | z_t
-        lY_t                 = log.(Y_t)                     # log Y_1 | z_t 
+        lY_t                 = log.(max.(Y_t, eps()))        # log Y_1 | z_t, nudge up to avoid runtime error
         @views θ_t           = θ_z[z_shocks_idx_str]         # θ(z_t)
 
         # Compute evolution of unemployment for the different z_t paths
@@ -131,8 +131,8 @@ function simulate(modd, shocks; u0 = 0.06)
         # Estimate d log Y / d log z (pooled OLS)
         @views dlY_dlz   = ols(vec(lY_t[burnin+1:end]), vec(lz_shocks_str[burnin+1:end]))[2]
 
-        # Estimate d log u / d  log z (pooled OLS)
-        @views dlu_dlz  = ols(log.(vec(u_t[burnin+1:end])), vec(lz_shocks_str[burnin+1:end]))[2]
+        # Estimate d log u / d  log z (pooled OLS), nudge up to avoid runtime error
+        @views dlu_dlz  = ols(log.( max.(u_t[burnin+1:end], eps()) ), vec(lz_shocks_str[burnin+1:end]))[2]
 
         # Compute u_ss as mean of unemployment rate post-burn period in for now
         u_ss   = mean(u_t[burnin+1:end])
