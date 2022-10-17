@@ -5,7 +5,7 @@ for θ and Y on every point in the productivity grid.
 Then, compute the effort optimal effort a and wage w,
 as a(z|z_0) and w(z|z_0). u0 = initial unemployment rate.
 """
-function simulate(modd, shocks; u0 = 0.06)
+function simulate(modd, shocks; u0 = 0.067)
     
     # initialize moments to export (default to NaN)
     std_Δlw  = NaN  # st dev of quarterly wage growth

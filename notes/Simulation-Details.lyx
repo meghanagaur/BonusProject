@@ -128,15 +128,15 @@ For every point
 
 \end_deeper
 \begin_layout Enumerate
-Compute the invariant distribution of 
+Denote the invariant distribution of 
 \begin_inset Formula $z_{t}$
 \end_inset
 
-, denoted as 
+ as 
 \begin_inset Formula $\lambda_{z}.$
 \end_inset
 
- Let 
+ Fpr example, we can take 
 \begin_inset Formula $N=30,000$
 \end_inset
 
@@ -187,7 +187,7 @@ but this shouldn't really matter.
 
 \end_deeper
 \begin_layout Enumerate
-Simulate the implied wages (so we simulate 
+Simulate the implied wages for each panel (so simulate 
 \begin_inset Formula $N_{z}\times T$
 \end_inset
 
@@ -196,7 +196,7 @@ Simulate the implied wages (so we simulate
 \end_inset
 
 -shocks for each initial 
-\begin_inset Formula $z$
+\begin_inset Formula $z_{1}$
 \end_inset
 
 ):
@@ -216,7 +216,7 @@ Compute the average and variance of
 \series bold
 quarterly
 \series default
- wage growth using the monthly model data (see procedure in Section 2).
+ wage growth using the monthly model data (see procedure in Section 3).
 \end_layout
 
 \end_deeper
@@ -258,7 +258,7 @@ Simulate a long
 \begin_inset Formula $T=30,000$
 \end_inset
 
-), with burn-in period of length 1000.
+), with a burn-in period of length 1000.
 \end_layout
 
 \begin_layout Enumerate
@@ -324,14 +324,57 @@ Regress
 \end_inset
 
  to estimate the cycality of new hire wage 
-\begin_inset Formula $\frac{{dE[\log w_{1}|z_{t}]}}{du_{t}(z_{t})}$
+\begin_inset Formula $\frac{{d\mathbb{E}[\log w_{1}|z_{t}]}}{du_{t}(z_{t})}$
 \end_inset
 
  using the post burn-in model data.
 \end_layout
 
 \begin_layout Section
-Details on quarterly wage changes 
+Aside on period wage changes in the model
+\end_layout
+
+\begin_layout Standard
+The earnings schedule satisfies (without savings) 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\log w_{t}=\log w_{t-1}+\psi h'(a(z_{t}|z_{1}))\eta_{t}-\frac{1}{2}(\psi h'(a(z_{t}|z_{1}))\sigma_{\eta})^{2}
+\]
+
+\end_inset
+
+The expectation of period wage growth is 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\mathbb{E}[\Delta\log w_{t}] & =\mathbb{E}\left[\psi h'(a(z_{t}|z_{1}))\eta_{t}-\frac{1}{2}(\psi h'(a(z_{t}|z_{1}))\sigma_{\eta})^{2}\right]\\
+ & =-\frac{\psi^{2}\sigma_{\eta}^{2}}{2}\mathbb{E}\left[h'(a(z_{t}|z_{1}))^{2}\right]<0,
+\end{align*}
+
+\end_inset
+
+which suggests we may not want to target expected wage growth.
+ The unconditional variance of period wage growth is 
+\begin_inset Formula 
+\begin{align*}
+Var(\Delta\log w_{t}) & =Var\left[\psi h'(a(z_{t}|z_{1}))\eta_{t}-\frac{1}{2}(\psi h'(a(z_{t}|z_{1}))\sigma_{\eta})^{2}\right]\\
+ & =\mathbb{E}\left[Var\left(\psi h'(a(z_{t}|z_{1}))\eta_{t}-\frac{1}{2}(\psi h'(a(z_{t}|z_{1}))\sigma_{\eta})^{2}|z_{t}\right)\right]+Var\left(\mathbb{E}\left[\psi h'(a(z_{t}|z_{1}))\eta_{t}-\frac{1}{2}(\psi h'(a(z_{t}|z_{1}))\sigma_{\eta})^{2}|z_{t}\right]\right)\\
+ & =\psi^{2}\sigma_{\eta}^{2}\mathbb{E}\left[h'(a(z_{t}|z_{1}))^{2}\right]+Var\left(\frac{1}{2}(\psi h'(a(z_{t}|z_{1}))\sigma_{\eta})^{2}\right)\\
+ & =\psi^{2}\sigma_{\eta}^{2}\left[\mathbb{E}\left[h'(a(z_{t}|z_{1}))^{2}\right]+\frac{1}{4}Var\left(h'(a(z_{t}|z_{1}))^{2}\right)\right].
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Details on computing quarterly wage changes 
 \end_layout
 
 \begin_layout Standard
@@ -339,8 +382,8 @@ To compute
 \begin_inset Formula $\log w_{t+3}-\log w_{t}$
 \end_inset
 
- in the data for our panel of continuing workers, we apply the recursive
- formula for log wages:
+ in the (monthly) data for our panel of continuing workers, we apply the
+ recursive formula for log wages:
 \end_layout
 
 \begin_layout Standard
@@ -373,16 +416,17 @@ To compute
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 We calculate the unconditional variance of quarterly log wage changes as
  the variance of the (pooled) log wage changes 
 \begin_inset Formula $Var(\Delta_{t+3}\log w_{t})$
 \end_inset
 
 .
+ 
+\end_layout
+
+\begin_layout Section
+Note on cyclicality of effort
 \end_layout
 
 \end_body

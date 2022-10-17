@@ -37,7 +37,7 @@ function objFunction(xx, pb, shocks, data_mom, W)
     inbounds = minimum( [ pb[i][1] <= xx[i] <= pb[i][2] for i = 1:J]) >= 1
 
     if inbounds == 0
-        f        = 10000
+        f        = 10^5
         mod_mom  = ones(K)*NaN
         flag     = 1
     elseif inbounds == 1
@@ -47,10 +47,12 @@ function objFunction(xx, pb, shocks, data_mom, W)
         flag     = out.flag
         mod_mom  = [out.std_Δlw, out.avg_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
         d        = (mod_mom - data_mom) #./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % change
-        f        = flag < 1 ? d'*W*d : 10000
+        f        = flag < 1 ? d'*W*d : 10^5
+
         # add extra flags
         flag     = isnan(f) ? 1 : flag
-        f        = isnan(f) ? 10000 : f
+        f        = isnan(f) ? 10^5 : f
+
     end
 
     return [f, mod_mom, flag]
@@ -85,14 +87,16 @@ function objFunction_WB(xx, x0, pb, shocks, data_mom, W)
 
     # Simulate the model and compute moments
     out     = simulate(baseline, shocks)
+    flag    = out.flag
     mod_mom = [out.std_Δlw, out.avg_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
     d       = (mod_mom - data_mom) #./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
-    f       = out.flag < 1 ? d'*W*d : 10000
-    f       = isnan(f) ? 10000 : f
+    f       = flag < 1 ? d'*W*d : 10^5
+
     # add extra flags
     flag     = isnan(f) ? 1 : flag
-    f        = isnan(f) ? 10000 : f
-    return [f, mod_mom, out.flag]
+    f        = isnan(f) ? 10^5 : f
+
+    return [f, mod_mom, flag]
 end
 
 """

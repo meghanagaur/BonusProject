@@ -7,7 +7,7 @@ function tiktak_spmd(sobol, fvals_d, argmin_d, min_p, argmin_p, iter_p,
     
     #init_points = @fetchfrom 2 test[:L] 
     #init_points = sob_d[:L] 
-    #idx = @fetchfrom 2 myid()
+    #idx = @fetchfrom 2 myid() 
     id          = myid() - 1            # corresponding worker id
     N_str       = size(sobol,2)         # length of string of initial points
     I_max       = N_str*size(sobol,3)   # maximal iterations across all tasks
@@ -60,7 +60,7 @@ function tiktak_spmd(sobol, fvals_d, argmin_d, min_p, argmin_p, iter_p,
         fvals_d[:L][i]      = min_f      # function value
         argmin_d[:L][:,i]  .= arg_min    # arg min 
 
-        # update the results in small vectors 
+        # update the best results in small vectors 
         if i == 1
 
             min_p[:L][:]        .= min_f

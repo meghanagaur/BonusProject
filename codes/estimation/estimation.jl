@@ -1,7 +1,7 @@
 using Distributed, SlurmClusterManager
 
 #addprocs(SlurmManager())
-addprocs(2)
+#addprocs(2)
 
 @everywhere begin
     using DistributedArrays, DistributedArrays.SPMD
@@ -16,12 +16,12 @@ end
     @unpack moms, fvals, pars = load(loc*"jld/pretesting_clean.jld2") 
 
     # sort and reshape the parameters for distribution across worksers
-    N_string       = 50                                # length of each worker string
+    N_string       = 25                                # length of each worker string
     N_procs        = nworkers()                        # number of processes
     Nend           = N_procs*N_string                  # number of initial points
     sorted_indices = reverse(sortperm(fvals)[1:Nend])  # sort by function values in descending order
-    sobol_sort     = pars[sorted_indices,:]            # get paramter values: N_TASKS*NSTRING x J
-    # reshpae parameter vector 
+    sobol_sort     = pars[sorted_indices,:]            # get parameter values: N_TASKS*NSTRING x J
+    # reshape parameter vector 
     sob_int        = reshape(sobol_sort,  (N_procs, N_string, J )) # N_TASKS x NSTRING x J
 
    # final parameter matrix (reshape for column-memory access: NSTRING x J x N_TASKS
@@ -40,7 +40,7 @@ argmin_d    = dzeros(size(sobol),  workers()[1:end], [1, 1, nworkers()])       #
 
 # initialize the small distributed vectors 
 iter_p      = ddata();  
-min_p       = dfill(10000.0, nworkers()); #ddata(); 
+min_p       = dfill(10^5, nworkers());
 argmin_p    = dzeros( (J, nworkers()) , workers()[1:end], [1, nworkers()] )
 
 # starting point for local optimization step with bounds (in (-1,1) interval for transformed parameters )
