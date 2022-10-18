@@ -37,21 +37,24 @@ function objFunction(xx, pb, shocks, data_mom, W)
     inbounds = minimum( [ pb[i][1] <= xx[i] <= pb[i][2] for i = 1:J]) >= 1
 
     if inbounds == 0
-        f        = 10^5
+
+        f        = 10.0^5
         mod_mom  = ones(K)*NaN
         flag     = 1
+   
     elseif inbounds == 1
+
         baseline = model(ε = xx[1] , σ_η = xx[2], χ = xx[3], γ = xx[4], hbar = xx[5]) 
         # Simulate the model and compute moments
         out      = simulate(baseline, shocks)
         flag     = out.flag
         mod_mom  = [out.std_Δlw, out.avg_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
         d        = (mod_mom - data_mom) #./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % change
-        f        = flag < 1 ? d'*W*d : 10^5
+        f        = flag < 1 ? d'*W*d : 10.0^5
 
         # add extra flags
         flag     = isnan(f) ? 1 : flag
-        f        = isnan(f) ? 10^5 : f
+        f        = isnan(f) ? 10.0^5 : f
 
     end
 
@@ -90,11 +93,11 @@ function objFunction_WB(xx, x0, pb, shocks, data_mom, W)
     flag    = out.flag
     mod_mom = [out.std_Δlw, out.avg_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
     d       = (mod_mom - data_mom) #./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
-    f       = flag < 1 ? d'*W*d : 10^5
+    f       = flag < 1 ? d'*W*d : 10.0^5
 
     # add extra flags
     flag     = isnan(f) ? 1 : flag
-    f        = isnan(f) ? 10^5 : f
+    f        = isnan(f) ? 10.0^5 : f
 
     return [f, mod_mom, flag]
 end
@@ -103,7 +106,7 @@ end
 Logit transformation to transform x to [min,max].
 """
 function logit(x; x0 = 0, min = -1, max = 1, λ = 1.0)
-    (max - min)/(1 + exp(-(x - x0)/λ)) + min
+   return (max - min)/(1 + exp(-(x - x0)/λ)) + min
 end
 
 """ 
@@ -156,7 +159,7 @@ param_bounds         = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
                         (2, [0.001, 0.5]),      # σ_η 
                         (3, [-1, 1]),           # χ
                         (4, [0.3, 0.9]),        # γ
-                        (5, [0.15, 2]) ])       # hbar
+                        (5, [0.15, 2.0]) ])     # hbar
 
 #= Corrction for the χ, γ bounds (enforce log b(z) < log z for all z)
 param_bounds[3] = [ max(1 - log(param_bounds[4][2])/log(model().zgrid[1]), param_bounds[3][1]) ,

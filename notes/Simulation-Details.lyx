@@ -120,7 +120,7 @@ For every point
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $a(z|z_{1})=\left[\cfrac{za(z|z_{1})}{\psi(Y(z_{1})-\frac{\kappa}{q(\theta(z_{1}))}}-\cfrac{\psi}{\epsilon}(h'(a(z|z_{1}))\sigma_{\eta})^{2}\right]^{\frac{{\varepsilon}}{\varepsilon+1}}$
+\begin_inset Formula $a(z|z_{1})=\left[\cfrac{za(z|z_{1})}{\psi\left(Y(z_{1})-\frac{\kappa}{q(\theta(z_{1}))}\right)}-\cfrac{\psi}{\epsilon}(h'(a(z|z_{1}))\sigma_{\eta})^{2}\right]^{\frac{{\varepsilon}}{\varepsilon+1}}$
 \end_inset
 
  
@@ -353,13 +353,12 @@ The expectation of period wage growth is
 \begin_inset Formula 
 \begin{align*}
 \mathbb{E}[\Delta\log w_{t}] & =\mathbb{E}\left[\psi h'(a(z_{t}|z_{1}))\eta_{t}-\frac{1}{2}(\psi h'(a(z_{t}|z_{1}))\sigma_{\eta})^{2}\right]\\
- & =-\frac{\psi^{2}\sigma_{\eta}^{2}}{2}\mathbb{E}\left[h'(a(z_{t}|z_{1}))^{2}\right]<0,
+ & =-\frac{\psi^{2}\sigma_{\eta}^{2}}{2}\mathbb{E}\left[h'(a(z_{t}|z_{1}))^{2}\right]<0.
 \end{align*}
 
 \end_inset
 
-which suggests we may not want to target expected wage growth.
- The unconditional variance of period wage growth is 
+The unconditional variance of period wage growth is 
 \begin_inset Formula 
 \begin{align*}
 Var(\Delta\log w_{t}) & =Var\left[\psi h'(a(z_{t}|z_{1}))\eta_{t}-\frac{1}{2}(\psi h'(a(z_{t}|z_{1}))\sigma_{\eta})^{2}\right]\\
@@ -426,7 +425,40 @@ We calculate the unconditional variance of quarterly log wage changes as
 \end_layout
 
 \begin_layout Section
-Note on cyclicality of effort
+Cyclicality of effort of new hires
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+a(z|z_{1})-\left[\cfrac{za(z|z_{1})}{\psi\left(Y(z_{1})-\frac{\kappa}{q(\theta(z_{1}))}\right)}-\cfrac{\psi}{\epsilon}(h'(a(z|z_{1}))\sigma_{\eta})^{2}\right]^{\frac{\varepsilon}{\varepsilon+1}} & =0\\
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial a(z_{1}|z_{1})}{\partial z_{1}}-\frac{\varepsilon}{\varepsilon+1}\left[\cfrac{z_{1}a(z|z_{1})}{w_{0}(z)}-\cfrac{\psi}{\epsilon}(h'(a(z|z_{1}))\sigma_{\eta})^{2}\right]^{\frac{-1}{\varepsilon+1}}\left[\cfrac{z_{1}\frac{\partial a(z_{1}|z_{1})}{\partial z_{1}}+a(z|z_{1})}{w_{0}(z_{1})}-\frac{z_{1}a(z|z_{1})}{w_{0}(z_{1})^{2}}\frac{dw_{0}(z_{1})}{dz_{1}}-\cfrac{2\psi\sigma_{\eta}}{\epsilon}h'(a)h''(a)\frac{\partial a(z_{1}|z_{1})}{\partial z_{1}}\right]=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial a(z_{1}|z_{1})}{\partial z_{1}}=\left[\frac{a(z_{1}|z_{1})}{w_{0}}-\frac{z_{1}a(z|z_{1})}{w_{0}(z_{1})^{2}}\frac{dw_{0}(z_{1})}{dz_{1}}\right]\left(\frac{\varepsilon+1}{\varepsilon}\left[\cfrac{z_{1}a(z|z_{1})}{w_{0}(z)}-\cfrac{\psi}{\epsilon}(h'(a(z|z_{1}))\sigma_{\eta})^{2}\right]^{\frac{1}{\varepsilon+1}}-\frac{z_{1}}{w_{0}(z_{1})}+\cfrac{2\psi\sigma_{\eta}}{\epsilon}h'(a)h''(a)\right)
+\]
+
+\end_inset
+
+
 \end_layout
 
 \end_body

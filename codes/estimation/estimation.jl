@@ -5,7 +5,7 @@ using Distributed, SlurmClusterManager
 
 @everywhere begin
     using DistributedArrays, DistributedArrays.SPMD
-    #loc = "/Users/meghanagaur/BonusProject/codes/estimation/"
+    #oc = "/Users/meghanagaur/BonusProject/codes/estimation/"
     loc = ""
     include(loc*"smm_settings.jl") # SMM inputs, settings, packages, etc.
 end  
@@ -16,7 +16,7 @@ end
     @unpack moms, fvals, pars = load(loc*"jld/pretesting_clean.jld2") 
 
     # sort and reshape the parameters for distribution across worksers
-    N_string       = 25                                # length of each worker string
+    N_string       = 20                                # length of each worker string
     N_procs        = nworkers()                        # number of processes
     Nend           = N_procs*N_string                  # number of initial points
     sorted_indices = reverse(sortperm(fvals)[1:Nend])  # sort by function values in descending order
@@ -40,7 +40,7 @@ argmin_d    = dzeros(size(sobol),  workers()[1:end], [1, 1, nworkers()])       #
 
 # initialize the small distributed vectors 
 iter_p      = ddata();  
-min_p       = dfill(10^5, nworkers());
+min_p       = dfill(10.0^5, nworkers());
 argmin_p    = dzeros( (J, nworkers()) , workers()[1:end], [1, nworkers()] )
 
 # starting point for local optimization step with bounds (in (-1,1) interval for transformed parameters )

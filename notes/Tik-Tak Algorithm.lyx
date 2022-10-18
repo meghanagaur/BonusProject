@@ -331,7 +331,7 @@ Handling Bound Constraints
 \end_layout
 
 \begin_layout Itemize
-The Nelder-Mead simplex algorithm does not incorporate bound constraints.
+The Nelder-Mead simplex algorithm does not incorporate box constraints.
  Two ways to handle this: set function values very high outside bounds or
  transform the search area into a K-cube conforming with our desired bound
  constraints.
@@ -351,9 +351,9 @@ To transform, set initial point to constant vector, perform a logistic transform
 \end_layout
 
 \begin_layout Itemize
-If we stick with Optim's NM algorithm and implicitly incoroporate bound
- constraints, we can decrease the search area as the number of iterations
- increases by increasing 
+If we stick with Optim's NM algorithm and implicitly incoroporate box constraint
+s, we can decrease the search area as the number of iterations increases
+ by increasing 
 \begin_inset Formula $\lambda$
 \end_inset
 
@@ -365,8 +365,8 @@ If we stick with Optim's NM algorithm and implicitly incoroporate bound
 \end_deeper
 \begin_layout Itemize
 We can also test out other local minimizers, such as those belonging to
- the NLSolve library.
- 
+ the NLSolve library, and BFGS-type solvers (L-BFGS-B solver which allows
+ for constraints).
 \end_layout
 
 \begin_layout Subsection*

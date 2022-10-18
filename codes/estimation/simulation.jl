@@ -30,16 +30,16 @@ function simulate(modd, shocks; u0 = 0.067)
     # Generate model data for every point on zgrid:
     
     # Results from panel simulation
-    lw      = zeros(indices[end])        # log w_it, given z_1 and z_t
-    ly      = zeros(indices[end])        # log y_it, given z_1 and z_t
-    Δlw_q   = zeros(indices_q[end])      # Δlog w_it <- QUARTERLY
+    lw      = zeros(Real, indices[end])        # log w_it, given z_1 and z_t
+    ly      = zeros(Real, indices[end])        # log y_it, given z_1 and z_t
+    Δlw_q   = zeros(Real, indices_q[end])      # Δlog w_it <- QUARTERLY
 
     # Values corresponding to new contracts (i.e. starting at z_t)
-    w0_z    = zeros(length(zgrid))       # E[w_t], given z_1
-    Y_z     = zeros(length(zgrid))       # PV of Y, given z_1
-    θ_z     = zeros(length(zgrid))       # θ(z_1)
-    lw1_z   = zeros(length(zgrid))       # E[log w1|z] <- wages of new hires
-    flag_z  = zeros(Int64,length(zgrid)) # error flags
+    w0_z    = zeros(Real, length(zgrid))       # E[w_t], given z_1
+    Y_z     = zeros(Real, length(zgrid))       # PV of Y, given z_1
+    θ_z     = zeros(Real, length(zgrid))       # θ(z_1)
+    lw1_z   = zeros(Real, length(zgrid))       # E[log w1|z] <- wages of new hires
+    flag_z  = zeros(Int64,length(zgrid))       # error flags
 
     Threads.@threads for iz = 1:N_z
 
@@ -82,9 +82,9 @@ function simulate(modd, shocks; u0 = 0.067)
             lw[start_idx:end_idx]   = vec(lw_mat)
 
             # Compute log individual output
-            @views y                = yz[z_shocks_idx_z]     # a_t(z_t|z_1)*z_t
-            ηz                      = z_shocks_z.*η_shocks_z # η_t*z_t
-            ly[start_idx:end_idx]   = vec(log.(max.(y + ηz, 0.01))) # nudge up to avoid run-time error
+            @views y                = yz[z_shocks_idx_z]             # a_t(z_t|z_1)*z_t
+            ηz                      = z_shocks_z.*η_shocks_z         # η_t*z_t
+            ly[start_idx:end_idx]   = vec(log.(max.(y + ηz, 0.001))) # nudge up to avoid run-time error
 
             # Make some adjustments to compute quarterly wage changes
             start_idx_q  = (iz==1) ? 1 : indices_q[iz-1] + 1 
@@ -111,7 +111,7 @@ function simulate(modd, shocks; u0 = 0.067)
         @views lw1_t         = lw1_z[z_shocks_idx_str]       # E[log w_1 | z_t]
         w_0_t                = w0_z[z_shocks_idx_str]        # E[w_0 | z_t]
         @views Y_t           = Y_z[z_shocks_idx_str]         # Y_1 | z_t
-        lY_t                 = log.(max.(Y_t, eps()))        # log Y_1 | z_t, nudge up to avoid runtime error
+        lY_t                 = log.(max.(Y_t, 10^-6 ))       # log Y_1 | z_t, nudge up to avoid runtime error
         @views θ_t           = θ_z[z_shocks_idx_str]         # θ(z_t)
 
         # Compute evolution of unemployment for the different z_t paths
@@ -129,10 +129,10 @@ function simulate(modd, shocks; u0 = 0.067)
         @views dlw1_dlz = ols(vec(lw1_t[burnin+1:end]), vec(lz_shocks_str[burnin+1:end]))[2]
         
         # Estimate d log Y / d log z (pooled OLS)
-        @views dlY_dlz   = ols(vec(lY_t[burnin+1:end]), vec(lz_shocks_str[burnin+1:end]))[2]
+        @views dlY_dlz  = ols(vec(lY_t[burnin+1:end]), vec(lz_shocks_str[burnin+1:end]))[2]
 
         # Estimate d log u / d  log z (pooled OLS), nudge up to avoid runtime error
-        @views dlu_dlz  = ols(log.( max.(u_t[burnin+1:end], eps()) ), vec(lz_shocks_str[burnin+1:end]))[2]
+        @views dlu_dlz  = ols(log.( max.(u_t[burnin+1:end], 10^-6 )), vec(lz_shocks_str[burnin+1:end]))[2]
 
         # Compute u_ss as mean of unemployment rate post-burn period in for now
         u_ss   = mean(u_t[burnin+1:end])
@@ -155,9 +155,10 @@ Run an OLS regression of Y on X.
 """
 function ols(Y, X; intercept = true)
     if intercept == true
-        X = hcat(ones(size(X,1)), X)
-    end
-    return  (X'X)\(X'*Y) #inv(X'X)*(X'*Y)
+        XX = Float64.(hcat(ones(size(X,1)), X))
+    end    
+    YY = Float64.(Y)
+    return  inv(XX'XX)*(XX'*YY)
 end
 
 """

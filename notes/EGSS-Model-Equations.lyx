@@ -120,7 +120,7 @@ y_{it}=z_{t}(a_{it}+\eta_{it})
 \end_layout
 
 \begin_layout Itemize
-The matching function is
+The matching function is Cobb-Douglas:
 \begin_inset Formula 
 \[
 m(u,v)=\mu u^{\alpha}v^{1-\alpha}
@@ -173,7 +173,7 @@ The unemployment benefit is
 \begin_inset Formula $\xi(z)=\gamma\cdot z^{\chi}$
 \end_inset
 
-, and the value of unemployment is 
+,and the value of unemployment is 
 \begin_inset Formula $\omega(z_{1})=E_{1}\left[\sum\beta^{t}\xi(z_{t})\right].$
 \end_inset
 
@@ -303,8 +303,8 @@ The worker's wage at time
 
 \end_inset
 
-This implies that a worker's expected PD utility from consumption (= wages
- without savings)
+This implies that a worker's expected PD utility from consumption (equal
+ to wages, without savings)
 \begin_inset Formula 
 \begin{align*}
 U & =E_{1}\left[\sum_{t=1}^{\infty}(\beta(1-s))^{t-1}\log(w_{t}(a_{t},\eta^{t}|z^{t})\right]\\
@@ -327,6 +327,55 @@ U & =E_{1}\left[\sum_{t=1}^{\infty}(\beta(1-s))^{t-1}(\log(w_{t}(a_{t},\eta^{t}|
 \end_inset
 
 
+\end_layout
+
+\begin_layout Section
+Notes
+\end_layout
+
+\begin_layout Itemize
+The optimal effort 
+\begin_inset Formula $a(z|z_{1})=\left[\cfrac{z_{t}a_{t}(z_{t}|z_{1})}{w_{0}(z_{1})}-\cfrac{\psi}{\varepsilon}(h'(a_{t}(z_{t}|z_{1}))\sigma_{\eta})^{2}\right]^{\varepsilon/(\varepsilon+1)}$
+\end_inset
+
+ is decreasing in 
+\begin_inset Formula $w_{0}$
+\end_inset
+
+ and increasing in 
+\begin_inset Formula $z_{t}$
+\end_inset
+
+ (for 
+\begin_inset Formula $\varepsilon=0.3,\sigma_{\eta}=0.5).$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+The expected wage at any time 
+\begin_inset Formula $t$
+\end_inset
+
+ is equal to 
+\begin_inset Formula $w_{0}(z_{1}),$
+\end_inset
+
+which is increasing in 
+\begin_inset Formula $Y(z_{1})$
+\end_inset
+
+ and increasing in 
+\begin_inset Formula $q.$
+\end_inset
+
+ However, 
+\begin_inset Formula $\frac{d^{2}w_{0}}{d^{2}q}=-\frac{\psi\kappa}{q^{3}}$
+\end_inset
+
+.
+ 
 \end_layout
 
 \end_body
