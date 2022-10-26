@@ -22,33 +22,39 @@ function simulate(modd, shocks; u0 = 0.067)
     std_w0   = NaN  # std dev of w_0
 
     # Get all of the relevant parameters for the model
-    @unpack hp, zgrid, N_z, ψ, f, s, ε, σ_η, χ, γ, hbar = modd 
+    @unpack hp, zgrid, N_z, ψ, f, s, σ_η, χ, γ, hbar = modd 
 
     # Unpack the relevant shocks
-    @unpack η_shocks, z_shocks, z_shocks_idx, λ_N_z, zstring, burnin, z_ss_dist, indices, indices_q, T_sim = shocks
+    @unpack η_shocks, z_shocks, z_shocks_idx, λ_N_z, zstring, burnin, z_ss_dist, indices, indices_y, T_sim = shocks
 
     # Generate model data for every point on zgrid:
     
     # Results from panel simulation
-    lw      = zeros(Real, indices[end])        # log w_it, given z_1 and z_t
-    ly      = zeros(Real, indices[end])        # log y_it, given z_1 and z_t
-    Δlw_q   = zeros(Real, indices_q[end])      # Δlog w_it <- QUARTERLY
+    lw      = zeros(indices[end])        # log w_it, given z_1 and z_t
+    ly      = zeros(indices[end])        # log y_it, given z_1 and z_t
+    Δlw_y   = zeros(indices_y[end])      # Δlog w_it <- yearly
 
     # Values corresponding to new contracts (i.e. starting at z_t)
-    w0_z    = zeros(Real, length(zgrid))       # E[w_t], given z_1
-    Y_z     = zeros(Real, length(zgrid))       # PV of Y, given z_1
-    θ_z     = zeros(Real, length(zgrid))       # θ(z_1)
-    lw1_z   = zeros(Real, length(zgrid))       # E[log w1|z] <- wages of new hires
-    flag_z  = zeros(Int64,length(zgrid))       # error flags
+    w0_z      = zeros(length(zgrid))       # E[w_t], given z_1
+    Y_z       = zeros(length(zgrid))       # PV of Y, given z_1
+    θ_z       = zeros(length(zgrid))       # θ(z_1)
+    lw1_z     = zeros(length(zgrid))       # E[log w1|z] <- wages of new hires
+    flag_z    = zeros(Int64,length(zgrid)) # convergence/effort/wage flags
+    flag_IR_z = zeros(Int64,length(zgrid)) # IR flags
+    err_IR_z  = zeros(length(zgrid))       # IR flags
 
     Threads.@threads for iz = 1:N_z
 
-        modd          = model(z_1 = zgrid[iz], ε = ε, σ_η = σ_η, hbar = hbar, χ = χ, γ = γ)
+        # solve the model for z_1 = zgrid[iz]
+        modd          = model(z_1 = zgrid[iz], σ_η = σ_η, hbar = hbar, χ = χ, γ = γ)
         sol           = solveModel(modd; noisy = false)
 
-        @unpack exit_flag1, exit_flag2, exit_flag3, wage_flag, effort_flag, az, yz, w_0, θ, Y = sol
+        @unpack conv_flag1, conv_flag2, conv_flag3, wage_flag, effort_flag, IR_err, flag_IR, az, yz, w_0, θ, Y = sol
         
-        flag_z[iz]    = maximum([exit_flag1, exit_flag2, exit_flag3, wage_flag, effort_flag])
+        # record the flags
+        flag_z[iz]    = maximum([conv_flag1, conv_flag2, conv_flag3, wage_flag, effort_flag])
+        flag_IR_z[iz] = flag_IR
+        err_IR_z[iz]  = IR_err
 
         if flag_z[iz] < 1             
             
@@ -82,14 +88,14 @@ function simulate(modd, shocks; u0 = 0.067)
             lw[start_idx:end_idx]   = vec(lw_mat)
 
             # Compute log individual output
-            @views y                = yz[z_shocks_idx_z]             # a_t(z_t|z_1)*z_t
-            ηz                      = z_shocks_z.*η_shocks_z         # η_t*z_t
-            ly[start_idx:end_idx]   = vec(log.(max.(y + ηz, 0.001))) # nudge up to avoid run-time error
+            @views y                = yz[z_shocks_idx_z]                            # a_t(z_t|z_1)*z_t
+            ηz                      = max.(-0.5, min.(z_shocks_z.*η_shocks_z,0.5))  # η_t*z_t <= truncate
+            ly[start_idx:end_idx]   = vec(log.(max.(y + ηz, eps())))                # nudge to avoid runtime error
 
-            # Make some adjustments to compute quarterly wage changes
-            start_idx_q  = (iz==1) ? 1 : indices_q[iz-1] + 1 
-            end_idx_q    = indices_q[iz]
-            Δlw_q[start_idx_q:end_idx_q] = [lw_mat[i,t+3] - lw_mat[i,t] for  i = 1:size(z_shocks_z,1), t = 1:T_sim-3]
+            # Make some adjustments to compute annual wage changes
+            start_idx_y = (iz == 1) ? 1 : indices_y[iz-1] + 1 
+            end_idx_y   = indices_y[iz]
+            Δlw_y[start_idx_y:end_idx_y] = vec([lw_mat[i,t+12] - lw_mat[i,t] for  i = 1:size(z_shocks_z,1), t = 1:T_sim-12])
         end
     end
 
@@ -97,9 +103,9 @@ function simulate(modd, shocks; u0 = 0.067)
     if maximum(flag_z) < 1
         
         # Stdev & avg of quarterly log wage changes for job-stayers
-        std_Δlw  = std(Δlw_q) 
-        avg_Δlw  = mean(Δlw_q)
-        #histogram(Δlw_q)
+        std_Δlw  = std(Δlw_y) 
+        avg_Δlw  = mean(Δlw_y)
+        #histogram(Δlw_y)
         
         # Regress log w_it on log y_it 
         dlw_dly  = ols(vec(lw), vec(ly))[2]
@@ -109,9 +115,9 @@ function simulate(modd, shocks; u0 = 0.067)
         z_shocks_str         = zstring.z_shocks
         lz_shocks_str        = log.(zstring.z_shocks)
         @views lw1_t         = lw1_z[z_shocks_idx_str]       # E[log w_1 | z_t]
-        w_0_t                = w0_z[z_shocks_idx_str]        # E[w_0 | z_t]
+        @views w_0_t         = w0_z[z_shocks_idx_str]        # E[w_0 | z_t]
         @views Y_t           = Y_z[z_shocks_idx_str]         # Y_1 | z_t
-        lY_t                 = log.(max.(Y_t, 10^-6 ))       # log Y_1 | z_t, nudge up to avoid runtime error
+        lY_t                 = log.(max.(Y_t, eps() ))       # log Y_1 | z_t, nudge up to avoid runtime error
         @views θ_t           = θ_z[z_shocks_idx_str]         # θ(z_t)
 
         # Compute evolution of unemployment for the different z_t paths
@@ -131,23 +137,31 @@ function simulate(modd, shocks; u0 = 0.067)
         # Estimate d log Y / d log z (pooled OLS)
         @views dlY_dlz  = ols(vec(lY_t[burnin+1:end]), vec(lz_shocks_str[burnin+1:end]))[2]
 
-        # Estimate d log u / d  log z (pooled OLS), nudge up to avoid runtime error
-        @views dlu_dlz  = ols(log.( max.(u_t[burnin+1:end], 10^-6 )), vec(lz_shocks_str[burnin+1:end]))[2]
+        # Estimate d log u / d  log z (pooled OLS), nudge to avoid runtime error
+        @views dlu_dlz  = ols(log.( max.(u_t[burnin+1:end], eps() )), vec(lz_shocks_str[burnin+1:end]))[2]
 
-        # Compute u_ss as mean of unemployment rate post-burn period in for now
-        u_ss   = mean(u_t[burnin+1:end])
+        # Compute stochastic SS unemployment: u_ss = E[u_t | t > burnin]
+        #u_ss   = mean(u_t[burnin+1:end])
+
+        # Compute nonstochastic SS unemployment: u_ss = s/(s + f(θ(z_ss)), where z_ss = 1
+        idx    = Int64(median(1:length(zgrid)))
+        u_ss   = s/(s  + f(θ_z[idx]))
 
         # Compute some standard deviations
         std_u  = std(u_t)
         std_z  = std(z_shocks_str)
         std_Y  = std(Y_t)
         std_w0 = std(w_0_t)
+
     end
     
+    IR_penalty = sum(abs.(err_IR_z))
+
     # Export the simulation results
     return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, 
             avg_Δlw = avg_Δlw, dlw1_dlz = dlw1_dlz, dlY_dlz = dlY_dlz, dlu_dlz = dlu_dlz, 
-            std_u = std_u, std_z = std_z, std_Y = std_Y, std_w0 = std_w0, flag = maximum(flag_z))
+            std_u = std_u, std_z = std_z, std_Y = std_Y, std_w0 = std_w0, 
+            flag = maximum(flag_z), flag_IR = maximum(flag_IR), IR_penalty = IR_penalty)
 end
 
 """
@@ -155,10 +169,10 @@ Run an OLS regression of Y on X.
 """
 function ols(Y, X; intercept = true)
     if intercept == true
-        XX = Float64.(hcat(ones(size(X,1)), X))
+        XX = [ones(size(X,1)) X]
     end    
-    YY = Float64.(Y)
-    return  inv(XX'XX)*(XX'*YY)
+    return  (XX'XX)\(XX'*Y)
+    #return  inv(XX'XX)(XX'*YY)
 end
 
 """

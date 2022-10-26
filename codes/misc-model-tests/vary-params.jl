@@ -6,7 +6,7 @@ using DataStructures, Distributions, ForwardDiff, Interpolations,
  LinearAlgebra, Parameters, Random, Roots, StatsBase, DynamicModel
 
 # Directory for figures
-dir = "/Users/meghanagaur/BonusProject/codes/model-tests/"
+dir = "/Users/meghanagaur/BonusProject/codes/misc-model-tests/"
 
 # check to make sure we fall within bounds for all χ
 zgrid = model().zgrid
@@ -102,7 +102,7 @@ helpful for checking how we should update theta for convergence =#
 qgrid = collect(0.5:1:25)
 modd  = OrderedDict{Int64, Any}()
 Threads.@threads for i = 1:length(qgrid)
-    modd[i] = partial.(qgrid[i], modd = model(ε=0.5))
+    modd[i] = partial.(qgrid[i], modd = model(ε=1))
 end
 
 Y     = [modd[i].Y for i = 1:length(qgrid)]
@@ -231,7 +231,8 @@ hline!([1],label=L"\bar{\chi}")
 q1(θ,ι)  = 1/(1 + θ^ι)^(1/ι)               # h&m mf
 q2(θ)    =  max(min(1.355*θ^(-0.72),1),0) # shimer mf
 
-plot(x->q1(x,1),0,5)
+plot(x->q1(x,0.5),0,5)
+plot!(x->q1(x,1),0,5)
 plot!(x->q1(x,2),0,5)
 plot!(x->q1(x,3),0,5)
 plot!(x->q1(x,4),0,5)

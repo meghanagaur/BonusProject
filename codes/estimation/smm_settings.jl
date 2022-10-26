@@ -5,6 +5,7 @@ Note: J = number of moments, K = number of parameters.
 
 # Load necessary packages
 #using Pkg; Pkg.add(url="https://github.com/meghanagaur/DynamicModel")
+
 using DynamicModel, BenchmarkTools, DataStructures, Distributions, Optim, Sobol,
 ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2
 
@@ -26,8 +27,8 @@ W            = weight matrix for SMM
 γ            = 4th param
 hbar         = 5th param
     ORDERING OF MOMENTS
-std_Δlw      = 1st moment (st dev of log wage changes)
-E[Δlw]       = 2nd moment (avg log wage change)
+std_Δlw      = 1st moment (st dev of wage growth)
+E[Δlw]       = 2nd moment (avg wage growth)
 dlw1_du      = 3rd moment (dlog w_1 / d u)
 dly_dΔlw     = 4th moment (d log y_it / d Δ log w_it )
 u_ss         = 5th moment (SS unemployment rate)
@@ -36,29 +37,36 @@ function objFunction(xx, pb, shocks, data_mom, W)
 
     inbounds = minimum( [ pb[i][1] <= xx[i] <= pb[i][2] for i = 1:J]) >= 1
 
-    if inbounds == 0
-
+    #= if inbounds == 0
         f        = 10.0^5
         mod_mom  = ones(K)*NaN
         flag     = 1
    
-    elseif inbounds == 1
+    #elseif inbounds == 1=#
 
-        baseline = model(ε = xx[1] , σ_η = xx[2], χ = xx[3], γ = xx[4], hbar = xx[5]) 
-        # Simulate the model and compute moments
-        out      = simulate(baseline, shocks)
-        flag     = out.flag
-        mod_mom  = [out.std_Δlw, out.avg_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
-        d        = (mod_mom - data_mom) #./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % change
-        f        = flag < 1 ? d'*W*d : 10.0^5
+    baseline = model(σ_η = xx[1], χ = xx[2], γ = xx[3], hbar = xx[4]) 
 
-        # add extra flags
-        flag     = isnan(f) ? 1 : flag
-        f        = isnan(f) ? 10.0^5 : f
+    # Record flags and update objective function
+    flag       = out.flag
+    flag_IR    = out.flag_IR
+    IR_penalty = out.IR_penalty
+    mod_mom = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
+    d       = (mod_mom - data_mom)/abs.(data_mom) #./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
 
+    # Adjust f accordingly
+    if flag < 1 && flag_IR < 1
+        f = d'*W*d 
+    elseif flag > 1 && flag_IR == 1
+        f = 10.0^8
+    elseif flag < 1 && flag_IR == 1
+        f = (10.0^5)*IR_penalty
     end
+    
+    # add extra checks
+    flag     = isnan(f) ? 1 : flag
+    f        = isnan(f) ? 10.0^8 : f
 
-    return [f, mod_mom, flag]
+    return [f, mod_mom, flag, flag_IR, IR_penalty]
 end
 
 """
@@ -77,8 +85,8 @@ W            = weight matrix for SMM
 γ            = 4th param
 hbar         = 5th param
     ORDERING OF MOMENTS
-std_Δlw      = 1st moment (st dev of log wage changes)
-E[Δlw]       = 2nd moment (avg log wage change)
+std_Δlw      = 1st moment (st dev of wage growth)
+E[Δlw]       = 2nd moment (avg wage growth)
 dlw1_du      = 3rd moment (dlog w_1 / d u)
 dly_dΔlw     = 4th moment (d log y_it / d Δ log w_it )
 u_ss         = 5th moment (SS unemployment rate)
@@ -86,20 +94,32 @@ u_ss         = 5th moment (SS unemployment rate)
 function objFunction_WB(xx, x0, pb, shocks, data_mom, W)
 
     endogParams  = [ transform_params(xx[i], pb[i], x0[i]) for i = 1:J] 
-    baseline     = model(ε = endogParams[1] , σ_η = endogParams[2], χ = endogParams[3], γ = endogParams[4], hbar = endogParams[5]) 
+    baseline     = model(σ_η = endogParams[1], χ = endogParams[2], γ = endogParams[3], hbar = endogParams[4]) 
 
     # Simulate the model and compute moments
     out     = simulate(baseline, shocks)
-    flag    = out.flag
-    mod_mom = [out.std_Δlw, out.avg_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
-    d       = (mod_mom - data_mom) #./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
-    f       = flag < 1 ? d'*W*d : 10.0^5
 
-    # add extra flags
+    # Record flags and update objective function
+    flag       = out.flag
+    flag_IR    = out.flag_IR
+    IR_penalty = out.IR_penalty
+    mod_mom = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
+    d       = (mod_mom - data_mom)/abs.(data_mom) #./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
+
+    # Adjust f accordingly
+    if flag < 1 && flag_IR < 1
+        f = d'*W*d 
+    elseif flag > 1 && flag_IR == 1
+        f = 10.0^8
+    elseif flag < 1 && flag_IR == 1
+        f = (10.0^5)*IR_penalty
+    end
+    
+    # add extra checks
     flag     = isnan(f) ? 1 : flag
-    f        = isnan(f) ? 10.0^5 : f
+    f        = isnan(f) ? 10.0^8 : f
 
-    return [f, mod_mom, flag]
+    return [f, mod_mom, flag, flag_IR, IR_penalty]
 end
 
 """
@@ -136,30 +156,36 @@ end
 ## Empirical moments that we are targeting
 moms_key             = OrderedDict{Int, Symbol}([   # parameter bounds
                         (1, :std_Δlw),
-                        (2, :avg_Δlw),
-                        (3, :dlw1_du),
-                        (4, :dy_dΔlw),
-                        (5, :u_ss) ]) 
-data_mom             = [0.016, 0.01, -0.5, 0.15, 0.06]    # annual -> quarterly stdev 0.064/4
-const K              = length(data_mom)
+                        #(2, :avg_Δlw),
+                        (2, :dlw1_du),
+                        (3, :dy_dΔlw),
+                        (4, :u_ss) ]) 
+
+std_Δlw_d     = 0.064 # annual -> quarterly stdev 0.064/4
+dlw1_du_d     = -0.5
+dy_dΔlw_d     = 0.15
+u_ss_d        = 0.035/(0.035+0.45)
+data_mom      = [std_Δlw_d, dlw1_du_d, dy_dΔlw_d, u_ss_d]   
+const K       = length(data_mom)
 
 ## Parameter bounds and weight matrix
-W                    = Matrix(1.0I, K, K) # inverse of covariance matrix of data_mom?
+const W   = Matrix(1.0I, K, K) # inverse of covariance matrix of data_mom?
+W[4,4]     = 2.0 # add extra weight for unemployment
 
 #Parameters to be estimated
 param_key            = OrderedDict{Int, Symbol}([
-                        (1, :ε),
-                        (2, :σ_η),
-                        (3, :χ),
-                        (4, :γ),
-                        (5, :hbar)])
+                        #(1, :ε),
+                        (1, :σ_η),
+                        (2, :χ),
+                        (3, :γ),
+                        (4, :hbar)])
 const J              = length(param_key)
 param_bounds         = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
-                        (1, [0.15,  2.0]),      # ε
-                        (2, [0.001, 0.5]),      # σ_η 
-                        (3, [-1, 1]),           # χ
-                        (4, [0.3, 0.9]),        # γ
-                        (5, [0.15, 2.0]) ])     # hbar
+                       # (1, [0.15,  2.0]),     # ε
+                        (1, [0.001, 0.5]),      # σ_η 
+                        (2, [-1, 1]),           # χ
+                        (3, [0.3, 0.9]),        # γ
+                        (4, [0.1, 2.0]) ])      # hbar
 
 #= Corrction for the χ, γ bounds (enforce log b(z) < log z for all z)
 param_bounds[3] = [ max(1 - log(param_bounds[4][2])/log(model().zgrid[1]), param_bounds[3][1]) ,
@@ -167,9 +193,9 @@ min(1 - log(param_bounds[4][2])/log(model().zgrid[end]), param_bounds[3][2])] =#
 
 ## Build shocks for the simulation
 @unpack N_z, P_z, zgrid = model()
-N_sim                   = 30000
-T_sim                   = 80         
-burnin                  = 1000
+N_sim                   = 100000
+T_sim                   = 120         
+burnin                  = 10000
 
 # Compute the invariant distribution of logz
 A           = P_z - Matrix(1.0I, N_z, N_z)
@@ -182,7 +208,7 @@ z_ss_dist   = (O*inv(A))
 # Create z and η shocks
 λ_N_z        = floor.(Int64, N_sim*z_ss_dist)
 indices      = cumsum(λ_N_z, dims = 2)*T_sim
-indices_q    = cumsum(λ_N_z, dims = 2)*(T_sim-3) # indices for quarterly log wage changes
+indices_y    = cumsum(λ_N_z, dims = 2)*(T_sim - 12) # indices for yearly log wage changes
 z_shocks     = OrderedDict{Int, Array{Real,2}}()
 z_shocks_idx = OrderedDict{Int, Array{Real,2}}()
 η_shocks     = OrderedDict{Int, Array{Real,2}}()
@@ -197,8 +223,9 @@ end
 zstring  = simulateZShocks(P_z, zgrid, N = 1, T = N_sim + burnin, set_seed = false)
 
 # Create an ordered tuple that contains the zshocks
-shocks   = (η_shocks = η_shocks, z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, indices = indices, indices_q = indices_q,
+shocks   = (η_shocks = η_shocks, z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, indices = indices, indices_y = indices_y,
     λ_N_z = λ_N_z, N_sim = N_sim, T_sim = T_sim, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
+
 
 #= Define a new simplexer for NM without explicit bound constraints
 """

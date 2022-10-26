@@ -1,6 +1,6 @@
 using CSV, DataFrames, Optim, StatsBase
 
-cd("/Users/meghanagaur/BonusProject/codes/estimate-mf-rates")
+cd("/Users/meghanagaur/BonusProject/codes/estimate-lmf-rates")
 
 # Load the vacancy, unemploymentdatda
 df = DataFrame(CSV.File(pwd()*"/data/mf_rates_monthly.csv"))
@@ -19,17 +19,28 @@ function obj(ι, θ, frate_d)
 end
 
 
-# match the quarterly job-finding rate data, given tightness in the data
+# match the monthly job-finding rate data, given tightness in the data
 opt     = optimize(ι -> obj(ι, tightness[1:end-1], frates[1:end-1]), 0.2, 20)
 ι_opt   = Optim.minimizer(opt)
 #0.733462873251313
 
-# match average quarterly job-finding rate, for θ=1
+# match average monthly job-finding rate, for θ=1
 opt     = optimize(ι -> obj(ι, 1, df.avg_frate[1]), 0.2, 20)
 ι_opt   = Optim.minimizer(opt)
 #0.7814827601364035
 
-# match average quarterly job-finding rate, for θ=1.5
+# match average monthly job-finding rate, for θ=1.5
 opt     = optimize(ι -> obj(ι, 1.5, df.avg_frate[1]), 0.2, 20)
 ι_opt   = Optim.minimizer(opt)
 #0.643888401555918
+
+# match average monthly job-finding rate, for θ=2
+opt     = optimize(ι -> obj(ι, 2, df.avg_frate[1]), 0.2, 20)
+ι_opt   = Optim.minimizer(opt)
+#0.5780803082372136
+
+
+# match average monthly job-finding rate, for θ=3
+opt     = optimize(ι -> obj(ι, 3, df.avg_frate[1]), 0.2, 20)
+ι_opt   = Optim.minimizer(opt)
+#0.5095238249429132

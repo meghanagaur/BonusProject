@@ -1,4 +1,4 @@
-cd "/Users/meghanagaur/BonusProject/codes/estimate-mf-rates"
+cd "/Users/meghanagaur/BonusProject/codes/estimate-lmf-rates"
 
 * Download monthly SA unemp + emp data from CPS and vacancies from JOLTS (all in thousands)
 freduse UEMPLT5 CE16OV UNEMPLOY JTSJOL UNRATE, clear
@@ -28,6 +28,8 @@ format qdate %tq
 
 egen avg_frate    = mean(frate) 
 egen avg_srate    = mean(srate) 
+
+gen u_ss          = avg_srate/(avg_srate + avg_frate)
 
 export delimited "data/mf_rates_monthly.csv", replace
 

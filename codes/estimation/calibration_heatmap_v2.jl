@@ -77,7 +77,7 @@ plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\bar{h}="*string(round(hbar_gr
 savefig(loc*"figs/calibration/fix_hbar_1.pdf")
 
 ############## SECOND SET OF MOMENTS ###################
-
+#=
 # Plot E[dlw]
 p1 = heatmap(ε_grid, σ_η_grid, avg_Δlw[idx,:,:], title=L"E[\Delta \log w]")
 xlabel!(L"\varepsilon")
@@ -125,7 +125,7 @@ ylabel!(L"\sigma_\eta")
 
 plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\bar{h}="*string(round(hbar_grid[idx], digits=2)))
 savefig(loc*"figs/calibration/fix_hbar_3.pdf")
-
+=#
 ############## FIX SIGMA_ETA at 0.5 ###################
 idx = length(σ_η_grid)
 ############## FIRST SET OF MOMENTS ###################
@@ -154,7 +154,7 @@ plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\sigma_{\eta}="*string(round(�
 savefig(loc*"figs/calibration/fix_sigma_eta_1.pdf")
 
 ############## SECOND SET OF MOMENTS ###################
-
+#=
 # Plot E[dlw]
 p1 = heatmap(ε_grid, hbar_grid, avg_Δlw[:,idx,:], title=L"E[\Delta \log w]")
 xlabel!(L"\varepsilon")
@@ -202,7 +202,7 @@ ylabel!(L"\bar{h}")
 
 plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\sigma_{\eta}="*string(σ_η_grid[idx]))
 savefig(loc*"figs/calibration/fix_sigma_eta_3.pdf")
-
+=#
 ############## FIX EPSILON at 0.3 #####################
 idx = findfirst(x -> x >= 0.3, ε_grid)
 ############## FIRST SET OF MOMENTS ###################

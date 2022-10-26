@@ -19,17 +19,19 @@ function get_stats(file_str)
     exp_wchange   = sum(df.freq_norm.*df.wchange)       
     exp_wchange2  = sum(df.freq_norm.*(df.wchange.^2))
 
-    # Compute std = sqrt(var) = E[x^2] - E[x]^2 
+    # Compute std = sqrt(var) = sqrt(E[x^2] - E[x]^2)
     std_wchange   = sqrt(exp_wchange2 - exp_wchange.^2)
 
     # return std, exp 
     return std_wchange/100, exp_wchange/100
 end
 
-get_stats("qtrly_wage_weighted_v0")    # quarterly wage changes
-get_stats("qtrly_wage_weighted_v1")    # quarterly wage changes
-get_stats("qtrly_wage_weighted_v2")    # quarterly wage changes
+# wages 
+get_stats("qtrly_wage_weighted_v0")    # quarterly wage changes: (0.0683999335069089, 0.01172357593232064)
+get_stats("qtrly_wage_weighted_v1")    # quarterly wage changes: (0.1064078051620281, 0.017867774303301696)
+get_stats("qtrly_wage_weighted_v2")    # quarterly wage changes: (0.07806647210753735, 0.013848325550726587)
 
+# other measures of wages/earnings
 get_stats("qtrly_wage4q_weighted")     # annual wage changes
 get_stats("sal_qtrly_ern_weighted")    # salary - earnings changes
 get_stats("sal_qtrly_wage_weighted")   # salary - wage changes
