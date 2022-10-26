@@ -1,6 +1,6 @@
 using CSV, DataFrames, Optim, StatsBase
 
-cd("/Users/meghanagaur/BonusProject/codes/estimate-lmf-rates")
+cd(dirname(@__FILE__))
 
 # Load the vacancy, unemploymentdatda
 df = DataFrame(CSV.File(pwd()*"/data/mf_rates_monthly.csv"))

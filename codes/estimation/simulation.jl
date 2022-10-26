@@ -16,7 +16,7 @@ function simulate(modd, shocks; u0 = 0.067)
     dlY_dlz  = NaN  # d log Y / d log z
     dlu_dlz  = NaN  # d log u / d log z
     dlw1_dlz = NaN  # d log w_1  / d log z
-    std_u    = NaN  # # st dev of u_t
+    std_u    = NaN  # st dev of u_t
     std_z    = NaN  # st dev of z_t
     std_Y    = NaN  # st dev of Y_t
     std_w0   = NaN  # std dev of w_0
@@ -32,6 +32,7 @@ function simulate(modd, shocks; u0 = 0.067)
     # Results from panel simulation
     lw      = zeros(indices[end])        # log w_it, given z_1 and z_t
     ly      = zeros(indices[end])        # log y_it, given z_1 and z_t
+    η_idx   = zeros(indices[end])        # index for selecting based on η
     Δlw_y   = zeros(indices_y[end])      # Δlog w_it <- yearly
 
     # Values corresponding to new contracts (i.e. starting at z_t)
@@ -70,15 +71,16 @@ function simulate(modd, shocks; u0 = 0.067)
             # Tightness, given z_1 = z
             θ_z[iz]       = θ             
 
-            # Get z, η-shocks to compute wages and output for continuing hires
-            @views z_shocks_z     = z_shocks[iz]
-            @views z_shocks_idx_z = z_shocks_idx[iz]
-            η_shocks_z            = σ_η*η_shocks[iz] # scale η to avoid re-simulating 
-            
             # Get indices for filling out log wages
             start_idx    = (iz==1) ? 1 : indices[iz-1] + 1 
             end_idx      = indices[iz]
 
+            # Get z, η-shocks to compute wages and output for continuing hires
+            @views z_shocks_z        = z_shocks[iz]
+            @views z_shocks_idx_z    = z_shocks_idx[iz]
+            η_shocks_z               = σ_η*η_shocks[iz]  # scale η
+            η_idx[start_idx:end_idx] = vec((η_shocks_z .>= -0.6).*(η_shocks_z .<= 0.6))
+            
             # Compute relevant terms for log wages and log output
             hpz_z1                  = hp.(az)  # h'(a(z|z_1))
             @views hp_az            = hpz_z1[z_shocks_idx_z]
@@ -89,8 +91,8 @@ function simulate(modd, shocks; u0 = 0.067)
 
             # Compute log individual output
             @views y                = yz[z_shocks_idx_z]                            # a_t(z_t|z_1)*z_t
-            ηz                      = max.(-0.5, min.(z_shocks_z.*η_shocks_z,0.5))  # η_t*z_t <= truncate
-            ly[start_idx:end_idx]   = vec(log.(max.(y + ηz, eps())))                # nudge to avoid runtime error
+            ηz                      = z_shocks_z.*η_shocks_z                        # truncate η_t
+            ly[start_idx:end_idx]   = vec(log.(max.(y + ηz, eps())))                # nudge to avoid any runtime errors
 
             # Make some adjustments to compute annual wage changes
             start_idx_y = (iz == 1) ? 1 : indices_y[iz-1] + 1 
@@ -108,7 +110,7 @@ function simulate(modd, shocks; u0 = 0.067)
         #histogram(Δlw_y)
         
         # Regress log w_it on log y_it 
-        dlw_dly  = ols(vec(lw), vec(ly))[2]
+        dlw_dly  = ols(lw[η_idx.==1], ly[η_idx.==1] )[2]
 
         # Compute model data for long time series  (trim to post-burn-in when computing moment)
         z_shocks_idx_str     = zstring.z_shocks_idx
@@ -132,13 +134,13 @@ function simulate(modd, shocks; u0 = 0.067)
         @views dlw1_du  = ols(vec(lw1_t[burnin+1:end]), vec(u_t[burnin+1:end]))[2]
         
         # Estimate d E[log w_1] / d log z (pooled ols)
-        @views dlw1_dlz = ols(vec(lw1_t[burnin+1:end]), vec(lz_shocks_str[burnin+1:end]))[2]
+        #@views dlw1_dlz = ols(vec(lw1_t[burnin+1:end]), vec(lz_shocks_str[burnin+1:end]))[2]
         
         # Estimate d log Y / d log z (pooled OLS)
-        @views dlY_dlz  = ols(vec(lY_t[burnin+1:end]), vec(lz_shocks_str[burnin+1:end]))[2]
+        #@views dlY_dlz  = ols(vec(lY_t[burnin+1:end]), vec(lz_shocks_str[burnin+1:end]))[2]
 
         # Estimate d log u / d  log z (pooled OLS), nudge to avoid runtime error
-        @views dlu_dlz  = ols(log.( max.(u_t[burnin+1:end], eps() )), vec(lz_shocks_str[burnin+1:end]))[2]
+        #@views dlu_dlz  = ols(log.( max.(u_t[burnin+1:end], eps() )), vec(lz_shocks_str[burnin+1:end]))[2]
 
         # Compute stochastic SS unemployment: u_ss = E[u_t | t > burnin]
         #u_ss   = mean(u_t[burnin+1:end])
@@ -148,20 +150,19 @@ function simulate(modd, shocks; u0 = 0.067)
         u_ss   = s/(s  + f(θ_z[idx]))
 
         # Compute some standard deviations
-        std_u  = std(u_t)
-        std_z  = std(z_shocks_str)
-        std_Y  = std(Y_t)
-        std_w0 = std(w_0_t)
-
+        #std_u  = std(u_t)
+        #std_z  = std(z_shocks_str)
+        #std_Y  = std(Y_t)
+        #std_w0 = std(w_0_t)
     end
     
-    IR_penalty = sum(abs.(err_IR_z))
+    IR_err = sum(abs.(err_IR_z))
 
     # Export the simulation results
     return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, 
             avg_Δlw = avg_Δlw, dlw1_dlz = dlw1_dlz, dlY_dlz = dlY_dlz, dlu_dlz = dlu_dlz, 
             std_u = std_u, std_z = std_z, std_Y = std_Y, std_w0 = std_w0, 
-            flag = maximum(flag_z), flag_IR = maximum(flag_IR), IR_penalty = IR_penalty)
+            flag = maximum(flag_z), flag_IR = maximum(flag_IR_z), IR_err = IR_err)
 end
 
 """

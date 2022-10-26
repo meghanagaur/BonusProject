@@ -1,5 +1,5 @@
 # Solve the simplest static model (first pass)
-cd("/Users/meghanagaur/BonusProject/codes/static-model/")
+cd(dirname(@__FILE__))
 
 using Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
 xguidefontsize =15, yguidefontsize=15, xtickfontsize=13, ytickfontsize=13,

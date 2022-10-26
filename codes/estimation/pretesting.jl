@@ -3,7 +3,7 @@ addprocs(SlurmManager())
 
 # Start the worker processes
 #num_tasks = parse(Int, ENV["SLURM_NTASKS"])
-#addprocs(num_tasks)
+#addprocs(2)
 
 @everywhere begin
 
@@ -17,7 +17,7 @@ addprocs(SlurmManager())
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 30000
+    I_max        = 20000
     lb           = zeros(J)
     ub           = zeros(J)
     for i = 1:J
@@ -42,16 +42,21 @@ save(loc*"jld/pretesting.jld2", Dict("output" => output, "sob_seq" => sob_seq, "
 
 # Retain the valid vectors (i.e. solutions without flags)
 N_old   = length(output)
-indices = [output[i][3] == 0 for i =1:N_old]
+indices = [output[i][3] == 0 for i = 1:N_old]
 out_new = output[indices]
 N       = length(out_new)
 
 # Record the function values
 fvals   = [out_new[i][1] for i = 1:N]
 # Record the moments
-moms   = reduce(hcat, out_new[i][2] for i = 1:N)'
+moms    = reduce(hcat, out_new[i][2] for i = 1:N)'
 # Record the parameters
-pars   = sob_seq[:,indices] 
+pars    = sob_seq[:,indices] 
+# Record the IR flag
+IR_flag = reduce(hcat, out_new[i][4] for i = 1:N)
+# Record the IR flag
+IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 
 # Save the output
-save(loc*"jld/pretesting_clean.jld2",  Dict("moms" => moms, "fvals" => fvals, "pars" => pars') )
+save(loc*"jld/pretesting_clean.jld2",  Dict("moms" => moms, "fvals" => fvals, 
+                                    "pars" => pars', "IR_flag" => IR_flag, "IR_err" => IR_err))

@@ -16,6 +16,8 @@ init_x    = zeros(J)
 fval      = out[1]
 mod_mom   = out[2]
 flag      = out[3]
+IR_flag   = out[4]
+IR_err    = out[5]
 
 ## test local optimization by setting the truth to the originally obtained model moments
 endogParams2 = endogParams + rand(Normal(0, 0.005), J) # add some noise

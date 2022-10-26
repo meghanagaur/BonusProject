@@ -34,39 +34,41 @@ dly_dΔlw     = 4th moment (d log y_it / d Δ log w_it )
 u_ss         = 5th moment (SS unemployment rate)
 """
 function objFunction(xx, pb, shocks, data_mom, W)
+    #= 
+    inbounds  = minimum( [ pb[i][1] <= xx[i] <= pb[i][2] for i = 1:J]) >= 1
 
-    inbounds = minimum( [ pb[i][1] <= xx[i] <= pb[i][2] for i = 1:J]) >= 1
-
-    #= if inbounds == 0
+    if inbounds == 0
         f        = 10.0^5
         mod_mom  = ones(K)*NaN
         flag     = 1
-   
     #elseif inbounds == 1=#
 
-    baseline = model(σ_η = xx[1], χ = xx[2], γ = xx[3], hbar = xx[4]) 
+    baseline   = model(σ_η = xx[1], χ = xx[2], γ = xx[3], hbar = xx[4]) 
+
+    # Simulate the model and compute moments
+    out        = simulate(baseline, shocks)
 
     # Record flags and update objective function
     flag       = out.flag
     flag_IR    = out.flag_IR
-    IR_penalty = out.IR_penalty
-    mod_mom = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
-    d       = (mod_mom - data_mom)/abs.(data_mom) #./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
+    IR_err     = out.IR_err
+    mod_mom    = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
+    d          = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
 
     # Adjust f accordingly
     if flag < 1 && flag_IR < 1
         f = d'*W*d 
-    elseif flag > 1 && flag_IR == 1
+    elseif flag >= 1 && flag_IR == 1
         f = 10.0^8
     elseif flag < 1 && flag_IR == 1
-        f = (10.0^5)*IR_penalty
+        f = (10.0^5)*IR_err
     end
     
     # add extra checks
     flag     = isnan(f) ? 1 : flag
     f        = isnan(f) ? 10.0^8 : f
 
-    return [f, mod_mom, flag, flag_IR, IR_penalty]
+    return [f, mod_mom, flag, flag_IR, IR_err]
 end
 
 """
@@ -97,29 +99,29 @@ function objFunction_WB(xx, x0, pb, shocks, data_mom, W)
     baseline     = model(σ_η = endogParams[1], χ = endogParams[2], γ = endogParams[3], hbar = endogParams[4]) 
 
     # Simulate the model and compute moments
-    out     = simulate(baseline, shocks)
+    out        = simulate(baseline, shocks)
 
     # Record flags and update objective function
     flag       = out.flag
     flag_IR    = out.flag_IR
-    IR_penalty = out.IR_penalty
-    mod_mom = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
-    d       = (mod_mom - data_mom)/abs.(data_mom) #./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
+    IR_err     = out.IR_err
+    mod_mom    = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
+    d          = (mod_mom - data_mom)./abs.(data_mom)  #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
 
     # Adjust f accordingly
     if flag < 1 && flag_IR < 1
         f = d'*W*d 
-    elseif flag > 1 && flag_IR == 1
+    elseif flag >= 1 && flag_IR == 1
         f = 10.0^8
     elseif flag < 1 && flag_IR == 1
-        f = (10.0^5)*IR_penalty
+        f = (10.0^5)*IR_err
     end
     
     # add extra checks
     flag     = isnan(f) ? 1 : flag
     f        = isnan(f) ? 10.0^8 : f
 
-    return [f, mod_mom, flag, flag_IR, IR_penalty]
+    return [f, mod_mom, flag, flag_IR, IR_err]
 end
 
 """
@@ -170,7 +172,7 @@ const K       = length(data_mom)
 
 ## Parameter bounds and weight matrix
 const W   = Matrix(1.0I, K, K) # inverse of covariance matrix of data_mom?
-W[4,4]     = 2.0 # add extra weight for unemployment
+W[4,4]    = 2.0                # add extra weight on SS unemployment
 
 #Parameters to be estimated
 param_key            = OrderedDict{Int, Symbol}([
@@ -193,7 +195,7 @@ min(1 - log(param_bounds[4][2])/log(model().zgrid[end]), param_bounds[3][2])] =#
 
 ## Build shocks for the simulation
 @unpack N_z, P_z, zgrid = model()
-N_sim                   = 100000
+N_sim                   = 50000
 T_sim                   = 120         
 burnin                  = 10000
 
@@ -225,7 +227,6 @@ zstring  = simulateZShocks(P_z, zgrid, N = 1, T = N_sim + burnin, set_seed = fal
 # Create an ordered tuple that contains the zshocks
 shocks   = (η_shocks = η_shocks, z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, indices = indices, indices_y = indices_y,
     λ_N_z = λ_N_z, N_sim = N_sim, T_sim = T_sim, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
-
 
 #= Define a new simplexer for NM without explicit bound constraints
 """

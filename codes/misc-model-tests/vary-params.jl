@@ -6,7 +6,7 @@ using DataStructures, Distributions, ForwardDiff, Interpolations,
  LinearAlgebra, Parameters, Random, Roots, StatsBase, DynamicModel
 
 # Directory for figures
-dir = "/Users/meghanagaur/BonusProject/codes/misc-model-tests/"
+cd(dirname(@__FILE__))
 
 # check to make sure we fall within bounds for all χ
 zgrid = model().zgrid

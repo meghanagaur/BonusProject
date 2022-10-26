@@ -7,129 +7,314 @@ linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 12*Plots.px, leg
 using DynamicModel, BenchmarkTools, DataStructures, Distributions, Optim, Sobol, DataFrames,
 ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2, Binscatters
 
-loc = "/Users/meghanagaur/BonusProject/codes/estimation/"
-@unpack output, par_grid, baseline_model = load(loc*"jld/calibration_data_v1.jld2") 
+cd(dirname(@__FILE__))
+loc = ""
 
-#= Note:
-var_Δlw      = 1st moment (variance of log wage changes)
-dlw1_du      = 2nd moment (dlog w_1 / d u)
-dly_dlw      = 3rd moment (d log y_it / d log w_it)
-u_ss         = 4th moment
-dW_du        = 5th moment (PV wages / d unemployment)
-dY_du        = 6th moment (d Y(z) / d u(z))
+@unpack output, par_grid, baseline_model = load(loc*"jld/calibration_data.jld2") 
 
-ε            = 1st param
-σ_η          = 2nd param
-=#
-
-# Export data to make heatmaps of 6 moments
+# Export data to make heatmaps
 N            = length(output)
 df           = DataFrame()
 df.epsilon   = par_grid[1,:]
 df.sigma_eta = par_grid[2,:]
+df.hbar      = par_grid[3,:]
+
 df.var_dlw   = [output[i][1][1] for i = 1:N]
 df.dlw1_du   = [output[i][1][2] for i = 1:N]
 df.dlw_dly   = [output[i][1][3] for i = 1:N]
 df.u_ss      = [output[i][1][4] for i = 1:N]
-df.dW_du     = [output[i][1][5] for i = 1:N]
-df.dY_du     = [output[i][1][6] for i = 1:N]
-df.dlW_dlY   = [output[i][1][7] for i = 1:N]
-df.du_dz     = [output[i][1][8] for i = 1:N]
+df.avg_Δlw   = [output[i][1][5] for i = 1:N]
+df.dlw1_dlz  = [output[i][1][6] for i = 1:N]
+df.dlY_dlz   = [output[i][1][7] for i = 1:N]
+df.dlu_dlz   = [output[i][1][8] for i = 1:N]
+df.std_u     = [output[i][1][9] for i = 1:N]
+df.std_z     = [output[i][1][10] for i = 1:N]
+df.std_Y     = [output[i][1][11] for i = 1:N]
+df.std_w0    = [output[i][1][12] for i = 1:N]
 
 # Get back the parameter grids
-ε_grid   = unique(df.epsilon)
-σ_η_grid = unique(df.sigma_eta)
+ε_grid       = unique(df.epsilon)
+σ_η_grid     = unique(df.sigma_eta)
+hbar_grid    = unique(df.hbar)
 
 # Reshape moments into a conformable N_ε by N_σ_η matrix
-var_dlw = reshape(df.var_dlw, length(ε_grid), length(σ_η_grid) )
-dlw1_du = reshape(df.dlw1_du, length(ε_grid), length(σ_η_grid) )
-dlw_dly = reshape(df.dlw_dly, length(ε_grid), length(σ_η_grid) )
-u_ss    = reshape(df.u_ss, length(ε_grid), length(σ_η_grid) )
-dW_du   = reshape(df.dW_du, length(ε_grid), length(σ_η_grid) )
-dY_du   = reshape(df.dY_du, length(ε_grid), length(σ_η_grid) )
-dlW_dlY = reshape(df.dlW_dlY, length(ε_grid), length(σ_η_grid) )
-du_dz   = reshape(df.du_dz, length(ε_grid), length(σ_η_grid) )
+var_dlw      = reshape(df.var_dlw, length(ε_grid), length(σ_η_grid), length(hbar_grid) )
+dlw1_du      = reshape(df.dlw1_du, length(ε_grid), length(σ_η_grid), length(hbar_grid) )
+dlw_dly      = reshape(df.dlw_dly, length(ε_grid), length(σ_η_grid), length(hbar_grid) )
+u_ss         = reshape(df.u_ss, length(ε_grid), length(σ_η_grid), length(hbar_grid) )
+avg_Δlw      = reshape(df.avg_Δlw, length(ε_grid), length(σ_η_grid), length(hbar_grid))
+dlw1_dlz     = reshape(df.dlw1_dlz, length(ε_grid), length(σ_η_grid), length(hbar_grid) )
+dlY_dlz      = reshape(df.dlY_dlz, length(ε_grid), length(σ_η_grid), length(hbar_grid) )
+dlu_dlz      = reshape(df.dlu_dlz, length(ε_grid), length(σ_η_grid), length(hbar_grid) )
+std_u        = reshape(df.std_u, length(ε_grid), length(σ_η_grid), length(hbar_grid) )
+std_z        = reshape(df.std_z, length(ε_grid), length(σ_η_grid), length(hbar_grid) )
+std_Y        = reshape(df.std_Y, length(ε_grid), length(σ_η_grid), length(hbar_grid) )
+std_w0       = reshape(df.std_w0, length(ε_grid), length(σ_η_grid), length(hbar_grid) )
 
-# Remove indices
-function rm_nans(mat)
-    nan_bool = isnan.(u_ss).==0
-    num_cols = maximum([findfirst(isequal(0), nan_bool[i,:] ) for i = 1:size(mat,2)])
-    return num_cols
-end
+############## FIX HBAR AT 1 ##########################
+idx = findfirst(x -> x >= 1, hbar_grid)
+############## FIRST SET OF MOMENTS ###################
 
 # Plot var_dlw
-num_cols = rm_nans(var_dlw)
-heatmap(ε_grid[1:num_cols], σ_η_grid, var_dlw[:,1:num_cols], title=L"Std(\Delta \log w)")
+p1 = heatmap(ε_grid, σ_η_grid, var_dlw[idx,:,:], title=L"Std(\Delta \log w)")
 xlabel!(L"\varepsilon")
 ylabel!(L"\sigma_\eta")
-savefig(loc*"figs/calibration/var_dlw.pdf")
 
 # Plot dlw1_du
-num_cols = rm_nans(dlw1_du)
-heatmap(ε_grid[1:num_cols], σ_η_grid, dlw1_du[:,1:num_cols], title=L"\frac{ d E[ \log w_1 | z_t ]}{ d u_t}")
+p2 = heatmap(ε_grid, σ_η_grid, dlw1_du[idx,:,:], title=L"\frac{ d E[ \log w_1 | z_t ]}{ d u_t}")
 xlabel!(L"\varepsilon")
 ylabel!(L"\sigma_\eta")
-savefig(loc*"figs/calibration/dlw1_du.pdf")
 
 # Plot dlw_dly
-num_cols = rm_nans(dlw_dly)
-heatmap(ε_grid[1:num_cols], σ_η_grid, dlw_dly[:,1:num_cols],title=L"\frac{d \log w_{it} }{ d \log y_{it} }")
+p3 = heatmap(ε_grid, σ_η_grid, dlw_dly[idx,:,:],title=L"\frac{d \log w_{it} }{ d \log y_{it} }")
 xlabel!(L"\varepsilon")
 ylabel!(L"\sigma_\eta")
-savefig(loc*"figs/calibration/dlw_dly.pdf")
 
 # Plot u_ss
-num_cols = rm_nans(u_ss)
-heatmap(ε_grid[1:num_cols], σ_η_grid, u_ss[:,1:num_cols], title=L"u_{ss}")
+p4 = heatmap(ε_grid, σ_η_grid, u_ss[idx,:,:], title=L"u_{ss}")
 xlabel!(L"\varepsilon")
 ylabel!(L"\sigma_\eta")
-savefig(loc*"figs/calibration/u_ss.pdf")
 
-# Plot dW_du
-num_cols = rm_nans(dW_du)
-heatmap(ε_grid[1:num_cols], σ_η_grid, dW_du[:,1:num_cols], title=L"\frac{d w_0/(1- \beta(1-s))}{ d u_t }")
-xlabel!(L"\varepsilon")
-ylabel!(L"\sigma_\eta")
-savefig(loc*"figs/calibration/dW_du.pdf")
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\bar{h}="*string(round(hbar_grid[idx], digits=2)))
+savefig(loc*"figs/calibration/fix_hbar_1.pdf")
 
-# Plot dY_du
-num_cols = rm_nans(dY_du)
-heatmap(ε_grid[1:num_cols], σ_η_grid, dY_du[:,1:num_cols], title=L"\frac{d E_1 [\sum (\beta(1-s))^t z_t a_t] }{ d u_t }")
+############## SECOND SET OF MOMENTS ###################
+#=
+# Plot E[dlw]
+p1 = heatmap(ε_grid, σ_η_grid, avg_Δlw[idx,:,:], title=L"E[\Delta \log w]")
 xlabel!(L"\varepsilon")
 ylabel!(L"\sigma_\eta")
-savefig(loc*"figs/calibration/dY_du.pdf")
 
-# Plot dlW_dlY
-num_cols = rm_nans(dlW_dlY)
-heatmap(ε_grid[1:num_cols], σ_η_grid, dlW_dlY[:,1:num_cols], title=L"\frac{d \log EPV W(z_t) }{ d \log EPV Y(z_t) }")
+# Plot dlw1_dlz
+p2 = heatmap(ε_grid, σ_η_grid, dlw1_dlz[idx,:,:], title=L"\frac{ d E[ \log w_1 | z ]}{ d \log z }")
 xlabel!(L"\varepsilon")
 ylabel!(L"\sigma_\eta")
-savefig(loc*"figs/calibration/dlW_dlY_pv.pdf")
 
-# Plot du_dz
-num_cols = rm_nans(du_dz)
-heatmap(ε_grid[1:num_cols], σ_η_grid, du_dz[:,1:num_cols], title=L"\frac{d u_t }{ d z_t }")
+# Plot dlY_dlz
+p3 = heatmap(ε_grid, σ_η_grid, dlY_dlz[idx,:,:],title=L"\frac{d \log Y }{ d \log z }")
 xlabel!(L"\varepsilon")
 ylabel!(L"\sigma_\eta")
-savefig(loc*"figs/calibration/du_dz.pdf")
+
+# Plot dlu_dlz
+p4 = heatmap(ε_grid, σ_η_grid, dlu_dlz[idx,:,:], title=L"\frac{d \log u }{ d \log z }")
+xlabel!(L"\varepsilon")
+ylabel!(L"\sigma_\eta")
+
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\bar{h}="*string(round(hbar_grid[idx], digits=2)))
+savefig(loc*"figs/calibration/fix_hbar_2.pdf")
+
+############## THIRD SET OF MOMENTS ###################
+
+# Std(u_t)
+p1 = heatmap(ε_grid, σ_η_grid, std_u[idx,:,:], title=L"Std(u_t)")
+xlabel!(L"\varepsilon")
+ylabel!(L"\sigma_\eta")
+
+# Std(z_t)
+p2 = heatmap(ε_grid, σ_η_grid, std_z[idx,:,:], title=L"Std(z_t)")
+xlabel!(L"\varepsilon")
+ylabel!(L"\sigma_\eta")
+
+# Std(Y_t)
+p3 = heatmap(ε_grid, σ_η_grid, std_Y[idx,:,:], title=L"Std(y_t)")
+xlabel!(L"\varepsilon")
+ylabel!(L"\sigma_\eta")
+
+# Std(w_0)
+p4 = heatmap(ε_grid, σ_η_grid, std_w0[idx,:,:], title=L"Std(w_0)")
+xlabel!(L"\varepsilon")
+ylabel!(L"\sigma_\eta")
+
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\bar{h}="*string(round(hbar_grid[idx], digits=2)))
+savefig(loc*"figs/calibration/fix_hbar_3.pdf")
+=#
+############## FIX SIGMA_ETA at 0.5 ###################
+idx = length(σ_η_grid)
+############## FIRST SET OF MOMENTS ###################
+
+# Plot var_dlw
+p1 = heatmap(ε_grid, hbar_grid, var_dlw[:,idx,:], title=L"Std(\Delta \log w)")
+xlabel!(L"\varepsilon")
+ylabel!(L"\bar{h}")
+
+# Plot dlw1_du
+p2 = heatmap(ε_grid, hbar_grid, dlw1_du[:,idx,:], title=L"\frac{ d E[ \log w_1 | z_t ]}{ d u_t}")
+xlabel!(L"\varepsilon")
+ylabel!(L"\bar{h}")
+
+# Plot dlw_dly
+p3 = heatmap(ε_grid, hbar_grid, dlw_dly[:,idx,:],title=L"\frac{d \log w_{it} }{ d \log y_{it} }")
+xlabel!(L"\varepsilon")
+ylabel!(L"\bar{h}")
+
+# Plot u_ss
+p3 = heatmap(ε_grid, hbar_grid, u_ss[:,idx,:], title=L"u_{ss}")
+xlabel!(L"\varepsilon")
+ylabel!(L"\bar{h}")
+
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\sigma_{\eta}="*string(round(σ_η_grid[idx], digits=2)))
+savefig(loc*"figs/calibration/fix_sigma_eta_1.pdf")
+
+############## SECOND SET OF MOMENTS ###################
+#=
+# Plot E[dlw]
+p1 = heatmap(ε_grid, hbar_grid, avg_Δlw[:,idx,:], title=L"E[\Delta \log w]")
+xlabel!(L"\varepsilon")
+ylabel!(L"\bar{h}")
+
+# Plot dlw1_dlz
+p2 = heatmap(ε_grid, hbar_grid, dlw1_dlz[:,idx,:], title=L"\frac{ d E[ \log w_1 | z ]}{ d \log z }")
+xlabel!(L"\varepsilon")
+ylabel!(L"\bar{h}")
+
+# Plot dlY_dlz
+p3 = heatmap(ε_grid, hbar_grid, dlY_dlz[:,idx,:],title=L"\frac{d \log Y }{ d \log z }")
+xlabel!(L"\varepsilon")
+ylabel!(L"\bar{h}")
+
+# Plot dlu_dlz
+p4 = heatmap(ε_grid, hbar_grid, dlu_dlz[:,idx,:], title=L"\frac{d \log u }{ d \log z }")
+xlabel!(L"\varepsilon")
+ylabel!(L"\bar{h}")
+
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\sigma_{\eta}="*string(round(σ_η_grid[idx], digits=2)))
+savefig(loc*"figs/calibration/fix_sigma_eta_2.pdf")
+
+############## THIRD SET OF MOMENTS ###################
+
+# Std(u_t)
+p1 = heatmap(ε_grid, σ_η_grid, std_u[:,idx,:], title=L"Std(u_t)")
+xlabel!(L"\varepsilon")
+ylabel!(L"\bar{h}")
+
+# Std(z_t)
+p2 = heatmap(ε_grid, σ_η_grid, std_z[:,idx,:], title=L"Std(z_t)")
+xlabel!(L"\varepsilon")
+ylabel!(L"\bar{h}")
+
+# Std(Y_t)
+p3 = heatmap(ε_grid, σ_η_grid, std_Y[:,idx,:], title=L"Std(y_t)")
+xlabel!(L"\varepsilon")
+ylabel!(L"\bar{h}")
+
+# Std(w_0)
+p4 = heatmap(ε_grid, σ_η_grid, std_w0[:,idx,:], title=L"Std(w_0)")
+xlabel!(L"\varepsilon")
+ylabel!(L"\bar{h}")
+
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\sigma_{\eta}="*string(σ_η_grid[idx]))
+savefig(loc*"figs/calibration/fix_sigma_eta_3.pdf")
+=#
+############## FIX EPSILON at 0.3 #####################
+idx = findfirst(x -> x >= 0.3, ε_grid)
+############## FIRST SET OF MOMENTS ###################
+
+# Plot var_dlw
+p1 = heatmap(σ_η_grid, hbar_grid, var_dlw[:,:,idx], title=L"Std(\Delta \log w)")
+xlabel!(L"\sigma_\eta")
+ylabel!(L"\bar{h}")
+
+# Plot dlw1_du
+p2 = heatmap(σ_η_grid, hbar_grid, dlw1_du[:,:,idx], title=L"\frac{ d E[ \log w_1 | z_t ]}{ d u_t}")
+xlabel!(L"\sigma_\eta")
+ylabel!(L"\bar{h}")
+
+# Plot dlw_dly
+p3 = heatmap(σ_η_grid, hbar_grid, dlw_dly[:,:,idx],title=L"\frac{d \log w_{it} }{ d \log y_{it} }")
+xlabel!(L"\sigma_\eta")
+ylabel!(L"\bar{h}")
+
+# Plot u_ss
+p4 = heatmap(σ_η_grid, hbar_grid, u_ss[:,:,idx], title=L"u_{ss}")
+xlabel!(L"\sigma_\eta")
+ylabel!(L"\bar{h}")
+
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\varepsilon="*string(round(ε_grid[idx], digits=2)))
+savefig(loc*"figs/calibration/fix_epsilon_1.pdf")
+
+############## SECOND SET OF MOMENTS ###################
+#=
+# Plot E[dlw]
+p1 = heatmap(σ_η_grid, hbar_grid, avg_Δlw[:,:,idx], title=L"E[\Delta \log w]")
+xlabel!(L"\sigma_\eta")
+ylabel!(L"\bar{h}")
+
+# Plot dlw1_dlz
+p2 = heatmap(σ_η_grid, hbar_grid, dlw1_dlz[:,:,idx], title=L"\frac{ d E[ \log w_1 | z ]}{ d \log z }")
+xlabel!(L"\sigma_\eta")
+ylabel!(L"\bar{h}")
+
+# Plot dlY_dlz
+p3 = heatmap(σ_η_grid, hbar_grid, dlY_dlz[:,:,idx],title=L"\frac{d \log Y }{ d \log z }")
+xlabel!(L"\sigma_\eta")
+ylabel!(L"\bar{h}")
+
+# Plot dlu_dlz
+p4 = heatmap(σ_η_grid, hbar_grid, dlu_dlz[:,:,idx], title=L"\frac{d \log u }{ d \log z }")
+xlabel!(L"\sigma_\eta")
+ylabel!(L"\bar{h}")
+
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\varepsilon="*string(round(ε_grid[idx], digits=2)))
+savefig(loc*"figs/calibration/fix_epsilon_2.pdf")
+
+############## THIRD SET OF MOMENTS ###################
+
+# Std(u_t)
+p1 = heatmap(σ_η_grid, hbar_grid, std_u[:,:,idx], title=L"Std(u_t)")
+xlabel!(L"\sigma_\eta")
+ylabel!(L"\bar{h}")
+
+# Std(z_t)
+p2 = heatmap(σ_η_grid, hbar_grid, std_z[:,:,idx], title=L"Std(z_t)")
+xlabel!(L"\sigma_\eta")
+ylabel!(L"\bar{h}")
+
+# Std(Y_t)
+p3 = heatmap(σ_η_grid, hbar_grid, std_Y[:,:,idx], title=L"Std(y_t)")
+xlabel!(L"\sigma_\eta")
+ylabel!(L"\bar{h}")
+
+# Std(w_0)
+p4 = heatmap(σ_η_grid, hbar_grid, std_w0[:,:,idx], title=L"Std(w_0)")
+xlabel!(L"\sigma_\eta")
+ylabel!(L"\bar{h}")
+
+plot(p1, p2, p3, p4, layout = (2,2), plot_title=L"\varepsilon="*string(round(ε_grid[idx], digits=2)))
+savefig(loc*"figs/calibration/fix_epsilon_3.pdf")
+=#
 
 #= check on the grids 
-N_grid   = 5
-ε_grid   = LinRange(param_bounds[1][1],param_bounds[1][2], N_grid)
-σ_η_grid = LinRange(param_bounds[2][1],param_bounds[2][2], N_grid)
-
+N_grid    = 5
+ε_grid    = LinRange(param_bounds[1][1],param_bounds[1][2], N_grid)
+σ_η_grid  = LinRange(param_bounds[2][1],param_bounds[2][2], N_grid)
+hbar_grid = LinRange(param_bounds[5][1],param_bounds[5][2], N_grid)
 
 # Stack the parameter vectors for parallel computation
-par_grid = zeros(2, N_grid^2)
+p_grid = zeros(3, N_grid^3)
 t = 1
-@inbounds for i =1:N_grid
-    @inbounds for j = 1:N_grid
-        par_grid[1,t] = ε_grid[i]
-        par_grid[2,t] = σ_η_grid[j]
-        global t+=1
+for i =1:N_grid
+    for j = 1:N_grid
+        for k = 1:N_grid
+            p_grid[1,t] = ε_grid[i]
+            p_grid[2,t] = σ_η_grid[j]
+            p_grid[3,t] = hbar_grid[k]
+            global t+=1
+        end
     end
 end
 
-reshape(par_grid[1,:],5, 5)
+reshape(p_grid[1,:],5, 5, 5)
+reshape(p_grid[2,:],5, 5, 5)
+reshape(p_grid[3,:],5, 5, 5)
 
+=#
+
+
+#=
+# Remove indices
+function rm_nans(mat)
+    nan_bool = isnan.(mat).==0
+    num_cols = maximum([findfirst(isequal(0), nan_bool[i,:] ) for i = 1:size(mat,2)])
+    return num_cols
+end
 =#
