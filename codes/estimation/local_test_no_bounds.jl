@@ -4,16 +4,18 @@ println(Threads.nthreads())
 
 # Initial parameter values
 endogParams    = zeros(K) 
-endogParams[1] = 0.5      # ε
-endogParams[2] = 0.05     # σ_η
-endogParams[3] = 0.3      # χ
-endogParams[4] = 0.7      # γ
+#endogParams[1] = 0.5     # ε
+endogParams[1] = 0.5      # σ_η
+endogParams[2] = 0.0      # χ
+endogParams[3] = 0.6      # γ
+endogParams[4] = 1        # hbar
 
 # evaluate the objective function 
 @time out = objFunction(endogParams, param_bounds, shocks, data_mom, W)
 fval      = out[1]
 mod_mom   = out[2]
 flag      = out[3]
+ir_flag   = out[4]
 
 ## test local optimization by setting the truth to the originally obtained model moments
 endogParams2 = endogParams + rand(Normal(0, 0.005), J)               # add some noise

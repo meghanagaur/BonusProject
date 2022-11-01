@@ -17,6 +17,8 @@ Pkg.add("JLD2")
 Pkg.add("SlurmClusterManager")
 Pkg.add("DistributedArrays")
 Pkg.add("BenchmarkTools")
+Pkg.add("DelimitedFiles")
+
 
 
 

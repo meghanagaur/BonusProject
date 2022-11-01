@@ -7,9 +7,7 @@ addprocs(SlurmManager())
 
 @everywhere begin
 
-    loc  = ""
-    #loc = "/Users/meghanagaur/BonusProject/codes/estimation/"
-    include(loc*"smm_settings.jl") # SMM inputs, settings, packages, etc.
+    include("smm_settings.jl") # SMM inputs, settings, packages, etc.
 
     # Evalute objective function at i-th parameter vector
     function evaluate!(i, sob_seq, pb, shocks, data_mom, W)
@@ -17,7 +15,7 @@ addprocs(SlurmManager())
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 20000
+    I_max        = 25000
     lb           = zeros(J)
     ub           = zeros(J)
     for i = 1:J
@@ -58,5 +56,5 @@ IR_flag = reduce(hcat, out_new[i][4] for i = 1:N)
 IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 
 # Save the output
-save(loc*"jld/pretesting_clean.jld2",  Dict("moms" => moms, "fvals" => fvals, 
+save("jld/pretesting_clean.jld2",  Dict("moms" => moms, "fvals" => fvals, 
                                     "pars" => pars', "IR_flag" => IR_flag, "IR_err" => IR_err))

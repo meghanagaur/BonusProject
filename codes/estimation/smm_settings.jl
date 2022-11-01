@@ -1,15 +1,15 @@
 #= 
 Main file to build required functions and random vectors for the estimation.
 Note: J = number of moments, K = number of parameters.
-=#
 
 # Load necessary packages
 #using Pkg; Pkg.add(url="https://github.com/meghanagaur/DynamicModel")
+=#
 
 using DynamicModel, BenchmarkTools, DataStructures, Distributions, Optim, Sobol,
 ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2
 
-# Load necessary helper functions for simulation
+# Load helper functions for simulation
 include("simulation.jl")   
 
 """
@@ -95,8 +95,8 @@ u_ss         = 5th moment (SS unemployment rate)
 """
 function objFunction_WB(xx, x0, pb, shocks, data_mom, W)
 
-    endogParams  = [ transform_params(xx[i], pb[i], x0[i]) for i = 1:J] 
-    baseline     = model(σ_η = endogParams[1], χ = endogParams[2], γ = endogParams[3], hbar = endogParams[4]) 
+    endogParams = [ transform_params(xx[i], pb[i], x0[i]) for i = 1:J] 
+    baseline    = model(σ_η = endogParams[1], χ = endogParams[2], γ = endogParams[3], hbar = endogParams[4]) 
 
     # Simulate the model and compute moments
     out        = simulate(baseline, shocks)
@@ -166,7 +166,7 @@ moms_key             = OrderedDict{Int, Symbol}([   # parameter bounds
 std_Δlw_d     = 0.064 # annual -> quarterly stdev 0.064/4
 dlw1_du_d     = -0.5
 dy_dΔlw_d     = 0.15
-u_ss_d        = 0.035/(0.035+0.45)
+u_ss_d        = 0.03/(0.03+0.42)
 data_mom      = [std_Δlw_d, dlw1_du_d, dy_dΔlw_d, u_ss_d]   
 const K       = length(data_mom)
 
@@ -183,10 +183,10 @@ param_key            = OrderedDict{Int, Symbol}([
                         (4, :hbar)])
 const J              = length(param_key)
 param_bounds         = OrderedDict{Int,Array{Real,1}}([ # parameter bounds
-                       # (1, [0.15,  2.0]),     # ε
+                        #(1, [0.15,  2.0]),     # ε
                         (1, [0.001, 0.5]),      # σ_η 
                         (2, [-1, 1]),           # χ
-                        (3, [0.3, 0.9]),        # γ
+                        (3, [0.1, 0.9]),        # γ
                         (4, [0.1, 2.0]) ])      # hbar
 
 #= Corrction for the χ, γ bounds (enforce log b(z) < log z for all z)

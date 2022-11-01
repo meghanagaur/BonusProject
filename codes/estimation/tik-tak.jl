@@ -3,7 +3,7 @@ Workhouse function for the global multistart optimization algorithm, loosely fol
 Guvenen et al (2019), with basic NM simplex algorithm for local optimization.
 """
 function tiktak_spmd(sobol, fvals_d, argmin_d, min_p, argmin_p, iter_p, 
-    init_x, param_bounds, shocks, data_mom, W; I_min  = 1, test = false, bounds = true)
+    init_x, param_bounds, shocks, data_mom, W; I_min  = 5, test = false, bounds = true)
     
     #init_points = @fetchfrom 2 test[:L] 
     #init_points = sob_d[:L] 
@@ -35,14 +35,14 @@ function tiktak_spmd(sobol, fvals_d, argmin_d, min_p, argmin_p, iter_p,
             if bounds == true
 
                 opt       = optimize(x -> objFunction_WB(x, start, param_bounds, shocks, data_mom, W)[1], init_x, NelderMead(), 
-                            Optim.Options(g_tol = 1e-5, x_tol = 1e-5,  f_tol = 1e-5, iterations = 25, show_trace = true))
+                            Optim.Options(g_tol = 1e-4, x_tol = 1e-4,  f_tol = 1e-4, iterations = 50, show_trace = true))
                 arg_min_t = Optim.minimizer(opt)
                 arg_min   = [ transform_params(arg_min_t[j], param_bounds[j], start[j]) for j = 1:length(param_bounds) ] 
 
             else
 
                 opt       = optimize(x -> objFunction(x, param_bounds, shocks, data_mom, W)[1], start, 
-                            NelderMead(), Optim.Options(g_tol = 1e-6, x_tol = 1e-6, f_tol = 1e-6, iterations = 50, show_trace = true))
+                            NelderMead(), Optim.Options(g_tol = 1e-4, x_tol = 1e-4, f_tol = 1e-4, iterations = 50, show_trace = true))
                 arg_min   = Optim.minimizer(opt)
 
             end

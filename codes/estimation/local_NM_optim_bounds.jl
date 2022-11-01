@@ -4,10 +4,11 @@ println(Threads.nthreads())
 
 # Initial parameter values
 endogParams    = zeros(K) 
-endogParams[1] = 0.5      # ε 
-endogParams[2] = 0.05     # σ_η
-endogParams[3] = 0.3      # χ
-endogParams[4] = 0.66     # γ
+#endogParams[1] = 0.3      # ε 
+endogParams[1] = 0.05     # σ_η
+endogParams[2] = 0.0      # χ
+endogParams[3] = 0.7      # γ
+endogParams[4] = 1        # hbar
 
 ## evaluate the objective function 
 init_x    = zeros(J)
