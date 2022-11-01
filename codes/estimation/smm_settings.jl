@@ -125,7 +125,7 @@ function objFunction_WB(xx, x0, pb, shocks, data_mom, W)
 end
 
 """
-Logit transformation to transform x to [min,max].
+Logit transformation to transform x to [min, max].
 """
 function logit(x; x0 = 0, min = -1, max = 1, λ = 1.0)
    return (max - min)/(1 + exp(-(x - x0)/λ)) + min
