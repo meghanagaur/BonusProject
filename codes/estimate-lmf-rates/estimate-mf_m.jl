@@ -15,7 +15,8 @@ fr(θ, ι) = 1/(1 + θ^(-ι))^(1/ι)
 # compares implied frate to actual frate
 function obj(ι, θ, frate_d)
     frate_m = fr.(θ, ι) # compute implied job-finding rate, given θ and ι
-    return (maximum(abs.(frate_m - frate_d)))
+    #return (maximum(abs.(frate_m - frate_d)))
+    return sum((frate_m - frate_d).^2)
 end
 
 

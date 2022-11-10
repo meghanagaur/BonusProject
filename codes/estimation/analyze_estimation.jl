@@ -1,43 +1,35 @@
-using Distributed, SlurmClusterManager
+using Distributed, SlurmClusterManager, DelimitedFiles
+
 cd(dirname(@__FILE__))
 
 # Start the worker processes
 addprocs(SlurmManager())
-
 #addprocs(2)
 
 @everywhere begin
 
     include("smm_settings.jl") # SMM inputs, settings, packages, etc.
+    using DelimitedFiles
 
     # Evalute objective function at i-th parameter vector
     function evaluate!(i, sob_seq, pb, shocks, data_mom, W)
         return objFunction(sob_seq[:,i], pb, shocks, data_mom, W)
     end
 
-    # Sample I Sobol vectors from the parameter space
-    I_max        = 25000
-    lb           = zeros(J)
-    ub           = zeros(J)
-    for i = 1:J
-        lb[i] = param_bounds[i][1]
-        ub[i] = param_bounds[i][2]
-    end
-    s             = SobolSeq(lb, ub)
-    seq           = skip(s, 10000, exact=true)
-    sob_seq       = reduce(hcat, next!(seq) for i = 1:I_max)
+    # Clean the results 
+    est_output = readdlm("jld/estimatio.txt", ',', Float64)      # open current output across all jobs
+    sob_seq    = est_output[:, 2:(2+J-1)]'        # get parameters 
+
 end
 
 # Evaluate the objective function for each parameter vector
-@time output = pmap(i -> evaluate!(i, sob_seq, param_bounds, shocks, data_mom, W), 1:I_max) 
+@time output = pmap(i -> evaluate!(i, sob_seq, param_bounds, shocks, data_mom, W), 1:size(sob_seq,2)) 
 
 # Kill the processes
 rmprocs(nprocs())
 
 # Save the raw results
-save("jld/pretesting.jld2", Dict("output" => output, "sob_seq" => sob_seq, "baseline_model" => model() ))
-
-# Clean the results 
+#save(loc*"jld/pretesting.jld2", Dict("output" => output, "sob_seq" => sob_seq, "baseline_model" => model() ))
 
 # Retain the valid vectors (i.e. solutions without flags)
 N_old   = length(output)
@@ -57,5 +49,4 @@ IR_flag = reduce(hcat, out_new[i][4] for i = 1:N)
 IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 
 # Save the output
-save("jld/pretesting_clean.jld2",  Dict("moms" => moms, "fvals" => fvals, 
-                                    "pars" => pars', "IR_flag" => IR_flag, "IR_err" => IR_err))
+save("jld/est_output.jld2",  Dict("moms" => moms, "fvals" => fvals, "pars" => pars', "IR_flag" => IR_flag, "IR_err" => IR_err))

@@ -1,5 +1,4 @@
 # Produce preliminary binscatters of the pretesting output.
-
 using LaTeXStrings, Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
 xguidefontsize =10, yguidefontsize=10, xtickfontsize=8, ytickfontsize=8,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,legendfontsize = 9)
@@ -9,8 +8,8 @@ ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase
 
 cd(dirname(@__FILE__))
 
-@unpack moms, fvals, pars, IR_flag, IR_err = load("jld/pretesting_clean.jld2") 
-dir = "figs/pretesting/"
+@unpack moms, fvals, pars, IR_flag, IR_err = load("jld/est_output.jld2") 
+dir = "figs/estimation/"
 
 #= Note:
 var_Δlw      = 1st moment (variance of log wage changes)
@@ -33,7 +32,6 @@ hbar_vals = pars[:,4]
 
 # Unpack moments
 std_Δlw   = moms[:,1]
-#avg_Δlw   = moms[:,2]
 dlw1_du   = moms[:,2]
 dlw_dly   = moms[:,3]
 u_ss      = moms[:,4]

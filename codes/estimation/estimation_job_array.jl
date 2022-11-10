@@ -1,10 +1,10 @@
-using Distributed, SlurmClusterManager
+using DelimitedFiles
 
 cd(dirname(@__FILE__))
 
 ## Logistics
-file           = "jld/estimation.txt"  # file save location
-N_procs        = 20                    # number of jobs in job array
+file           = "jld/estimation_3.txt"  # file save location
+N_procs        = 20                      # number of jobs in job array
 
 # Task number for job array
 idx = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])

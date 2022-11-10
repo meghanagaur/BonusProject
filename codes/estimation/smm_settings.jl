@@ -56,14 +56,8 @@ function objFunction(xx, pb, shocks, data_mom, W)
     d          = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
 
     # Adjust f accordingly
-    if flag < 1 && flag_IR < 1
-        f = d'*W*d 
-    elseif flag >= 1 && flag_IR == 1
-        f = 10.0^8
-    elseif flag < 1 && flag_IR == 1
-        f = (10.0^5)*IR_err
-    end
-    
+    f = d'*W*d + flag*10.0^8 + flag_IR*(1 - flag)*(10.0^5)
+
     # add extra checks
     flag     = isnan(f) ? 1 : flag
     f        = isnan(f) ? 10.0^8 : f
@@ -109,13 +103,7 @@ function objFunction_WB(xx, x0, pb, shocks, data_mom, W)
     d          = (mod_mom - data_mom)./abs.(data_mom)  #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
 
     # Adjust f accordingly
-    if flag < 1 && flag_IR < 1
-        f = d'*W*d 
-    elseif flag >= 1 && flag_IR == 1
-        f = 10.0^8
-    elseif flag < 1 && flag_IR == 1
-        f = (10.0^5)*IR_err
-    end
+    f = d'*W*d + flag*10.0^8 + flag_IR*(1 - flag)*(10.0^5)
     
     # add extra checks
     flag     = isnan(f) ? 1 : flag
@@ -164,7 +152,7 @@ moms_key             = OrderedDict{Int, Symbol}([   # parameter bounds
                         (4, :u_ss) ]) 
 
 std_Δlw_d     = 0.064 # annual -> quarterly stdev 0.064/4
-dlw1_du_d     = -0.5
+dlw1_du_d     = -1.0 #-0.5
 dy_dΔlw_d     = 0.15
 u_ss_d        = 0.03/(0.03+0.42)
 data_mom      = [std_Δlw_d, dlw1_du_d, dy_dΔlw_d, u_ss_d]   

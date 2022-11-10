@@ -37,7 +37,7 @@ function tiktak(init_points, fvals, argmin, I_max, file,
             if bounds == true
 
                 opt       = optimize(x -> objFunction_WB(x, start, param_bounds, shocks, data_mom, W)[1], init_x, NelderMead(), 
-                            Optim.Options(g_tol = 1e-4, x_tol = 1e-4,  f_tol = 1e-4, iterations = 50, show_trace = true))
+                            Optim.Options(g_tol = 1e-4, x_tol = 1e-4,  f_tol = 1e-4, iterations = 60, show_trace = true))
                 arg_min_t = Optim.minimizer(opt)
                 arg_min   = [ transform_params(arg_min_t[j], param_bounds[j], start[j]) for j = 1:J] 
 
