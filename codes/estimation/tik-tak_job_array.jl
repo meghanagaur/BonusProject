@@ -2,8 +2,8 @@
 Workhouse function for the global multistart optimization algorithm, loosely following
 Guvenen et al (2019), with basic NM simplex algorithm for local optimization.
 """
-function tiktak(init_points, fvals, argmin, I_max, file,
-    init_x, param_bounds, shocks, data_mom, W; I_min  = 5, test = false, bounds = true)
+function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, 
+    shocks, data_mom, J, W, I_max; I_min  = 5, test = false, bounds = true)
 
     N_str       = size(init_points, 2)       # number of initial points
     output      = zeros(J + 1, N_str)        # J + 1 x N_str
@@ -36,14 +36,14 @@ function tiktak(init_points, fvals, argmin, I_max, file,
             # LOCAL OPTIMIZATION 
             if bounds == true
 
-                opt       = optimize(x -> objFunction_WB(x, start, param_bounds, shocks, data_mom, W)[1], init_x, NelderMead(), 
+                opt       = optimize(x -> objFunction_WB(x, start, param_bounds, param_vals, param_est, shocks, data_mom, W)[1], init_x, NelderMead(), 
                             Optim.Options(g_tol = 1e-4, x_tol = 1e-4,  f_tol = 1e-4, iterations = 60, show_trace = true))
                 arg_min_t = Optim.minimizer(opt)
                 arg_min   = [ transform_params(arg_min_t[j], param_bounds[j], start[j]) for j = 1:J] 
 
             else
 
-                opt       = optimize(x -> objFunction(x, param_bounds, shocks, data_mom, W)[1], start, 
+                opt       = optimize(x -> objFunction(x, param_vals, param_est, shocks, data_mom, W)[1], start, 
                             NelderMead(), Optim.Options(g_tol = 1e-4, x_tol = 1e-4, f_tol = 1e-4, iterations = 50, show_trace = true))
                 arg_min   = Optim.minimizer(opt)
 

@@ -10,4 +10,4 @@
 module purge
 module load julia/1.6.1
 
-julia calibration_vary_hbar_sigma.jl
+julia calibration_vary_hbar_eps.jl

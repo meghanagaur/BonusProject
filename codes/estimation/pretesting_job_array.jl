@@ -4,36 +4,43 @@ cd(dirname(@__FILE__))
 # Start the worker processes
 addprocs(SlurmManager())
 
-# File location for saving jld output + slurm idx
-file = "pretesting_eps3_high_dlogw_du"
-
 @everywhere begin
+
+    # Get slurm idx
+    ja_idx  = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
 
     include("smm_settings.jl") # SMM inputs, settings, packages, etc.
 
     # get moment targets
-    data_mom, mom_key = target_moments(dlw1_du = -3.0)
+    data_mom, mom_key = target_moments()
     K                 = length(data_mom)
     W                 = getW()
+
+    # combinations of parameters we are fixing and varying
+    symbols    = [:ε, :ε, :ε, :ε, :hbar]
+    ε_vals     = [0.2, 0.3, 0.4, 0.5, 0.3]
+    hbar_vals  = ones(5)
+
+    # File location for saving jld output 
+    files   = ["pretesting_fix_eps"*replace(string(ε_vals[i]), "." => "") for i = 1:length(ε_vals)-1]
+    files   = [files; "pretesting_fix_hbar1"]
+    file    = files[ja_idx]
 
     # Evalute objective function at i-th parameter vector
     function evaluate!(i, sob_seq, param_vals, param_est, shocks, data_mom, W)
         return objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W)
     end
 
-    # Define the baseline values
+    # Define the values for parameters, we are fixing
     param_vals  = OrderedDict{Symbol, Real}([ 
-                    (:ε,   0.3),         # ε
-                    (:σ_η, 0.2759),      # σ_η 
-                    (:χ, 0.4417),        # χ
-                    (:γ, 0.4916),        # γ
-                    (:hbar, 1.0) ])      # hbar
+                (:ε,  ε_vals[ja_idx]),         # ε
+                (:σ_η, 0.2759),                # σ_η 
+                (:χ, 0.4417),                  # χ
+                (:γ, 0.4916),                  # γ
+                (:hbar, hbar_vals[ja_idx]) ])  # hbar
 
     # Parameters we will fix (if any) in ε, σ_η, χ, γ, hbar 
-    params_fix  = [:ε] 
-    for p in params_fix
-        delete!(param_bounds, p)
-    end
+    delete!(param_bounds, symbols[ja_idx])
 
     # Parameters that we will estimate
     J           = length(param_bounds)
@@ -54,11 +61,12 @@ file = "pretesting_eps3_high_dlogw_du"
     end
 
     s            = SobolSeq(lb, ub)
-    seq          = skip(s, 10000, exact = true)
+    seq          = skip(s, 10000, exact=true)
     sob_seq      = reduce(hcat, next!(seq) for i = 1:I_max)
+
 end
 
-# Evaluate the objective function for each parameter vector
+# Evaluate the objective function for each parameter vector i=1
 @time output = pmap(i -> evaluate!(i, sob_seq, param_vals, param_est, shocks, data_mom, W), 1:I_max) 
 
 # Kill the processes

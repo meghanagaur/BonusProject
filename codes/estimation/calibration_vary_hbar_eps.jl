@@ -1,23 +1,23 @@
-# Solve the model moments on a grid of ε and σ_η
+# Solve the model moments on a grid of ε and hbar
 using Distributed, SlurmClusterManager
 
-cd(dirname(@__FILE__))
 addprocs(SlurmManager())
+cd(dirname(@__FILE__))
 
-file = "calibration_vary_eps_chi"
+file = "calibration_vary_hbar_eps"
 
 @everywhere begin
     include("smm_settings.jl") # SMM inputs, settings, packages, etc.
 
     # Build the grids 
     N_grid    = 50
-    σ_η_grid  = LinRange(param_bounds[:σ_η][1], param_bounds[:σ_η][2], N_grid)
+    ε_grid    = LinRange(param_bounds[:ε][1], param_bounds[:ε][2], N_grid)
     hbar_grid = LinRange(param_bounds[:hbar][1], param_bounds[:hbar][2], N_grid)
 
     # Simulate moments  
     function simulate_moments(xx)
         
-        baseline = model(σ_η = xx[1], hbar = xx[2], ε = 0.3, γ = 0.5,  χ = 0.0) 
+        baseline = model(ε = xx[1], hbar = xx[2], σ_η = 0.1, γ = 0.5,  χ = 0.0) 
         out      = simulate(baseline, shocks)
         mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss] #, out.avg_Δlw,
         #out.dlw1_dlz, out.dlY_dlz, out.dlu_dlz, out.std_u, out.std_z, out.std_Y, out.std_w0]
@@ -40,7 +40,7 @@ par_grid = zeros(2, N_grid^2)
 t = 1
 @inbounds for j = 1:N_grid
     @inbounds for k = 1:N_grid
-        par_grid[1,t] = σ_η_grid[j]
+        par_grid[1,t] = ε_grid[j]
         par_grid[2,t] = hbar_grid[k]
         global t+=1
     end

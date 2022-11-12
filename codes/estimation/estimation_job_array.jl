@@ -3,24 +3,30 @@ using DelimitedFiles
 cd(dirname(@__FILE__))
 
 ## Logistics
-file           = "jld/estimation_3.txt"  # file save location
-N_procs        = 20                      # number of jobs in job array
+file_str       = "eps3_high_dlogw_du"
+file_load      = "jld/pretesting_"*file_str*".jld2"  # file to-load location
+file_save      = "jld/estimation_"*file_str*".txt"   # file to-save 
+rm(file_save; force = true)                          # force remove the save file
+N_procs        = 20                                  # number of jobs in job array
 
 # Task number for job array
 idx = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
+
+println("JLD FILE = ", file_str)
 
 # Load helper functions
 include("smm_settings.jl")      # SMM inputs, settings, packages, etc.
 include("tik-tak_job_array.jl") # tik-tak code 
 
 # Load the pretesting ouput. Use the "best" Sobol points for our starting points.
-@unpack moms, fvals, pars = load("jld/pretesting_clean.jld2") 
+@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W = load(file_load) 
 
 # Sort and reshape the parameters for distribution across jobs
 N_string       = 25                                # length of each worker string
 Nend           = N_procs*N_string                  # number of initial points
 sorted_indices = reverse(sortperm(fvals)[1:Nend])  # sort by function values in descending order
 sobol_sort     = pars[sorted_indices,:]            # get parameter values: N_TASKS*NSTRING x J
+
 # reshape parameter vector 
 sob_int        = reshape(sobol_sort,  (N_procs, N_string, J )) # N_TASKS x NSTRING x J
 
@@ -42,7 +48,7 @@ I_max       = N_string*N_procs
 init_x      = zeros(J)
 
 # Run the optimization code 
-@time output = tiktak(init_points, fvals, argmin, I_max, file, init_x, param_bounds, shocks, data_mom, W)
+@time output = tiktak(init_points, file_save, init_x, param_bounds, param_vals, param_est, shocks, data_mom, J, W, I_max)
 
 # Print output 
 for i = 1:N_string
