@@ -1,21 +1,7 @@
-using DelimitedFiles
-
-cd(dirname(@__FILE__))
-
-## Logistics
-file_str       = "fix_eps03"
-file_load      = "jld/pretesting_"*file_str*".jld2"  # file to-load location
-file_save      = "jld/estimation_"*file_str*".txt"   # file to-save 
-N_procs        = 20                                  # number of jobs in job array
-
-# Task number for job array
-idx = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
-
-println("JLD FILE = ", file_str)
 
 # Load helper functions
-include("functions/smm_settings.jl")      # SMM inputs, settings, packages, etc.
-include("functions/tik-tak_job_array.jl") # tik-tak code 
+include("../functions/smm_settings.jl")      # SMM inputs, settings, packages, etc.
+include("../functions/tik-tak_job_array.jl") # tik-tak code 
 
 # Load the pretesting ouput. Use the "best" Sobol points for our starting points.
 @unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W = load(file_load) 
@@ -53,4 +39,3 @@ init_x      = zeros(J)
 for i = 1:N_string
     println(output[:,i])
 end
-
