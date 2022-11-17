@@ -23,7 +23,7 @@ end
 # match the monthly job-finding rate data, given tightness in the data
 opt     = optimize(ι -> obj(ι, tightness[1:end-1], frates[1:end-1]), 0.2, 20)
 ι_opt   = Optim.minimizer(opt)
-#0.733462873251313
+#0.7962462501912746
 
 # match average monthly job-finding rate, for θ=1
 opt     = optimize(ι -> obj(ι, 1, df.avg_frate[1]), 0.2, 20)

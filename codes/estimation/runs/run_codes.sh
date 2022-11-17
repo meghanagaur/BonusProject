@@ -1,0 +1,9 @@
+#!/bin/bash
+
+sbatch estimation_eps3_high_dlogw_du.slurm
+sbatch estimation_eps5_high_dlogw_du.slurm
+sbatch estimation_fix_eps02.slurm
+sbatch estimation_fix_eps03.slurm
+sbatch estimation_fix_eps04.slurm
+sbatch estimation_fix_eps05.slurm
+sbatch estimation_fix_hbar1.slurm

@@ -1,4 +1,5 @@
 using Distributed, SlurmClusterManager
+
 cd(dirname(@__FILE__))
 
 # Start the worker processes
@@ -9,7 +10,7 @@ addprocs(SlurmManager())
     # Get slurm idx
     ja_idx  = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
 
-    include("smm_settings.jl") # SMM inputs, settings, packages, etc.
+    include("functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
 
     # get moment targets
     data_mom, mom_key = target_moments()

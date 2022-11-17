@@ -1,0 +1,18 @@
+My SLURM_ARRAY_JOB_ID is 43916808.
+My SLURM_ARRAY_TASK_ID is 16
+Executing on the machine: della-r3c2n2
+JLD FILE = eps3_high_dlogw_du
+Threads: 11
+----------------------------
+GLOBAL ITERATION STEP: 1
+----------------------------
+Iter     Function value    √(Σ(yᵢ-ȳ)²)/n 
+------   --------------    --------------
+     0     1.029637e+02     9.037234e+00
+ * time: 0.02307891845703125
+     1     1.029637e+02     2.009645e+01
+ * time: 280.1099798679352
+     2     7.163148e+01     2.023817e+01
+ * time: 401.2706649303436
+     3     7.163148e+01     2.170003e+01
+ * time: 636.0275988578796

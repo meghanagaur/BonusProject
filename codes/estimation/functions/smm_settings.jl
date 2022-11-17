@@ -11,8 +11,8 @@ using DynamicModel, BenchmarkTools, DataStructures, Distributions, Optim, Sobol,
 ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2
 
 ## Required functions
-include("functions/obj_func.jl")       # objective functions
-include("functions/simulation.jl")     # simulation functions
+include("obj_func.jl")       # objective functions
+include("simulation.jl")     # simulation functions
 
 ## Empirical moments that we are targeting
 function target_moments(; std_Δlw = 0.064, dlw1_du = -1.0, dy_dΔlw = 0.15, u_ss = 0.03/(0.03+0.42) )

@@ -9,11 +9,21 @@ ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase
 cd(dirname(@__FILE__))
 
 # file path and parameters
-file     = "vary_hbar_sigma"
-#par1_str = L"\varepsilon"john
-#par2_str = L"\bar{h}"
-par1_str = L"\bar{h}"
-par2_str = L"\sigma_\eta"
+#=
+file     = "vary_eps_hbar"
+par1_str = L"\varepsilon"
+par2_str = L"\bar{h}"
+=#
+
+#=
+file     = "vary_sigma_hbar"
+par1_str = L"\sigma_\eta"
+par2_str = L"\bar{h}"
+=#
+
+file     = "vary_eps_chi"
+par1_str = L"\varepsilon"
+par2_str = L"\chi"
 
 @unpack output, par_grid, baseline_model = load("jld/calibration_"*file*".jld2") 
 
@@ -84,24 +94,27 @@ plot(p1, p2, layout = (1,2),  size = (600,200))
 savefig(dir*"ir_error.pdf")
 
 ## Zoom into u_ss where IR flag = 0
-cc = 0
-i = 1
-while (cc == 0) && (i <= size(ir_flag,1))
-    global i +=1
-    global cc = i*(sum(ir_flag[i,:])>1)
+
+if maximum(ir_flag) >=1
+    cc = 0
+    i = 1
+    while (cc == 0) && (i <= size(ir_flag,1))
+        global i +=1
+        global cc = i*(sum(ir_flag[i,:])>1)
+    end
+
+    # Plot u_ss
+    p1 = heatmap(par1_grid, par2_grid, u_ss, title=L"u_{ss}")
+    xlabel!(par1_str)
+    ylabel!(par2_str)
+
+    p2 = heatmap(par1_grid, par2_grid[1:cc], u_ss[1:cc,:], title=L"u_{ss}")
+    xlabel!(par1_str)
+    ylabel!(par2_str)
+
+    plot(p1, p2, layout = (1,2),size = (600,200))
+    savefig(dir*"u_zoom.pdf")
 end
-
-# Plot u_ss
-p1 = heatmap(par1_grid, par2_grid, u_ss, title=L"u_{ss}")
-xlabel!(par1_str)
-ylabel!(par2_str)
-
-p2 = heatmap(par1_grid, par2_grid[1:cc], u_ss[1:cc,:], title=L"u_{ss}")
-xlabel!(par1_str)
-ylabel!(par2_str)
-
-plot(p1, p2, layout = (1,2),size = (600,200))
-savefig(dir*"u_zoom.pdf")
 
 ## Compare alternative moment definitions
 df.dlw_dly_2 = [output[i][5] for i = 1:N]

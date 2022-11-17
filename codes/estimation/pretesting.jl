@@ -5,11 +5,11 @@ cd(dirname(@__FILE__))
 addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
-file = "pretesting_eps3_high_dlogw_du"
+file = "pretesting_eps5_high_dlogw_du"
 
 @everywhere begin
 
-    include("smm_settings.jl") # SMM inputs, settings, packages, etc.
+    include("functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
 
     # get moment targets
     data_mom, mom_key = target_moments(dlw1_du = -3.0)
@@ -23,7 +23,7 @@ file = "pretesting_eps3_high_dlogw_du"
 
     # Define the baseline values
     param_vals  = OrderedDict{Symbol, Real}([ 
-                    (:ε,   0.3),         # ε
+                    (:ε,   0.5),         # ε
                     (:σ_η, 0.2759),      # σ_η 
                     (:χ, 0.4417),        # χ
                     (:γ, 0.4916),        # γ
@@ -84,6 +84,6 @@ IR_flag = reduce(hcat, out_new[i][4] for i = 1:N)
 IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 
 # Save the output
-save("jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
+save("runs/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
                             "W" => W, "data_mom" => data_mom))

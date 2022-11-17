@@ -122,11 +122,11 @@ function simulate(modd, shocks; u0 = 0.067)
         # Compute model data for long time series  (trim to post-burn-in when computing moment)
         z_shocks_idx_str     = zstring.z_shocks_idx
         z_shocks_str         = zstring.z_shocks
-        #lz_shocks_str       = log.(zstring.z_shocks)
+        lz_shocks_str        = log.(zstring.z_shocks)
         @views lw1_t         = lw1_z[z_shocks_idx_str]       # E[log w_1 | z_t]
         @views w_0_t         = w0_z[z_shocks_idx_str]        # E[w_0 | z_t]
         @views Y_t           = Y_z[z_shocks_idx_str]         # Y_1 | z_t
-        #lY_t                = log.(max.(Y_t, eps() ))       # log Y_1 | z_t, nudge up to avoid runtime error
+        lY_t                 = log.(max.(Y_t, eps() ))       # log Y_1 | z_t, nudge up to avoid runtime error
         @views θ_t           = θ_z[z_shocks_idx_str]         # θ(z_t)
 
         # Compute evolution of unemployment for the different z_t paths
@@ -157,9 +157,9 @@ function simulate(modd, shocks; u0 = 0.067)
         u_ss_2   = mean(u_t[burnin+1:end])
 
         # Compute some standard deviations
-        std_u  = std(log.(u_t))
-        std_z  = std(log.(z_shocks_str))
-        std_Y  = std(log.(Y_t))
+        std_u  = std(log.(max.(eps(), u_t)))
+        std_z  = std(lz_shocks_str)
+        std_Y  = std(lY_t)
     end
     
     IR_err = sum(abs.(err_IR_z))
@@ -200,7 +200,12 @@ end
 """
 Construct the η, z shocks for simulation
 """
-function build_shocks( N_z, P_z, zgrid, N_sim, T_sim, burnin )
+function build_shocks( N_z, P_z, zgrid, N_sim, T_sim, burnin; set_seed = true, seed = 512)
+
+    if set_seed == true
+        Random.seed!(seed)
+    end
+    
     # Compute the invariant distribution of logz
     A           = P_z - Matrix(1.0I, N_z, N_z)
     A[:,end]   .= 1
@@ -217,7 +222,7 @@ function build_shocks( N_z, P_z, zgrid, N_sim, T_sim, burnin )
     z_shocks_idx = OrderedDict{Int, Array{Real,2}}()
     η_shocks     = OrderedDict{Int, Array{Real,2}}()
     Threads.@threads for iz = 1:length(zgrid)
-        temp                = simulateZShocks(P_z, zgrid, N = λ_N_z[iz], T = T_sim, z_1_idx = iz, set_seed = true)
+        temp                = simulateZShocks(P_z, zgrid, N = λ_N_z[iz], T = T_sim, z_1_idx = iz, set_seed = false)
         z_shocks[iz]        = temp.z_shocks
         z_shocks_idx[iz]    = temp.z_shocks_idx
         η_shocks[iz]        = rand(Normal(0, 1), size(z_shocks[iz])) # N x T  <- standard normal

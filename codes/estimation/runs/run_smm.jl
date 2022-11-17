@@ -32,8 +32,11 @@ I_max       = N_string*N_procs
 # Starting point for local optimization step with bounds (in (-1,1) interval because these are transformed parameters)
 init_x      = zeros(J)
 
+# print the number of threads
+println("Threads: ", Threads.nthreads())
+
 # Run the optimization code 
-@time output = tiktak(init_points, file_save, init_x, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max)
+@time output = tiktak(init_points, file_save, init_x, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max, test=false)
 
 # Print output 
 for i = 1:N_string

@@ -7,7 +7,7 @@ cd(dirname(@__FILE__))
 file = "calibration_vary_eps_chi"
 
 @everywhere begin
-    include("smm_settings.jl") # SMM inputs, settings, packages, etc.
+    include("functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
 
     # Build the grids 
     N_grid    = 50
