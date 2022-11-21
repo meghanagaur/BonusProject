@@ -5,7 +5,8 @@ cd(dirname(@__FILE__))
 addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
-file = "pretesting_eps5_high_dlogw_du"
+@everywhere ε_val = 0.3
+file  = "pretesting_eps"*replace(string(ε_val), "." => "")*"_high_dlogw_du"
 
 @everywhere begin
 
@@ -23,7 +24,7 @@ file = "pretesting_eps5_high_dlogw_du"
 
     # Define the baseline values
     param_vals  = OrderedDict{Symbol, Real}([ 
-                    (:ε,   0.5),         # ε
+                    (:ε,   ε_val),       # ε
                     (:σ_η, 0.2759),      # σ_η 
                     (:χ, 0.4417),        # χ
                     (:γ, 0.4916),        # γ

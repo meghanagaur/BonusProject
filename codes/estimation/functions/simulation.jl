@@ -76,7 +76,7 @@ function simulate(modd, shocks; u0 = 0.067)
             θ_z[iz]       = θ             
 
             # Get indices for filling out log wages
-            start_idx    = (iz==1) ? 1 : indices[iz-1] + 1 
+            start_idx    = (iz == 1) ? 1 : indices[iz - 1] + 1 
             end_idx      = indices[iz]
 
             # Get z, η-shocks to compute wages and output for continuing hires
@@ -121,7 +121,6 @@ function simulate(modd, shocks; u0 = 0.067)
 
         # Compute model data for long time series  (trim to post-burn-in when computing moment)
         z_shocks_idx_str     = zstring.z_shocks_idx
-        z_shocks_str         = zstring.z_shocks
         lz_shocks_str        = log.(zstring.z_shocks)
         @views lw1_t         = lw1_z[z_shocks_idx_str]       # E[log w_1 | z_t]
         @views w_0_t         = w0_z[z_shocks_idx_str]        # E[w_0 | z_t]
@@ -221,7 +220,8 @@ function build_shocks( N_z, P_z, zgrid, N_sim, T_sim, burnin; set_seed = true, s
     z_shocks     = OrderedDict{Int, Array{Real,2}}()
     z_shocks_idx = OrderedDict{Int, Array{Real,2}}()
     η_shocks     = OrderedDict{Int, Array{Real,2}}()
-    Threads.@threads for iz = 1:length(zgrid)
+
+    for iz = 1:length(zgrid)
         temp                = simulateZShocks(P_z, zgrid, N = λ_N_z[iz], T = T_sim, z_1_idx = iz, set_seed = false)
         z_shocks[iz]        = temp.z_shocks
         z_shocks_idx[iz]    = temp.z_shocks_idx
@@ -232,8 +232,7 @@ function build_shocks( N_z, P_z, zgrid, N_sim, T_sim, burnin; set_seed = true, s
     zstring  = simulateZShocks(P_z, zgrid, N = 1, T = N_sim + burnin, set_seed = false)
 
     # Create an ordered tuple that contains the zshocks
-    shocks   = (η_shocks = η_shocks, z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, indices = indices, indices_y = indices_y,
+    return (η_shocks = η_shocks, z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, indices = indices, indices_y = indices_y,
         λ_N_z = λ_N_z, N_sim = N_sim, T_sim = T_sim, zstring = zstring, burnin = burnin, z_ss_dist = z_ss_dist)
 
-    return shocks
 end

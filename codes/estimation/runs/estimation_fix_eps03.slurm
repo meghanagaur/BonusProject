@@ -18,9 +18,6 @@ echo "Executing on the machine:" $(hostname)
 module purge
 module load julia/1.6.1
 
-file=estimation_fix_eps03
-rm -f jld/$file.txt
-
-julia --threads $SLURM_CPUS_PER_TASK $file.jl
+julia --threads $SLURM_CPUS_PER_TASK estimation_fix_eps03.jl
 
 

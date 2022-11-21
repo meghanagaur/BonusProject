@@ -37,9 +37,9 @@ end
 
 # Bounds on parameters to be estimated
 param_bounds  = OrderedDict{Symbol, Array{Real,1}}([ # parameter bounds
-                        (:ε,  [0.05,   2.0]),    # ε
+                        (:ε,  [0.1,   2.0]),     # ε
                         (:σ_η, [0.001, 0.5]),    # σ_η 
-                        (:χ, [-1, 1]),           # χ
+                        (:χ, [-1.0, 1.0]),           # χ
                         (:γ, [0.1, 0.9]),        # γ
                         (:hbar, [0.1, 2.0]) ])   # hbar
 
@@ -48,4 +48,4 @@ param_bounds  = OrderedDict{Symbol, Array{Real,1}}([ # parameter bounds
 N_sim                   = 50000
 T_sim                   = 120         
 burnin                  = 10000
-shocks                  = build_shocks( N_z, P_z, zgrid, N_sim, T_sim, burnin)
+shocks                  = build_shocks(N_z, P_z, zgrid, N_sim, T_sim, burnin)

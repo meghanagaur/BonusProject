@@ -2,8 +2,8 @@
 Workhouse function for the global multistart optimization algorithm, loosely following
 Guvenen et al (2019), with basic NM simplex algorithm for local optimization.
 """
-function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, 
-    shocks, data_mom, W, I_max; I_min  = 5, test = false, bounds = true)
+function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
+    I_min  = 5, test = false, bounds = true, max_iter = 50, crit = 1e-4)
 
     JJ          = length(param_vals)         # total num params (fixed + estimating)
     J           = length(param_bounds)       # num params we are estimating
@@ -31,15 +31,16 @@ function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est,
 
             println("I_last: ", i_last)
             println("----------------------------")
+            
         end
 
         if test == false
             
-            # LOCAL OPTIMIZATION 
+            # LOCAL OPTIMIZATION WITH BOUNDS
             if bounds == true
 
                 opt       = optimize(x -> objFunction_WB(x, start, param_bounds, param_vals, param_est, shocks, data_mom, W)[1], init_x, NelderMead(), 
-                            Optim.Options(g_tol = 1e-4, x_tol = 1e-4,  f_tol = 1e-4, iterations = 50, show_trace = true))
+                            Optim.Options(g_tol = crit, x_tol = crit,  f_tol = crit, iterations = max_iter, show_trace = true))
 
                 arg_min_t = Optim.minimizer(opt)
                
@@ -48,10 +49,11 @@ function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est,
                     arg_min[v]  = transform_params(arg_min_t[v], param_bounds[k], start[v])
                 end
 
+            # LOCAL OPTIMIZATION WITHOUT BOUNDS
             else
 
-                opt        = optimize(x -> objFunction(x, param_vals, param_est, shocks, data_mom, W)[1], start, 
-                            NelderMead(), Optim.Options(g_tol = 1e-4, x_tol = 1e-4, f_tol = 1e-4, iterations = 50, show_trace = true))
+                opt        = optimize(x -> objFunction(x, param_vals, param_est, shocks, data_mom, W)[1], start, NelderMead(), 
+                            Optim.Options(g_tol = crit, x_tol = crit, f_tol = crit, iterations = max_iter, show_trace = true))
 
                 arg_min    = Optim.minimizer(opt)
 

@@ -7,7 +7,7 @@ xguidefontsize =13, yguidefontsize=13, xtickfontsize=8, ytickfontsize=8,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,legendfontsize = 9)
 
 ## Logistics
-file_str     = "fix_eps05"
+file_str     = "fix_hbar1"
 file_pre     = "runs/jld/pretesting_"*file_str*".jld2"  # pretesting data location
 file_est     = "runs/jld/estimation_"*file_str*".txt"   # estimation output location
 file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
@@ -193,6 +193,6 @@ plot(lzgrid[5:end-1],tt_B[5:end], linecolor=:red, label=bonus, legend=:topleft)
 plot!(lzgrid[5:end-1],tt_H[5:end], linecolor=:blue,label=rigid)
 xaxis!(L" \log z")
 yaxis!(L"\frac{d \theta }{dz}\frac{z}{\theta}")
-savefig(file_save*"dtheta.pdf")
+#savefig(file_save*"dtheta.pdf")
 
 
