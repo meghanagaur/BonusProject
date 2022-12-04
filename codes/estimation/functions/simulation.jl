@@ -5,7 +5,7 @@ for θ and Y on every point in the productivity grid.
 Then, compute the effort optimal effort a and wage w,
 as a(z|z_0) and w(z|z_0). u0 = initial unemployment rate.
 """
-function simulate(modd, shocks; u0 = 0.067)
+function simulate(modd, shocks; u0 = 0.067, check_mult = false)
     
     # initialize moments to export (default to NaN)
     std_Δlw   = NaN  # st dev of quarterly wage growth
@@ -50,8 +50,7 @@ function simulate(modd, shocks; u0 = 0.067)
     Threads.@threads for iz = 1:N_z
 
         # solve the model for z_1 = zgrid[iz]
-        modd          = model(z_1 = zgrid[iz], ε = ε, σ_η = σ_η, hbar = hbar, χ = χ, γ = γ)
-        sol           = solveModel(modd; noisy = false)
+        sol           = solveModel(modd; z_1 = zgrid[iz],  noisy = false, check_mult = check_mult)
 
         @unpack conv_flag1, conv_flag2, conv_flag3, wage_flag, effort_flag, IR_err, flag_IR, az, yz, w_0, θ, Y = sol
         

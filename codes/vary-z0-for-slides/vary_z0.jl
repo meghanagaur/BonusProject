@@ -1,3 +1,5 @@
+cd(dirname(@__FILE__))
+
 using LaTeXStrings, Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
 xguidefontsize =13, yguidefontsize=13, xtickfontsize=8, ytickfontsize=8,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,legendfontsize = 9)
@@ -71,13 +73,13 @@ end
 
 # Define the main object
 modd    = OrderedDict{Int64, Any}()
-@unpack β,s,ψ,ρ,σ_ϵ,hp,σ_η,q,κ,ι,ε,zgrid,N_z,P_z  = model()
-idx     = model().z_1_idx # z_SS index
+@unpack β,s,ψ,ρ,σ_ϵ,hp,σ_η,q,κ,ι,ε,hbar,γ,zgrid,N_z,P_z = model()
+idx     = Int64(median(1:N_z))
 dz      = zgrid[2:end] - zgrid[1:end-1]
 
 # Solve the model for different z_0
 @time Threads.@threads for iz = 1:length(zgrid)
-    modd[iz] =  solveModel(model(z_1 = zgrid[iz], χ=0), noisy = false)
+    modd[iz] =  solveModel(model(χ=0), z_1 = zgrid[iz], noisy = false)
 end
 
 ## Store series of interest
@@ -217,7 +219,7 @@ JJ_B = slope(J,dz)     # Bonus
 JJ_H = slope(JJ,dz)    # Hall
 ZZ   = slope(exp_z,dz) # slope of ∑ z_t (β(1-s))^(t-1)
 
-# Check partial derivative
+# Check derivatives
 plot(zgrid[1:end-1], JJ_H, label="Hall: Fixed w and fixed a", linecolor=:cyan, linewidth=3,legend=:outerbottom, ylabel=L"dJ_0/ dz_0")
 plot!(zgrid[1:end-1], JJ_B, label="Bonus economy: Variable w and variable a", linecolor=:black)
 plot!(zgrid[1:end-1], a_opt*ZZ, label="Check")

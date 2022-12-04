@@ -9,21 +9,21 @@ ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase
 cd(dirname(@__FILE__))
 
 # file path and parameters
-#=
-file     = "vary_eps_hbar"
-par1_str = L"\varepsilon"
-par2_str = L"\bar{h}"
-=#
-
-#=
-file     = "vary_sigma_hbar"
-par1_str = L"\sigma_\eta"
-par2_str = L"\bar{h}"
-=#
-
 file     = "vary_eps_chi"
-par1_str = L"\varepsilon"
-par2_str = L"\chi"
+
+if file == "vary_eps_hbar"
+    par1_str = L"\varepsilon"
+    par2_str = L"\bar{h}"
+
+elseif file == "vary_sigma_hbar"
+    par1_str = L"\sigma_\eta"
+    par2_str = L"\bar{h}"
+
+
+elseif file == "vary_eps_chi"
+    par1_str = L"\varepsilon"
+    par2_str = L"\chi"
+end
 
 @unpack output, par_grid, baseline_model = load("jld/calibration_"*file*".jld2") 
 
@@ -41,6 +41,7 @@ df.var_dlw   = [output[i][1][1] for i = 1:N]
 df.dlw1_du   = [output[i][1][2] for i = 1:N]
 df.dlw_dly   = [output[i][1][3] for i = 1:N]
 df.u_ss      = [output[i][1][4] for i = 1:N]
+df.dlogθ     = [output[i][1][5] for i = 1:N]
 df.ir_flag   = [output[i][3] for i = 1:N]
 df.flag      = [output[i][2] for i = 1:N]
 df.ir_err    = [output[i][4] for i = 1:N]
@@ -49,11 +50,12 @@ df.ir_err    = [output[i][4] for i = 1:N]
 par1_grid    = unique(df.par1)
 par2_grid    = unique(df.par2)
 
-# Reshape moments into a conformable N_hbar by N_σ_η matrix
+# Reshape moments into a conformable matrix
 var_dlw      = reshape(df.var_dlw, length(par1_grid), length(par2_grid) )
 dlw1_du      = reshape(df.dlw1_du, length(par1_grid), length(par2_grid) )
 dlw_dly      = reshape(df.dlw_dly, length(par1_grid), length(par2_grid) )
 u_ss         = reshape(df.u_ss,  length(par1_grid), length(par2_grid) )
+dlogθ        = reshape(df.dlogθ,  length(par1_grid), length(par2_grid) )
 ir_flag      = reshape(df.ir_flag, length(par1_grid), length(par2_grid) )
 ir_err       = reshape(df.ir_err, length(par1_grid), length(par2_grid) )
 
@@ -92,6 +94,12 @@ ylabel!(par2_str)
 
 plot(p1, p2, layout = (1,2),  size = (600,200))
 savefig(dir*"ir_error.pdf")
+
+## Plot dlogθ/dlogz at steady state
+p1 = heatmap(par1_grid, par2_grid, dlogθ, title = L"\frac{d \log \theta }{ d \log z }")
+xlabel!(par1_str)
+ylabel!(par2_str)
+savefig(dir*"dlogtheta_dlogz.pdf")
 
 ## Zoom into u_ss where IR flag = 0
 

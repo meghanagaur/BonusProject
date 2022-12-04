@@ -6,16 +6,17 @@ addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
 @everywhere hbar_val = 1.0
-file  = "pretesting_fix_hbar1"
+file  = "pretesting_fix_hbar1_high_dlogw_du"
 
 @everywhere begin
 
     include("functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
 
     # get moment targets
-    data_mom, mom_key = target_moments()
+    data_mom, mom_key = moment_targets(dlw1_du = -3.0)
     K                 = length(data_mom)
-    W                 = getW()
+    W                 = getW(K)
+    W[4,4]            = 10
 
     # Evalute objective function at i-th parameter vector
     function evaluate!(i, sob_seq, param_vals, param_est, shocks, data_mom, W)

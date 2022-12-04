@@ -1,8 +1,8 @@
-#= Specifications for the SMM
+#= Specifications for the SMM:
 
-Note: J = number of moments, K = number of parameters.
+J = number of moments, K = number of parameters.
 
-How to install necessary packages
+How to install necessary packages:
 using Pkg; Pkg.add(url="https://github.com/meghanagaur/DynamicModel")
 =#
 
@@ -15,7 +15,7 @@ include("obj_func.jl")       # objective functions
 include("simulation.jl")     # simulation functions
 
 ## Empirical moments that we are targeting
-function target_moments(; std_Δlw = 0.064, dlw1_du = -1.0, dy_dΔlw = 0.15, u_ss = 0.03/(0.03+0.42) )
+function moment_targets(; std_Δlw = 0.064, dlw1_du = -1.0, dy_dΔlw = 0.15, u_ss = 0.03/(0.03+0.42) )
     
     mom_key       = OrderedDict{Symbol, Real}([   # parameter bounds
                             (:std_Δlw, std_Δlw),
@@ -28,18 +28,16 @@ function target_moments(; std_Δlw = 0.064, dlw1_du = -1.0, dy_dΔlw = 0.15, u_s
     return data_mom, mom_key
 end
 
-## Weight matrix
-function getW()
-    W             = Matrix(1.0I, K, K) # inverse of covariance matrix of data_mom?
-    W[end,end]    = 2.0                # put 2x weight on SS unemployment
-    return W
+## Identity weight matrix
+function getW(K)
+    return Matrix(1.0I, K, K) 
 end
 
 # Bounds on parameters to be estimated
 param_bounds  = OrderedDict{Symbol, Array{Real,1}}([ # parameter bounds
                         (:ε,  [0.1,   2.0]),     # ε
                         (:σ_η, [0.001, 0.5]),    # σ_η 
-                        (:χ, [-1.0, 1.0]),           # χ
+                        (:χ, [-1.0, 1.0]),       # χ
                         (:γ, [0.1, 0.9]),        # γ
                         (:hbar, [0.1, 2.0]) ])   # hbar
 

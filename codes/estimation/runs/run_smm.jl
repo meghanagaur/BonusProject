@@ -7,7 +7,7 @@ include("../functions/tik-tak_job_array.jl") # tik-tak code
 @unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W = load(file_load) 
 
 # Sort and reshape the parameters for distribution across jobs
-N_string       = 25                                # length of each worker string
+N_string       = 50                                # length of each worker string
 Nend           = N_procs*N_string                  # number of initial points
 sorted_indices = reverse(sortperm(fvals)[1:Nend])  # sort by function values in descending order
 sobol_sort     = pars[sorted_indices,:]            # get parameter values: N_TASKS*NSTRING x J

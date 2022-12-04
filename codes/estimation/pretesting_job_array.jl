@@ -13,9 +13,9 @@ addprocs(SlurmManager())
     include("functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
 
     # get moment targets
-    data_mom, mom_key = target_moments()
+    data_mom, mom_key = moment_targets()
     K                 = length(data_mom)
-    W                 = getW()
+    W                 = getW(K)
 
     # combinations of parameters we are fixing and varying
     symbols    = [:ε, :ε, :ε, :ε, :hbar]
