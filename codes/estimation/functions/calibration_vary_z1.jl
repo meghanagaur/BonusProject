@@ -2,7 +2,7 @@
 Vary z_1, and compute relevant aggregates.
 B denotes Bonus model.
 """
-function vary_z1(modd)
+function vary_z1(modd; check_mult = false)
 
     @unpack ψ, zgrid, z_ss, N_z = modd
     modds      = OrderedDict{Int64, Any}()
@@ -10,7 +10,7 @@ function vary_z1(modd)
 
     # Solve the model for different z_0
     @time Threads.@threads for iz = 1:N_z
-        modds[iz] =  solveModel(modd; z_1 = zgrid[iz], noisy = false)
+        modds[iz] =  solveModel(modd; z_1 = zgrid[iz], noisy = false, check_mult = check_mult)
     end
 
     ## Store series of interest
@@ -21,15 +21,16 @@ function vary_z1(modd)
     ω_1    = [modds[i].ω_0 for i = 1:N_z]      # EPV value of unemployment at z0
     J_1    = Y_1 - W_1                         # EPV profits
     a_1    = [modds[i].az[i] for i = 1:N_z]    # optimal effort @ start of contract
+    aflag  = [modds[i].effort_flag for i = 1:N_z] 
 
     return (w_0_B = w_0, θ_B = θ_1, W_B = W_1, Y_B = Y_1, ω_B = ω_1, J_B = J_1, 
-            a_B = a_1, z_ss_idx = z_ss_idx, zgrid = zgrid)
+            a_B = a_1, z_ss_idx = z_ss_idx, zgrid = zgrid, aflag = aflag)
 end
 
 """
 Produce Hall economy aggregates, matching SS Y and W from Bonus economy.
 """
-function solveHall(modd, z_ss_idx, Y_B, W_B, J_B)
+function solveHall(modd, z_ss_idx, Y_B, W_B)
 
     @unpack zgrid, κ, ι, s, β, N_z, P_z = modd
     
@@ -64,7 +65,7 @@ function solveHall(modd, z_ss_idx, Y_B, W_B, J_B)
     qθ       = min.(1, max.(0, κ./JJ))            # job-filling rate
     θ        = (qθ.^(-ι) .- 1).^(1/ι).*(qθ .!= 0) # implied tightness
 
-    return (a_H = aa, W_H = WW, J_H = JJ, Y_H = YY, θ_H = θ)
+    return (a_H = aa, W_H = WW, J_H = JJ, Y_H = YY, θ_H = θ, zz = exp_z)
 end
 
 """

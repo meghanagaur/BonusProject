@@ -35,11 +35,29 @@ end
 
 # Bounds on parameters to be estimated
 param_bounds  = OrderedDict{Symbol, Array{Real,1}}([ # parameter bounds
-                        (:ε,  [0.1,   2.0]),     # ε
+                        (:ε,  [0.1,   3.0]),     # ε
                         (:σ_η, [0.001, 0.5]),    # σ_η 
                         (:χ, [-1.0, 1.0]),       # χ
-                        (:γ, [0.1, 0.9]),        # γ
-                        (:hbar, [0.1, 2.0]) ])   # hbar
+                        (:γ, [0.05, 0.9]),       # γ
+                        (:hbar, [0.1, 4.0]) ])   # hbar
+
+"""
+Get lower, upper bounds given parameters
+to be estimated.
+"""
+function get_bounds(param_est, param_bounds)
+
+    lb = zeros(length(param_est))
+    ub = zeros(length(param_est))
+
+   for (k,v) in param_est
+        lb[v] = param_bounds[k][1]
+        ub[v] = param_bounds[k][2]
+   end
+
+   return lb, ub
+
+end
 
 ## Specifciations for the shocks in simulation
 @unpack N_z, P_z, zgrid = model()

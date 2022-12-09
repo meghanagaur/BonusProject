@@ -9,7 +9,7 @@ ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase
 cd(dirname(@__FILE__))
 
 # file path and parameters
-file     = "vary_eps_chi"
+file     = "vary_eps_hbar"
 
 if file == "vary_eps_hbar"
     par1_str = L"\varepsilon"
@@ -95,12 +95,6 @@ ylabel!(par2_str)
 plot(p1, p2, layout = (1,2),  size = (600,200))
 savefig(dir*"ir_error.pdf")
 
-## Plot dlogθ/dlogz at steady state
-p1 = heatmap(par1_grid, par2_grid, dlogθ, title = L"\frac{d \log \theta }{ d \log z }")
-xlabel!(par1_str)
-ylabel!(par2_str)
-savefig(dir*"dlogtheta_dlogz.pdf")
-
 ## Zoom into u_ss where IR flag = 0
 
 if maximum(ir_flag) >=1
@@ -124,6 +118,14 @@ if maximum(ir_flag) >=1
     savefig(dir*"u_zoom.pdf")
 end
 
+## Plot dlogθ/dlogz at steady state
+dlogθ[ir_flag.==1] .= NaN
+p1 = heatmap(par1_grid, par2_grid, dlogθ, title = L"\frac{d \log \theta }{ d \log z }")
+xlabel!(par1_str)
+ylabel!(par2_str)
+savefig(dir*"dlogtheta_dlogz.pdf")
+
+#=
 ## Compare alternative moment definitions
 df.dlw_dly_2 = [output[i][5] for i = 1:N]
 df.u_ss_2    = [output[i][6] for i = 1:N]
@@ -152,3 +154,4 @@ ylabel!(par2_str)
 
 plot(p1, p2, p3, p4, layout = (2,2))
 savefig(dir*"moment_check.pdf")
+=#

@@ -8,18 +8,19 @@ xguidefontsize =13, yguidefontsize=13, xtickfontsize=8, ytickfontsize=8,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,legendfontsize = 9)
 
 ## Logistics
-file_str     = "fix_eps03"
+file_str     = "fix_chi0"
 file_pre     = "runs/jld/pretesting_"*file_str*".jld2"  # pretesting data location
 file_est     = "runs/jld/estimation_"*file_str*".txt"   # estimation output location
 file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
 mkpath(file_save)
 
-# Simulate moments
-est_output = readdlm(file_est, ',', Float64)   # open output across all jobs
+# Load output
+est_output = readdlm(file_est, ',', Float64)            # open output across all jobs
 @unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, W = load(file_pre) 
 
-idx        = argmin(est_output[:,1])           # check for the lowest function value across processes 
-pstar      = est_output[idx, 2:(2+J-1)]        # get parameters 
+# Get the final minimum 
+idx        = argmin(est_output[:,1])                    # check for the lowest function value across processes 
+pstar      = est_output[idx, 2:(2+J-1)]                 # get parameters 
 
 # Get the relevant parameters
 Params =  OrderedDict{Symbol, Float64}()
@@ -72,12 +73,11 @@ round(std_w0,digits=4)
 
 # Get the Bonus model aggregates
 @unpack σ_η, χ, γ, hbar, ε = Params
-modd  = model(N_z = 21, σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε)
-#modd  = model(N_z = 21, σ_η = 0.5, χ = 0.0, γ = 0.6, hbar = 1.0, ε = 0.5)
-@unpack w_0_B, θ_B, W_B, Y_B, ω_B, J_B, a_B, z_ss_idx, zgrid = vary_z1(modd)
+modd  = model(N_z = 101, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η)
+@unpack w_0_B, θ_B, W_B, Y_B, ω_B, J_B, a_B, z_ss_idx, zgrid, aflag = vary_z1(modd)
 
 # Get the Hall analogues
-a_H, W_H, J_H, Y_H, θ_H = solveHall(modd, z_ss_idx, Y_B, W_B, J_B);
+a_H, W_H, J_H, Y_H, θ_H = solveHall(modd, z_ss_idx, Y_B, W_B);
 
 # Plot labels
 rigid   = "Rigid Wage: Fixed w and a"
@@ -116,7 +116,7 @@ savefig(file_save*"wages.pdf")
 # Plot dlog θ / d log z
 tt_B   = slope(θ_B, zgrid).*zgrid[1:end-1]./θ_B[1:end-1]
 tt_H   = slope(θ_H, zgrid).*zgrid[1:end-1]./θ_H[1:end-1]
-idx    = findfirst(x -> ~isnan(x) && x<50, tt_H)
+idx    = 1#findfirst(x -> ~isnan(x) && x<60, tt_H)
 
 plot(logz[idx:end-1], tt_B[idx:end], linecolor=:red, label=bonus, legend=:topright)
 plot!(logz[idx:end-1], tt_H[idx:end], linecolor=:blue,label=rigid)
@@ -124,5 +124,77 @@ xaxis!(L" \log z")
 yaxis!(L"\frac{d \log \theta }{d \log z}")
 savefig(file_save*"dlogtheta.pdf")
 
+# isolate effort/wage movements
+p1 = plot( zgrid, Y_B , label="Variable a", linecolor=:red, linewidth=3)
+plot!(p1, zgrid, Y_H, label="Fixed a", linecolor=:blue)
+ylabel!(L"Y")
+xlabel!(L"z_1")
+p2= plot(W_B, label="Variable w",linecolor=:red)
+hline!(p2, [W_H], label="Fixed w",linecolor=:blue)
+ylabel!(L"W")
+xlabel!(L"z_0")
+plot(p1, p2, layout = (2, 1), legend=:topleft)
+
+savefig(file_save*"y_w_movements.pdf")
+
+# check dJ/dz1
+sol            = solveModel(modd)
+@unpack az     = sol
+@unpack P_z, zgrid, ρ, β, s         = modd
+
+# Solve for expected PV of sum of the z_t's
+exp_az = zeros(length(zgrid)) 
+@inbounds for (iz, z1) in enumerate(zgrid)
+
+    z0_idx  = findfirst(isequal(z1), zgrid)  # index of z0 on zgrid
+    
+    # initialize guesses
+    v0     = zgrid./(1-ρ*β*(1-s))
+    v0_new = zeros(N_z)
+    iter   = 1
+    err    = 10
+    
+    # solve via simple value function iteration
+    @inbounds while err > 10^-10 && iter < 500
+        v0_new = az.*zgrid + ρ*β*(1-s)*P_z*v0
+        err    = maximum(abs.(v0_new - v0))
+        v0     = copy(v0_new)
+        iter +=1
+    end
+
+    exp_az[iz]   = v0[z0_idx]
+
+end
+
+JJ_EVT = exp_az/zgrid[z_ss_idx]
+JJ_B   = slope(J_B, zgrid)
+JJ_H   = slope(J_H, zgrid)
+
+plot( logz, JJ_EVT)
+plot!(logz[1:end-1], JJ_B)
+plot!(logz[1:end-1], JJ_H)
+
+plot( JJ_EVT[z_ss_idx-3:z_ss_idx+3])
+plot!( JJ_B[z_ss_idx-3:z_ss_idx+3])
+plot!( JJ_H[z_ss_idx-3:z_ss_idx+3])
 
 
+#=simulate N = 10000 paths and compute average
+N_sim          = 10000
+T_sim          = 1000
+exp_az                              = zeros(N_sim, 1) 
+@unpack z_shocks, z_shocks_idx      = simulateZShocks(P_z, zgrid; N = N_sim, T = T_sim)
+
+Threads.@threads for n = 1:N_sim
+
+    for t =1:T_sim
+        #rt   = mapreduce(x -> ρ^x, +, [0:t-1;]) 
+        rt    = ρ^(t-1) #(1-ρ^(t-1) )/(1-ρ)
+        exp_az[n] += rt*((β*(1-s))^(t-1))*az[z_shocks_idx[n,t]]*z_shocks[n,t]
+    end
+
+end
+
+z1   = unique(z_shocks[:,1])
+dJdz = mean(exp_az)/z1
+=#

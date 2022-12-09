@@ -1,14 +1,18 @@
 """
 Workhouse function for the global multistart optimization algorithm, loosely following
-Guvenen et al (2019), with basic NM simplex algorithm for local optimization.
+Guvenen et al (2019), with basic NM simplex or Gradient Descent algorithm for local optimization.
 """
 function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
-    I_min  = 5, test = false, bounds = true, max_iter = 60, crit = 1e-5)
+    I_min  = 5, test = false, bounds = true, max_iter = 60, crit = 1e-5, manual_bounds = true)
 
     JJ          = length(param_vals)         # total num params (fixed + estimating)
     J           = length(param_bounds)       # num params we are estimating
     N_str       = size(init_points, 2)       # number of initial points
     output      = zeros(JJ+1, N_str)         # JJ + 1 x N_str, record function + param values
+
+    if bounds == true
+        lower, upper = get_bounds(param_est, param_bounds)
+    end
 
     @inbounds for i = 1:N_str
 
@@ -39,8 +43,16 @@ function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, 
             # LOCAL OPTIMIZATION WITH BOUNDS
             if bounds == true
 
-                opt       = optimize(x -> objFunction_WB(x, start, param_bounds, param_vals, param_est, shocks, data_mom, W)[1], init_x, NelderMead(), 
+                if manual_bounds == true
+                
+                    opt       = optimize(x -> objFunction_WB(x, start, param_bounds, param_vals, param_est, shocks, data_mom, W)[1], init_x, NelderMead(), 
                             Optim.Options(g_tol = crit, x_tol = crit,  f_tol = crit, iterations = max_iter, show_trace = true))
+                else
+
+                    opt       = optimize(x -> objFunction(x, param_vals, param_est, shocks, data_mom, W)[1], lower, upper, start, Fminbox(NelderMead()), 
+                    Optim.Options(g_tol = crit, x_tol = crit,  f_tol = crit, iterations = max_iter, show_trace = true))
+                
+                end
 
                 arg_min_t = Optim.minimizer(opt)
                
