@@ -5,18 +5,17 @@ cd(dirname(@__FILE__))
 addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
-@everywhere hbar_val = 1.0
-file  = "pretesting_fix_hbar1_high_dlogw_du"
+@everywhere hbar_val = 4.0
+file  = "pretesting_fix_hbar"*string(Int64(hbar_val))
 
 @everywhere begin
 
     include("functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
 
     # get moment targets
-    data_mom, mom_key = moment_targets(dlw1_du = -3.0)
+    data_mom, mom_key = moment_targets()
     K                 = length(data_mom)
     W                 = getW(K)
-    W[4,4]            = 10
 
     # Evalute objective function at i-th parameter vector
     function evaluate!(i, sob_seq, param_vals, param_est, shocks, data_mom, W)
@@ -46,7 +45,7 @@ file  = "pretesting_fix_hbar1_high_dlogw_du"
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 20000
+    I_max        = 30000
     lb           = zeros(J)
     ub           = zeros(J)
 

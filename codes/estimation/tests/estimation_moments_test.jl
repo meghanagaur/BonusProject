@@ -8,11 +8,14 @@ xguidefontsize =13, yguidefontsize=13, xtickfontsize=8, ytickfontsize=8,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,legendfontsize = 9)
 
 ## Logistics
-ε    = 1.63051 #0.5
-σ_η  = 0.288581 #0.3
-χ    = 0.0 #0.0
-γ    = 0.279864 #0.65
-hbar = 1.2 #1.0
+file_str     = "test"
+file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
+
+ε    = 0.5
+σ_η  = 0.3
+χ    = 0.0
+γ    = 0.65
+hbar = 1.0
 
 # Define the parameter values
 param_vals  = OrderedDict{Symbol, Real}([ 

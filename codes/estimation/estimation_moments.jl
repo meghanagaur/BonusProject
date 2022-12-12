@@ -8,7 +8,7 @@ xguidefontsize =13, yguidefontsize=13, xtickfontsize=8, ytickfontsize=8,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,legendfontsize = 9)
 
 ## Logistics
-file_str     = "fix_chi0"
+file_str     = "fix_hbar4"
 file_pre     = "runs/jld/pretesting_"*file_str*".jld2"  # pretesting data location
 file_est     = "runs/jld/estimation_"*file_str*".txt"   # estimation output location
 file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
@@ -42,8 +42,10 @@ function simulate_moments(Params; check_mult = false)
     return out
 end
 
-# Get moments
-output     = simulate_moments(Params; check_mult = true)
+# Get moments (check multiplicity)
+output2    = simulate_moments(Params; check_mult = true)
+output     = simulate_moments(Params; check_mult = false)
+
 @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, u_ss_2, avg_Δlw, dlw1_dlz, dlY_dlz, dlu_dlz, std_u, std_z, std_Y, std_w0, flag, flag_IR, IR_err  = output
 
 # Estimated parameters
@@ -58,13 +60,14 @@ round(std_Δlw,digits=4)
 round(dlw1_du,digits=4)
 round(dlw_dly,digits=4)
 round(u_ss,digits=4)
+round(dlu_dlz,digits=4)
+round(std_u,digits=4)
 
 # Addiitonal moments
 round(u_ss_2,digits=4)
 round(dlu_dlz,digits=4)
 round(dlY_dlz,digits=4)
 round(dlw1_dlz,digits=4)
-round(std_u,digits=4)
 round(std_z,digits=4)
 round(std_Y,digits=4)
 round(std_w0,digits=4)
@@ -73,7 +76,7 @@ round(std_w0,digits=4)
 
 # Get the Bonus model aggregates
 @unpack σ_η, χ, γ, hbar, ε = Params
-modd  = model(N_z = 101, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η)
+modd  = model(N_z = 51, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η)
 @unpack w_0_B, θ_B, W_B, Y_B, ω_B, J_B, a_B, z_ss_idx, zgrid, aflag = vary_z1(modd)
 
 # Get the Hall analogues
@@ -116,7 +119,7 @@ savefig(file_save*"wages.pdf")
 # Plot dlog θ / d log z
 tt_B   = slope(θ_B, zgrid).*zgrid[1:end-1]./θ_B[1:end-1]
 tt_H   = slope(θ_H, zgrid).*zgrid[1:end-1]./θ_H[1:end-1]
-idx    = 1#findfirst(x -> ~isnan(x) && x<60, tt_H)
+idx    = findfirst(x -> ~isnan(x) && x<60, tt_H)
 
 plot(logz[idx:end-1], tt_B[idx:end], linecolor=:red, label=bonus, legend=:topright)
 plot!(logz[idx:end-1], tt_H[idx:end], linecolor=:blue,label=rigid)

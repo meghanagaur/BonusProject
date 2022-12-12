@@ -145,7 +145,7 @@ function simulate(modd, shocks; u0 = 0.067, check_mult = false)
         #@views dlY_dlz  = ols(vec(lY_t[burnin+1:end]), vec(lz_shocks_str[burnin+1:end]))[2]
 
         # Estimate d log u / d  log z (pooled OLS), nudge to avoid runtime error
-        #@views dlu_dlz  = ols(log.( max.(u_t[burnin+1:end], eps() )), vec(lz_shocks_str[burnin+1:end]))[2]
+        @views dlu_dlz  = ols(log.( max.(u_t[burnin+1:end], eps() )), vec(lz_shocks_str[burnin+1:end]))[2]
 
         # Compute nonstochastic SS unemployment: define u_ss = s/(s + f(θ(z_ss)), at log z_ss = μ_z
         idx    = Int64(median(1:length(zgrid)))

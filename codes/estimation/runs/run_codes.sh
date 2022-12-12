@@ -1,6 +1,9 @@
 #!/bin/bash
 
-file=estimation_fix_sigma0
-rm -f jld/$file.txt
+files="estimation_fix_eps02 estimation_fix_eps03 estimation_fix_eps04 estimation_fix_eps05 pretesting_fix_hbar1"
 
-sbatch  $file.slurm
+for file in $files
+do
+    rm -f jld/$file.txt
+    sbatch  $file.slurm
+done

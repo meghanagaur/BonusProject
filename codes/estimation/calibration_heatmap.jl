@@ -120,7 +120,7 @@ end
 
 ## Plot dlogθ/dlogz at steady state
 dlogθ[ir_flag.==1] .= NaN
-p1 = heatmap(par1_grid, par2_grid, dlogθ, title = L"\frac{d \log \theta }{ d \log z }")
+p1 = heatmap(par1_grid, par2_grid, dlogθ, title = L"\frac{d \log \theta }{ d \log z }"*" at "*L"\mu_z")
 xlabel!(par1_str)
 ylabel!(par2_str)
 savefig(dir*"dlogtheta_dlogz.pdf")

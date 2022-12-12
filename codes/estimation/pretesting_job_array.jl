@@ -24,7 +24,7 @@ addprocs(SlurmManager())
 
     # File location for saving jld output 
     files   = ["pretesting_fix_eps"*replace(string(ε_vals[i]), "." => "") for i = 1:length(ε_vals)-1]
-    files   = [files; "pretesting_fix_hbar1"]
+    files   = [files; "pretesting_fix_hbar"*string(Int64(hbar_vals[ja_idx]))]
     file    = files[ja_idx]
 
     # Evalute objective function at i-th parameter vector
@@ -52,7 +52,7 @@ addprocs(SlurmManager())
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 20000
+    I_max        = 30000
     lb           = zeros(J)
     ub           = zeros(J)
 

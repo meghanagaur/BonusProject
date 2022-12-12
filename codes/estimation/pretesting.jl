@@ -13,7 +13,7 @@ file  = "pretesting_eps"*replace(string(ε_val), "." => "")*"_high_dlogw_du"
     include("functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
 
     # get moment targets
-    data_mom, mom_key = target_moments(dlw1_du = -3.0)
+    data_mom, mom_key = target_moments()
     K                 = length(data_mom)
     W                 = getW()
 
