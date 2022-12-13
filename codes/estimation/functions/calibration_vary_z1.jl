@@ -95,7 +95,7 @@ end
 """
 Simulate moments for heatmaps
 """
-function heatmap_moments(; σ_η = 0.3, hbar = 1.0, ε = 0.3, γ = 0.5, χ = 0.0)
+function heatmap_moments(; σ_η = 0.35, hbar = 3.8, ε = 0.5, γ = 0.43, χ = 0.5)
 
     baseline = model(σ_η = σ_η, hbar = hbar, ε = ε, γ = γ,  χ = χ) 
     out      = simulate(baseline, shocks)

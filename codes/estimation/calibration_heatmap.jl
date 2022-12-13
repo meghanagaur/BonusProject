@@ -9,7 +9,7 @@ ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase
 cd(dirname(@__FILE__))
 
 # file path and parameters
-file     = "vary_eps_hbar"
+file     = "vary_eps_chi"
 
 if file == "vary_eps_hbar"
     par1_str = L"\varepsilon"
