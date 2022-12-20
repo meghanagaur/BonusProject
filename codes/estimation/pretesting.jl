@@ -6,16 +6,16 @@ addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
 @everywhere ε_val = 0.3
-file  = "pretesting_eps"*replace(string(ε_val), "." => "")*"_high_dlogw_du"
+file  = "pretesting_eps"*replace(string(ε_val), "." => "")*"_low_pt"
 
 @everywhere begin
 
     include("functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
 
     # get moment targets
-    data_mom, mom_key = target_moments()
+    data_mom, mom_key = moment_targets(dlw_dly = 0.05)
     K                 = length(data_mom)
-    W                 = getW()
+    W                 = getW(K)
 
     # Evalute objective function at i-th parameter vector
     function evaluate!(i, sob_seq, param_vals, param_est, shocks, data_mom, W)
@@ -45,7 +45,7 @@ file  = "pretesting_eps"*replace(string(ε_val), "." => "")*"_high_dlogw_du"
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 20000
+    I_max        = 30000
     lb           = zeros(J)
     ub           = zeros(J)
 

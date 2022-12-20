@@ -35,4 +35,3 @@ end
 save("jld/"*file*".jld2", Dict("output" => output, "par_grid" => par_grid, "baseline_model" => model() ))
 
 
-heatmap_moments(; ε = 0.5, hbar = 1.0)

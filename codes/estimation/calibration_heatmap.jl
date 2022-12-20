@@ -9,7 +9,7 @@ ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase
 cd(dirname(@__FILE__))
 
 # file path and parameters
-file     = "vary_eps_chi"
+file     = "vary_eps_hbar"
 
 if file == "vary_eps_hbar"
     par1_str = L"\varepsilon"
@@ -58,6 +58,7 @@ u_ss         = reshape(df.u_ss,  length(par1_grid), length(par2_grid) )
 dlogθ        = reshape(df.dlogθ,  length(par1_grid), length(par2_grid) )
 ir_flag      = reshape(df.ir_flag, length(par1_grid), length(par2_grid) )
 ir_err       = reshape(df.ir_err, length(par1_grid), length(par2_grid) )
+flag         = reshape(df.flag, length(par1_grid), length(par2_grid) )
 
 # Plot var_dlw
 p1 = heatmap(par1_grid, par2_grid, var_dlw, title=L"std(\Delta \log w)")
@@ -120,7 +121,7 @@ end
 
 ## Plot dlogθ/dlogz at steady state
 dlogθ[ir_flag.==1] .= NaN
-p1 = heatmap(par1_grid, par2_grid, dlogθ, title = L"\frac{d \log \theta }{ d \log z }"*" at "*L"\mu_z")
+p1 = heatmap(par1_grid, par2_grid, dlogθ, title = L"\frac{d \log \theta }{ d \log z }")
 xlabel!(par1_str)
 ylabel!(par2_str)
 savefig(dir*"dlogtheta_dlogz.pdf")

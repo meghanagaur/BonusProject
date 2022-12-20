@@ -16,12 +16,11 @@ function simulate(modd, shocks; u0 = 0.067, check_mult = false)
     dlY_dlz   = NaN  # d log Y / d log z
     dlu_dlz   = NaN  # d log u / d log z
     dlw1_dlz  = NaN  # d log w_1  / d log z
-    std_u     = NaN  # st dev of u_t
-    std_z     = NaN  # st dev of z_t
-    std_Y     = NaN  # st dev of Y_t
-    std_w0    = NaN  # std dev of w_0
-    dlw_dly_2 = NaN  # d log w_it / d log y_it <- alt definition
-    u_ss_2    = NaN  # u_ss <- alt definition
+    std_u     = NaN  # st dev of log u_t
+    std_z     = NaN  # st dev of log z_t
+    std_Y     = NaN  # st dev of log Y_t
+    dlw_dly_2 = NaN  # d log w_it / d log y_it <- regression estimate
+    u_ss_2    = NaN  # u_ss <- stochastic steady state 
 
     # Get all of the relevant parameters for the model
     @unpack hp, zgrid, N_z, ψ, f, s, σ_η, χ, γ, hbar, ε = modd 
@@ -34,8 +33,10 @@ function simulate(modd, shocks; u0 = 0.067, check_mult = false)
     # Results from panel simulation
     lw        = zeros(indices[end])        # log w_it, given z_1 and z_t
     ly        = zeros(indices[end])        # log y_it, given z_1 and z_t
+    lz        = zeros(indices[end])        # log z_it, given z_1 and z_t
+    η_bar     = 0.4                        # selection criterion for η
     η_idx     = zeros(indices[end])        # index for selecting based on η
-    pt        = zeros(indices[end])        # direct computation of pass-through
+    pt        = zeros(indices[end])        # direct computation of pass-through moment
     Δlw_y     = zeros(indices_y[end])      # Δlog w_it <- yoy
 
     # Values corresponding to new contracts (i.e. starting at z_t)
@@ -82,27 +83,29 @@ function simulate(modd, shocks; u0 = 0.067, check_mult = false)
             @views z_shocks_z        = z_shocks[iz]
             @views z_shocks_idx_z    = z_shocks_idx[iz]
             η_shocks_z               = σ_η*η_shocks[iz]  # scale η
-            #η_idx[start_idx:end_idx] = vec((η_shocks_z .>= -0.6).*(η_shocks_z .<= 0.6)) # limit to [-0.6,0.6] for log y computation
+            η_idx[start_idx:end_idx] = vec(abs.(η_shocks_z) .<= η_bar) # limit η range for log y computation
             
             # Compute relevant terms for log wages and log output
-            @views hp_az            = hpz_z1[z_shocks_idx_z]
-            t1                      = ψ*hp_az.*η_shocks_z
-            t2                      = 0.5*(ψ*hp_az*σ_η).^2 
-            lw_mat                  = log(w_0) .+ cumsum(t1, dims=2) - cumsum(t2, dims=2)
-            lw[start_idx:end_idx]   = vec(lw_mat)
+            @views hp_az             = hpz_z1[z_shocks_idx_z]
+            t1                       = ψ*hp_az.*η_shocks_z
+            t2                       = 0.5*(ψ*hp_az*σ_η).^2 
+            lw_mat                   = log(w_0) .+ cumsum(t1, dims = 2) - cumsum(t2, dims = 2)
+            lw[start_idx:end_idx]    = vec(lw_mat)
+            lz[start_idx:end_idx]    = vec(z_shocks_z)
 
             # Compute log individual output
-            #@views y                = yz[z_shocks_idx_z]                            # a_t(z_t|z_1)*z_t
-            #ηz                      = z_shocks_z.*η_shocks_z                        # truncate η_t
-            #ly[start_idx:end_idx]   = vec(log.(max.(y + ηz, eps())))                # nudge up to avoid any runtime errors
+            @views y                = yz[z_shocks_idx_z]                            # a_t(z_t|z_1)*z_t
+            ηz                      = z_shocks_z.*η_shocks_z                        # truncate η_t
+            ly[start_idx:end_idx]   = vec(log.(max.(y + ηz, eps())))                # nudge up to avoid any runtime errors
 
             # Compute directly pass-through for comparison
-            @views pt[start_idx:end_idx]   = az[z_shocks_idx_z].^(1 + 1/ε)
+            @views pt[start_idx:end_idx] = az[z_shocks_idx_z].^(1 + 1/ε)
 
             # Make some adjustments to compute annual wage changes
             start_idx_y = (iz == 1) ? 1 : indices_y[iz-1] + 1 
             end_idx_y   = indices_y[iz]
             @views Δlw_y[start_idx_y:end_idx_y] = vec([lw_mat[i,t+12] - lw_mat[i,t] for  i = 1:size(z_shocks_z,1), t = 1:T_sim-12])
+
         end
     end
 
@@ -114,15 +117,18 @@ function simulate(modd, shocks; u0 = 0.067, check_mult = false)
         #avg_Δlw  = mean(Δlw_y)
         #histogram(Δlw_y)
         
-        # Regress log w_it on log y_it 
-        #dlw_dly_2  = ols(lw[η_idx.==1], ly[η_idx.==1] )[2]
+        # Compute passthrough moment: elasticity of w_it wrt y_it 
         dlw_dly     = ψ*hbar*mean(pt)
-
+        dlw_dly_2   = ols(lw[η_idx.==1], ly[η_idx .== 1] )[2]
+        #dlw_dly_2   = ols(lw[η_idx.==1], [ly[η_idx .== 1] lz[η_idx.==1]] )[2]                  # control for z
+        #dlw_dly_2   = ols(lw[η_idx.==1], ly[η_idx.==1]; intercept = false )[1]                 # no intercept  
+        #dlw_dly_2   = ols(lw[η_idx.==1], [ly[η_idx.== 1] lz[η_idx.==1]]; intercept=false )[1]  # no intercept, control for z
+        
         # Compute model data for long time series  (trim to post-burn-in when computing moment)
-        z_shocks_idx_str     = zstring.z_shocks_idx
-        lz_shocks_str        = log.(zstring.z_shocks)
+        z_shocks_idx_str     = zstring.z_shocks_idx         
+        logzt                = log.(zstring.z_shocks)        # logzt    
         @views lw1_t         = lw1_z[z_shocks_idx_str]       # E[log w_1 | z_t]
-        @views w_0_t         = w0_z[z_shocks_idx_str]        # E[w_0 | z_t]
+        @views w0_t          = w0_z[z_shocks_idx_str]        # E[w_0 | z_t]
         @views Y_t           = Y_z[z_shocks_idx_str]         # Y_1 | z_t
         lY_t                 = log.(max.(Y_t, eps() ))       # log Y_1 | z_t, nudge up to avoid runtime error
         @views θ_t           = θ_z[z_shocks_idx_str]         # θ(z_t)
@@ -145,28 +151,30 @@ function simulate(modd, shocks; u0 = 0.067, check_mult = false)
         #@views dlY_dlz  = ols(vec(lY_t[burnin+1:end]), vec(lz_shocks_str[burnin+1:end]))[2]
 
         # Estimate d log u / d  log z (pooled OLS), nudge to avoid runtime error
-        @views dlu_dlz  = ols(log.( max.(u_t[burnin+1:end], eps() )), vec(lz_shocks_str[burnin+1:end]))[2]
+        @views dlu_dlz  = ols(log.( max.(u_t[burnin+1:end], eps() )), vec(logzt[burnin+1:end]))[2]
 
         # Compute nonstochastic SS unemployment: define u_ss = s/(s + f(θ(z_ss)), at log z_ss = μ_z
         idx    = Int64(median(1:length(zgrid)))
         u_ss   = s/(s  + f(θ_z[idx]))
 
         # Compute stochastic SS unemployment: define u_ss = E[u_t | t > burnin]
-        u_ss_2   = mean(u_t[burnin+1:end])
+        u_ss_2 = mean(u_t[burnin+1:end])
 
-        # Compute some standard deviations
-        std_u  = std(log.(max.(eps(), u_t)))
-        std_z  = std(lz_shocks_str)
-        std_Y  = std(lY_t)
+        # Compute standard deviations
+        std_u  = std(log.(max.(eps(), u_t[burnin+1:end])))
+        std_z  = std(logzt[burnin+1:end])
+        std_Y  = std(lY_t[burnin+1:end])
+
     end
     
+    # determine an IR error for all initial z
     IR_err = sum(abs.(err_IR_z))
 
     # Export the simulation results
-    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, 
+    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, u_ss_2 = u_ss_2, 
             avg_Δlw = avg_Δlw, dlw1_dlz = dlw1_dlz, dlY_dlz = dlY_dlz, dlu_dlz = dlu_dlz, 
-            std_u = std_u, std_z = std_z, std_Y = std_Y, std_w0 = std_w0, dlw_dly_2 = dlw_dly_2,
-            u_ss_2 = u_ss_2, flag = maximum(flag_z), flag_IR = maximum(flag_IR_z), IR_err = IR_err)
+            std_u = std_u, std_z = std_z, std_Y = std_Y, dlw_dly_2 = dlw_dly_2,
+            flag = maximum(flag_z), flag_IR = maximum(flag_IR_z), IR_err = IR_err)
 end
 
 """
@@ -176,7 +184,10 @@ function ols(Y, X; intercept = true)
     
     if intercept == true
         XX = [ones(size(X,1)) X]
+    else
+        XX = X
     end    
+
     return  (XX'XX)\(XX'*Y)
     #return  inv(XX'XX)(XX'*YY)
 end

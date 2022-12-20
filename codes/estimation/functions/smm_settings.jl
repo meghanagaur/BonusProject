@@ -15,15 +15,15 @@ include("obj_func.jl")       # objective functions
 include("simulation.jl")     # simulation functions
 
 ## Empirical moments that we are targeting
-function moment_targets(; std_Δlw = 0.064, dlw1_du = -1.0, dy_dΔlw = 0.15, u_ss = 0.03/(0.03+0.42) )
+function moment_targets(; std_Δlw = 0.064, dlw1_du = -1.0, dlw_dly = 0.15, u_ss = 0.03/(0.03+0.42) )
     
     mom_key       = OrderedDict{Symbol, Real}([   # parameter bounds
                             (:std_Δlw, std_Δlw),
                             (:dlw1_du, dlw1_du),
-                            (:dy_dΔlw, dy_dΔlw),
+                            (:dlw_dly, dlw_dly),
                             (:u_ss, u_ss) ]) 
 
-    data_mom      = [std_Δlw, dlw1_du, dy_dΔlw, u_ss]   
+    data_mom      = [std_Δlw, dlw1_du, dlw_dly, u_ss]   
 
     return data_mom, mom_key
 end

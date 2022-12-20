@@ -91,27 +91,23 @@ function dlogtheta(modd; N_z = 21)
     return  dlogθ[z_ss_idx]
 
 end
- 
+
 """
 Simulate moments for heatmaps
 """
-function heatmap_moments(; σ_η = 0.35, hbar = 3.8, ε = 0.5, γ = 0.43, χ = 0.5)
+function heatmap_moments(; σ_η = 0.406231, χ = 0.578895, γ = 0.562862, hbar = 3.52046, ε = 0.3)
 
-    baseline = model(σ_η = σ_η, hbar = hbar, ε = ε, γ = γ,  χ = χ) 
-    out      = simulate(baseline, shocks)
-    dlogθ    = dlogtheta(baseline)
+    baseline     = model(σ_η = σ_η, hbar = hbar, ε = ε, γ = γ,  χ = χ) 
+    out          = simulate(baseline, shocks)
+    dlogθ_dlogz  = dlogtheta(baseline)
 
-    mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss, dlogθ] #, out.avg_Δlw,
-    #out.dlw1_dlz, out.dlY_dlz, out.dlu_dlz, out.std_u, out.std_z, out.std_Y, out.std_w0]
+    mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss, dlogθ_dlogz, out.dlw_dly_2, out.u_ss_2]  
+    # out.dlw1_dlz, out.avg_Δlw,  out.dlY_dlz, out.dlu_dlz, out.std_u, out.std_z, out.std_Y, out.std_w0]
 
     # Flags
     flag     = out.flag
     flag_IR  = out.flag_IR
     IR_err   = out.IR_err
-
-    # Extra moments (check)
-    dlw_dly_2  = out.dlw_dly_2
-    u_ss_2     = out.u_ss_2
 
     return [mod_mom, flag, flag_IR, IR_err]
 end

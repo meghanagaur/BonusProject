@@ -8,7 +8,7 @@ xguidefontsize =13, yguidefontsize=13, xtickfontsize=8, ytickfontsize=8,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,legendfontsize = 9)
 
 ## Logistics
-file_str     = "fix_hbar4_highu"
+file_str     = "fix_eps03_highu"
 file_pre     = "runs/jld/pretesting_"*file_str*".jld2"  # pretesting data location
 file_est     = "runs/jld/estimation_"*file_str*".txt"   # estimation output location
 file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
@@ -46,7 +46,7 @@ end
 output2    = simulate_moments(Params; check_mult = true)
 output     = simulate_moments(Params; check_mult = false)
 
-@unpack std_Δlw, dlw1_du, dlw_dly, u_ss, u_ss_2, avg_Δlw, dlw1_dlz, dlY_dlz, dlu_dlz, std_u, std_z, std_Y, std_w0, flag, flag_IR, IR_err  = output
+@unpack std_Δlw, dlw1_du, dlw_dly, u_ss, u_ss_2, avg_Δlw, dlw1_dlz, dlw_dly_2, dlY_dlz, dlu_dlz, std_u, std_z, std_Y, std_w0, flag, flag_IR, IR_err  = output
 
 # Estimated parameters
 round.(Params[:σ_η], digits=4)
@@ -59,18 +59,19 @@ round.(Params[:ε], digits=4)
 round(std_Δlw,digits=4)
 round(dlw1_du,digits=4)
 round(dlw_dly,digits=4)
+round(dlw_dly_2,digits=4)
 round(u_ss,digits=4)
 round(dlu_dlz,digits=4)
 round(std_u,digits=4)
 
 # Addiitonal moments
-round(u_ss_2,digits=4)
-round(dlu_dlz,digits=4)
-round(dlY_dlz,digits=4)
-round(dlw1_dlz,digits=4)
-round(std_z,digits=4)
-round(std_Y,digits=4)
-round(std_w0,digits=4)
+round(u_ss_2, digits=4)
+round(dlu_dlz, digits=4)
+round(dlY_dlz, digits=4)
+round(dlw1_dlz, digits=4)
+round(std_z, digits=4)
+round(std_Y, digits=4)
+round(std_w0, digits=4)
 
 ## Vary z1 experiments
 
@@ -119,7 +120,7 @@ savefig(file_save*"wages.pdf")
 # Plot dlog θ / d log z
 tt_B   = slope(θ_B, zgrid).*zgrid[1:end-1]./θ_B[1:end-1]
 tt_H   = slope(θ_H, zgrid).*zgrid[1:end-1]./θ_H[1:end-1]
-idx    = findfirst(x -> ~isnan(x) && x<60, tt_H)
+idx    = findfirst(x -> ~isnan(x) && x<100, tt_H)
 
 plot(logz[idx:end-1], tt_B[idx:end], linecolor=:red, label=bonus, legend=:topright)
 plot!(logz[idx:end-1], tt_H[idx:end], linecolor=:blue,label=rigid)
@@ -173,13 +174,9 @@ JJ_EVT = exp_az/zgrid[z_ss_idx]
 JJ_B   = slope(J_B, zgrid)
 JJ_H   = slope(J_H, zgrid)
 
-plot( logz, JJ_EVT)
+plot( logz, JJ_EVT, legend=:bottomright)
 plot!(logz[1:end-1], JJ_B)
 plot!(logz[1:end-1], JJ_H)
-
-plot( JJ_EVT[z_ss_idx-3:z_ss_idx+3])
-plot!( JJ_B[z_ss_idx-3:z_ss_idx+3])
-plot!( JJ_H[z_ss_idx-3:z_ss_idx+3])
 
 
 #=simulate N = 10000 paths and compute average
