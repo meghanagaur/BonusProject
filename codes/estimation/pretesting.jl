@@ -6,7 +6,7 @@ addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
 @everywhere ε_val = 0.3
-file  = "pretesting_eps"*replace(string(ε_val), "." => "")*"_low_pt"
+file  = "pretesting_fix_eps"*replace(string(ε_val), "." => "")*"_low_pt"
 
 @everywhere begin
 

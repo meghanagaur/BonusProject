@@ -46,7 +46,7 @@ end
 output2    = simulate_moments(Params; check_mult = true)
 output     = simulate_moments(Params; check_mult = false)
 
-@unpack std_Δlw, dlw1_du, dlw_dly, u_ss, u_ss_2, avg_Δlw, dlw1_dlz, dlw_dly_2, dlY_dlz, dlu_dlz, std_u, std_z, std_Y, std_w0, flag, flag_IR, IR_err  = output
+@unpack std_Δlw, dlw1_du, dlw_dly, u_ss, u_ss_2, avg_Δlw, dlw1_dlz, dlw_dly_2, dlY_dlz, dlu_dlz, std_u, std_z, std_Y, flag, flag_IR, IR_err  = output
 
 # Estimated parameters
 round.(Params[:σ_η], digits=4)
@@ -142,12 +142,12 @@ plot(p1, p2, layout = (2, 1), legend=:topleft)
 savefig(file_save*"y_w_movements.pdf")
 
 # check dJ/dz1
-sol            = solveModel(modd)
-@unpack az     = sol
-@unpack P_z, zgrid, ρ, β, s         = modd
+@unpack P_z, zgrid, ρ, β, s = modd
 
 # Solve for expected PV of sum of the z_t's
-exp_az = zeros(length(zgrid)) 
+sol          = solveModel(modd)
+@unpack az   = sol
+exp_az       = zeros(length(zgrid)) 
 @inbounds for (iz, z1) in enumerate(zgrid)
 
     z0_idx  = findfirst(isequal(z1), zgrid)  # index of z0 on zgrid
@@ -178,6 +178,22 @@ plot( logz, JJ_EVT, legend=:bottomright)
 plot!(logz[1:end-1], JJ_B)
 plot!(logz[1:end-1], JJ_H)
 
+# Scatter plot of log emploment
+T_sim     = 5000
+burnin    = 10000
+minz_idx  = max(findfirst(x -> x >= 10^-5, θ_H), findfirst(x -> x >= 10^-5, θ_B))
+
+N_B       = simulate_employment(modd, T_sim, burnin, θ_B, minz_idx; u0 = 0.067).nt
+N_H       = simulate_employment(modd, T_sim, burnin, θ_H, minz_idx; u0 = 0.067).nt
+
+zt_B      = zgrid[simulate_employment(modd, T_sim, burnin, θ_H, minz_idx; u0 = 0.067).zt_idx]
+zt_H      = zgrid[simulate_employment(modd, T_sim, burnin, θ_H, minz_idx; u0 = 0.067).zt_idx]
+@assert(zt_B == zt_H)
+
+plot(log.(zt_B), log.(N_B), seriestype=:scatter, label=bonus, legend=:bottomright)
+plot!(log.(zt_B), log.(N_H), seriestype=:scatter, label=rigid)
+
+savefig(file_save*"logn.pdf")
 
 #=simulate N = 10000 paths and compute average
 N_sim          = 10000
@@ -198,3 +214,4 @@ end
 z1   = unique(z_shocks[:,1])
 dJdz = mean(exp_az)/z1
 =#
+

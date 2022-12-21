@@ -14,13 +14,13 @@ function vary_z1(modd; check_mult = false)
     end
 
     ## Store series of interest
-    w_0    = [modds[i].w_0 for i = 1:N_z]      # w0 (constant)
-    θ_1    = [modds[i].θ for i = 1:N_z]        # tightness
-    W_1    = w_0/ψ                             # EPV of wages
-    Y_1    = [modds[i].Y for i = 1:N_z]        # EPV of output
-    ω_1    = [modds[i].ω_0 for i = 1:N_z]      # EPV value of unemployment at z0
-    J_1    = Y_1 - W_1                         # EPV profits
-    a_1    = [modds[i].az[i] for i = 1:N_z]    # optimal effort @ start of contract
+    w_0    = [modds[i].w_0 for i = 1:N_z]          # w0 (constant)
+    θ_1    = [modds[i].θ for i = 1:N_z]            # tightness
+    W_1    = w_0/ψ                                 # EPV of wages
+    Y_1    = [modds[i].Y for i = 1:N_z]            # EPV of output
+    ω_1    = [modds[i].ω_0 for i = 1:N_z]          # EPV value of unemployment at z0
+    J_1    = Y_1 - W_1                             # EPV profits
+    a_1    = [modds[i].az[i] for i = 1:N_z]        # optimal effort @ start of contract
     aflag  = [modds[i].effort_flag for i = 1:N_z] 
 
     return (w_0_B = w_0, θ_B = θ_1, W_B = W_1, Y_B = Y_1, ω_B = ω_1, J_B = J_1, 
@@ -77,19 +77,18 @@ function slope(y, x)
 end
 
 """
-Return dlogtheta at the steady state μ_z.
+Return d log theta/d log z at the steady state μ_z.
 """
 function dlogtheta(modd; N_z = 21)
 
-    # vary z0 
+    # vary initial z1
     modd2 = model(N_z = N_z, σ_η = modd.σ_η, χ = modd.χ, γ = modd.γ, hbar = modd.hbar, ε = modd.ε)
     @unpack θ_B, z_ss_idx, zgrid = vary_z1(modd2)
 
-    # compute dtheta/dz
+    # compute d log theta/d log z
     dlogθ  = slope(θ_B, zgrid).*zgrid[1:end-1]./θ_B[1:end-1]
 
     return  dlogθ[z_ss_idx]
-
 end
 
 """
@@ -110,4 +109,32 @@ function heatmap_moments(; σ_η = 0.406231, χ = 0.578895, γ = 0.562862, hbar 
     IR_err   = out.IR_err
 
     return [mod_mom, flag, flag_IR, IR_err]
+end
+
+"""
+Simulate employment, given θ(z_t) path
+"""
+function simulate_employment(modd, T_sim, burnin, θ, minz_idx; u0 = 0.067, seed = 512)
+
+    @unpack s, f, zgrid, P_z = modd
+
+    # get productivity shocks
+    shocks  = simulateZShocks(P_z, zgrid, N = 1, T = T_sim + burnin, set_seed = true)
+    @unpack z_shocks, z_shocks_idx, T = shocks
+
+    z_shocks_idx = max.(z_shocks_idx, minz_idx)
+
+    # get relevant parameters
+    @views θ_t   = θ[z_shocks_idx]   
+
+    # Compute evolution of unemployment for z_t path
+    u_t      = zeros(T)
+    u_t[1]   = u0
+
+    @inbounds for t = 2:T
+        u_t[t] = (1 - f(θ_t[t-1]))*u_t[t-1] + s*(1 - u_t[t-1])
+    end
+
+    return (nt = 1 .- u_t[burnin+1:end], zt_idx = z_shocks_idx[burnin+1:end])
+
 end

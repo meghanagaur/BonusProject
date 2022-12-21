@@ -34,10 +34,14 @@ function simulate(modd, shocks; u0 = 0.067, check_mult = false)
     lw        = zeros(indices[end])        # log w_it, given z_1 and z_t
     ly        = zeros(indices[end])        # log y_it, given z_1 and z_t
     lz        = zeros(indices[end])        # log z_it, given z_1 and z_t
-    η_bar     = 0.4                        # selection criterion for η
+    η_bar     = 0.5                        # selection criterion for η
     η_idx     = zeros(indices[end])        # index for selecting based on η
+    y_idx     = zeros(indices[end])        # index for selecting based on η
     pt        = zeros(indices[end])        # direct computation of pass-through moment
     Δlw_y     = zeros(indices_y[end])      # Δlog w_it <- yoy
+    #pt_check  = zeros(indices[end])        # check computation of pass-through moment
+    #pt_check2 = zeros(indices[end])        # check computation of pass-through moment
+    #pt_check3 = zeros(indices[end])        # check computation of pass-through moment
 
     # Values corresponding to new contracts (i.e. starting at z_t)
     w0_z      = zeros(length(zgrid))       # E[w_t], given z_1
@@ -94,12 +98,16 @@ function simulate(modd, shocks; u0 = 0.067, check_mult = false)
             lz[start_idx:end_idx]    = vec(z_shocks_z)
 
             # Compute log individual output
-            @views y                = yz[z_shocks_idx_z]                            # a_t(z_t|z_1)*z_t
-            ηz                      = z_shocks_z.*η_shocks_z                        # truncate η_t
-            ly[start_idx:end_idx]   = vec(log.(max.(y + ηz, eps())))                # nudge up to avoid any runtime errors
+            ηz                        = z_shocks_z.*η_shocks_z                # truncate η_t
+            @views y                  = yz[z_shocks_idx_z] + ηz               # a_t(z_t|z_1)*z_t
+            y_idx[start_idx:end_idx]  = vec(y .> 0)                           # y < 0
+            ly[start_idx:end_idx]     = vec(log.(max.(y, 10^-5)))             # nudge up to avoid any runtime errors
 
             # Compute directly pass-through for comparison
-            @views pt[start_idx:end_idx] = az[z_shocks_idx_z].^(1 + 1/ε)
+            @views pt[start_idx:end_idx]    = az[z_shocks_idx_z].^(1 + 1/ε)
+            #pt_check[start_idx:end_idx]    = vec(ψ*hp_az.*η_shocks_z - 0.5*(ψ*hp_az*σ_η).^2)  # dlw
+            #pt_check2[start_idx:end_idx]  .= zgrid[iz]
+            #pt_check3[start_idx:end_idx]   = 
 
             # Make some adjustments to compute annual wage changes
             start_idx_y = (iz == 1) ? 1 : indices_y[iz-1] + 1 
@@ -118,8 +126,12 @@ function simulate(modd, shocks; u0 = 0.067, check_mult = false)
         #histogram(Δlw_y)
         
         # Compute passthrough moment: elasticity of w_it wrt y_it 
-        dlw_dly     = ψ*hbar*mean(pt)
-        dlw_dly_2   = ols(lw[η_idx.==1], ly[η_idx .== 1] )[2]
+        dlw_dly      = ψ*hbar*mean(pt)
+        
+        #dlw_dly_2    = ols(lw[(y_idx.==1).*(η_idx.==1)], ly[(y_idx.==1).*(η_idx.==1)] )[2]
+        #cov(lw[(y_idx.==1).*(η_idx.==1)], ly[(y_idx.==1).*(η_idx.==1)])/var(ly[(y_idx.==1).*(η_idx.==1)] )
+        #cov(pt_check3[(y_idx.==1).*(η_idx.==1)], ly[(y_idx.==1).*(η_idx.==1)])/var(ly[(y_idx.==1).*(η_idx.==1)] )
+        #dlw_dly_2   = ols(lw[η_idx.==1], ly[η_idx .== 1] )[2]
         #dlw_dly_2   = ols(lw[η_idx.==1], [ly[η_idx .== 1] lz[η_idx.==1]] )[2]                  # control for z
         #dlw_dly_2   = ols(lw[η_idx.==1], ly[η_idx.==1]; intercept = false )[1]                 # no intercept  
         #dlw_dly_2   = ols(lw[η_idx.==1], [ly[η_idx.== 1] lz[η_idx.==1]]; intercept=false )[1]  # no intercept, control for z
@@ -133,7 +145,7 @@ function simulate(modd, shocks; u0 = 0.067, check_mult = false)
         lY_t                 = log.(max.(Y_t, eps() ))       # log Y_1 | z_t, nudge up to avoid runtime error
         @views θ_t           = θ_z[z_shocks_idx_str]         # θ(z_t)
 
-        # Compute evolution of unemployment for the different z_t paths
+        # Compute evolution of unemployment for the z_t path
         T        = zstring.T
         u_t      = zeros(T)
         u_t[1]   = u0

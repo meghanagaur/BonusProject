@@ -1,9 +1,9 @@
 """
 Workhouse function for the global multistart optimization algorithm, loosely following
-Guvenen et al (2019), with basic NM simplex or Gradient Descent algorithm for local optimization.
+Guvenen et al (2019), with NM simplex for local optimization step.
 """
 function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
-    I_min  = 5, test = false, bounds = true, max_iter = 60, crit = 1e-5, manual_bounds = true)
+    I_min  = 10, test = false, bounds = true, max_iter = 50, crit = 1e-5, manual_bounds = true)
 
     JJ          = length(param_vals)         # total num params (fixed + estimating)
     J           = length(param_bounds)       # num params we are estimating
@@ -47,10 +47,11 @@ function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, 
                 
                     opt       = optimize(x -> objFunction_WB(x, start, param_bounds, param_vals, param_est, shocks, data_mom, W)[1], init_x, NelderMead(), 
                             Optim.Options(g_tol = crit, x_tol = crit,  f_tol = crit, iterations = max_iter, show_trace = true))
-                else
+
+                elseif manual_bounds == false
 
                     opt       = optimize(x -> objFunction(x, param_vals, param_est, shocks, data_mom, W)[1], lower, upper, start, Fminbox(NelderMead()), 
-                    Optim.Options(g_tol = crit, x_tol = crit,  f_tol = crit, iterations = max_iter, show_trace = true))
+                                Optim.Options(g_tol = crit, x_tol = crit,  f_tol = crit, iterations = max_iter, show_trace = true))
                 
                 end
 
