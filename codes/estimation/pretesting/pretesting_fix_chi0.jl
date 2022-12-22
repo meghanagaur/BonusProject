@@ -15,7 +15,6 @@ file  = "pretesting_fix_chi0"
     data_mom, mom_key = moment_targets(dlw1_du = -1.0)
     K                 = length(data_mom)
     W                 = getW(K)
-    #W[end,end]        = 10.0 # put 10x weight on SS unemployment
 
     # Evalute objective function at i-th parameter vector
     function evaluate!(i, sob_seq, param_vals, param_est, shocks, data_mom, W)

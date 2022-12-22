@@ -3,7 +3,7 @@ Workhouse function for the global multistart optimization algorithm, loosely fol
 Guvenen et al (2019), with NM simplex for local optimization step.
 """
 function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
-    I_min  = 10, test = false, bounds = true, max_iter = 50, crit = 1e-5, manual_bounds = true)
+    I_min  = 10, test = false, bounds = true, max_iter_1 = 50, max_iter_2 = 75, crit = 1e-6, manual_bounds = true)
 
     JJ          = length(param_vals)         # total num params (fixed + estimating)
     J           = length(param_bounds)       # num params we are estimating
@@ -23,6 +23,7 @@ function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, 
         if i <= I_min
 
             start      = init_points[:,i]
+            max_iter   = max_iter_1
 
         elseif i >  I_min
 
@@ -32,6 +33,7 @@ function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, 
             idx        = argmin(cur_out[:,1])                            # check for the lowest function value across processes 
             pstar      = cur_out[idx, 2:2+J-1]                           # get parameters 
             start      = @views (1-θ)*init_points[:,i] + θ*pstar         # set new start value for local optimization
+            max_iter   = max_iter_2                                      # max iterations 
 
             println("I_last: ", i_last)
             println("----------------------------")
@@ -46,7 +48,7 @@ function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, 
                 if manual_bounds == true
                 
                     opt       = optimize(x -> objFunction_WB(x, start, param_bounds, param_vals, param_est, shocks, data_mom, W)[1], init_x, NelderMead(), 
-                            Optim.Options(g_tol = crit, x_tol = crit,  f_tol = crit, iterations = max_iter, show_trace = true))
+                                Optim.Options(g_tol = crit, x_tol = crit,  f_tol = crit, iterations = max_iter, show_trace = true))
 
                 elseif manual_bounds == false
 

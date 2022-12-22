@@ -1,4 +1,5 @@
 using Pkg
+
 Pkg.add(url="https://github.com/meghanagaur/DynamicModel")
 Pkg.add("DataStructures")
 Pkg.add("Distributions")
@@ -18,6 +19,9 @@ Pkg.add("SlurmClusterManager")
 Pkg.add("DistributedArrays")
 Pkg.add("BenchmarkTools")
 Pkg.add("DelimitedFiles")
+Pkg.add("Binscatters")
+Pkg.add("DataFrames")
+
 
 
 

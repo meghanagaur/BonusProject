@@ -3,14 +3,14 @@ cd(dirname(@__FILE__))
 include("functions/smm_settings.jl")        # SMM inputs, settings, packages, etc.
 include("functions/calibration_vary_z1.jl") # vary z1 functions
 
-using DelimitedFiles, LaTeXStrings, Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
+using DataFrames, Binscatters, DelimitedFiles, LaTeXStrings, Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
 xguidefontsize =13, yguidefontsize=13, xtickfontsize=8, ytickfontsize=8,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,legendfontsize = 9)
 
 ## Logistics
-file_str     = "fix_eps03_highu"
-file_pre     = "runs/jld/pretesting_"*file_str*".jld2"  # pretesting data location
-file_est     = "runs/jld/estimation_"*file_str*".txt"   # estimation output location
+file_str     = "fix_eps03_low_pt_high_cyc_w1"
+file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
+file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
 file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
 mkpath(file_save)
 
@@ -42,9 +42,9 @@ function simulate_moments(Params; check_mult = false)
     return out
 end
 
-# Get moments (check multiplicity)
-output2    = simulate_moments(Params; check_mult = true)
-output     = simulate_moments(Params; check_mult = false)
+# Get moments (check for multiplicity and verfiy solutions are the same)
+output2    = simulate_moments(Params; check_mult = true)    # check multiplicity of roots (slow)
+output     = simulate_moments(Params; check_mult = false)   # skip multiplicity check
 
 @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, u_ss_2, avg_Δlw, dlw1_dlz, dlw_dly_2, dlY_dlz, dlu_dlz, std_u, std_z, std_Y, flag, flag_IR, IR_err  = output
 
@@ -71,16 +71,15 @@ round(dlY_dlz, digits=4)
 round(dlw1_dlz, digits=4)
 round(std_z, digits=4)
 round(std_Y, digits=4)
-round(std_w0, digits=4)
 
-## Vary z1 experiments
+## Vary initial productivity z_1 experiments
 
 # Get the Bonus model aggregates
 @unpack σ_η, χ, γ, hbar, ε = Params
 modd  = model(N_z = 51, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η)
 @unpack w_0_B, θ_B, W_B, Y_B, ω_B, J_B, a_B, z_ss_idx, zgrid, aflag = vary_z1(modd)
 
-# Get the Hall analogues
+# Get the Hall aggregates
 a_H, W_H, J_H, Y_H, θ_H = solveHall(modd, z_ss_idx, Y_B, W_B);
 
 # Plot labels
@@ -103,13 +102,6 @@ xaxis!(L"\log z")
 yaxis!(L"a")
 savefig(file_save*"efforts.pdf")
 
-# Plot tightness
-plot(logz, θ_B, linecolor=:red, label=bonus, legend=:topleft)
-plot!(logz, θ_H, linecolor=:blue, label=rigid)
-xaxis!(L"\log z")
-yaxis!(L"\theta")
-savefig(file_save*"tightness.pdf")
-
 # Plot wages
 plot(logz, W_B, linecolor=:red, label=bonus, legend=:topleft)
 hline!([W_H], linecolor=:blue, label=rigid)
@@ -117,7 +109,14 @@ xaxis!(L"\log z")
 yaxis!(L"W")
 savefig(file_save*"wages.pdf")
 
-# Plot dlog θ / d log z
+# Plot tightness
+plot(logz, θ_B, linecolor=:red, label=bonus, legend=:topleft)
+plot!(logz, θ_H, linecolor=:blue, label=rigid)
+xaxis!(L"\log z")
+yaxis!(L"\theta")
+savefig(file_save*"tightness.pdf")
+
+# Plot tightness fluctuations: dlog θ / d log z
 tt_B   = slope(θ_B, zgrid).*zgrid[1:end-1]./θ_B[1:end-1]
 tt_H   = slope(θ_H, zgrid).*zgrid[1:end-1]./θ_H[1:end-1]
 idx    = findfirst(x -> ~isnan(x) && x<100, tt_H)
@@ -128,7 +127,7 @@ xaxis!(L" \log z")
 yaxis!(L"\frac{d \log \theta }{d \log z}")
 savefig(file_save*"dlogtheta.pdf")
 
-# isolate effort/wage movements
+# Isolate effort/wage movements
 p1 = plot( zgrid, Y_B , label="Variable a", linecolor=:red, linewidth=3)
 plot!(p1, zgrid, Y_H, label="Fixed a", linecolor=:blue)
 ylabel!(L"Y")
@@ -141,10 +140,10 @@ plot(p1, p2, layout = (2, 1), legend=:topleft)
 
 savefig(file_save*"y_w_movements.pdf")
 
-# check dJ/dz1
+# Compute dJ/dz when C term is 0
 @unpack P_z, zgrid, ρ, β, s = modd
 
-# Solve for expected PV of sum of the z_t's
+# Solve for implied dynamics when C term is 0
 sol          = solveModel(modd)
 @unpack az   = sol
 exp_az       = zeros(length(zgrid)) 
@@ -170,6 +169,7 @@ exp_az       = zeros(length(zgrid))
 
 end
 
+# Compare C term, Bonus, Hall
 JJ_EVT = exp_az/zgrid[z_ss_idx]
 JJ_B   = slope(J_B, zgrid)
 JJ_H   = slope(J_H, zgrid)
@@ -178,7 +178,7 @@ plot( logz, JJ_EVT, legend=:bottomright)
 plot!(logz[1:end-1], JJ_B)
 plot!(logz[1:end-1], JJ_H)
 
-# Scatter plot of log emploment
+## Scatter plot of log emploment
 T_sim     = 5000
 burnin    = 10000
 minz_idx  = max(findfirst(x -> x >= 10^-5, θ_H), findfirst(x -> x >= 10^-5, θ_B))
@@ -190,12 +190,22 @@ zt_B      = zgrid[simulate_employment(modd, T_sim, burnin, θ_H, minz_idx; u0 = 
 zt_H      = zgrid[simulate_employment(modd, T_sim, burnin, θ_H, minz_idx; u0 = 0.067).zt_idx]
 @assert(zt_B == zt_H)
 
-plot(log.(zt_B), log.(N_B), seriestype=:scatter, label=bonus, legend=:bottomright)
-plot!(log.(zt_B), log.(N_H), seriestype=:scatter, label=rigid)
+plot(log.(zt_B), log.(N_B), seriestype=:scatter, label=bonus, legend=:bottomright, ms=:3, mc=:red)
+plot!(log.(zt_B), log.(N_H), seriestype=:scatter, label=rigid, ms=:3, mc=:blue)
+
+# Number of bins
+nbins    = 100
+
+df = DataFrame(y = log.(N_B), x = log.(zt_B) )
+p2 = binscatter(df, @formula(y ~ x), nbins)
+ylabel!(L"\log n_t")
+xlabel!(L"\log z_t")
+
+
 
 savefig(file_save*"logn.pdf")
 
-#=simulate N = 10000 paths and compute average
+#= simulate N = 10000 paths and compute average
 N_sim          = 10000
 T_sim          = 1000
 exp_az                              = zeros(N_sim, 1) 
