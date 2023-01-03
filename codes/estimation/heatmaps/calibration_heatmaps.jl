@@ -9,7 +9,7 @@ ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase
 cd(dirname(@__FILE__))
 
 # file path and parameters
-file     = "vary_sigma_hbar"
+file     = "vary_eps_chi"
 
 if file == "vary_eps_hbar"
     par1_str = L"\varepsilon"
@@ -24,10 +24,10 @@ elseif file == "vary_eps_chi"
     par2_str = L"\chi"
 end
 
-@unpack output, par_grid, baseline_model = load("jld/calibration_"*file*".jld2") 
+@unpack output, par_grid, baseline_model = load("../jld/calibration_"*file*".jld2") 
 
 # figure file path
-dir  = "figs/heatmaps/"*file*"/"
+dir  = "../figs/heatmaps/"*file*"/"
 mkpath(dir)
 
 # Export data to make heatmaps

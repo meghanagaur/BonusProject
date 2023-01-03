@@ -1,6 +1,6 @@
 #!/bin/bash
 
-files="dlogw1_du_05 dlogw1_du_1 dlogw1_du_15 dlogw1_du_2"
+files="fix_eps03_dlogw1_du_05 fix_eps03_dlogw1_du_1 fix_eps03_dlogw1_du_15 fix_eps03_dlogw1_du_2 fix_chi0"
 
 for file in $files
 do
@@ -16,10 +16,12 @@ do
     cp estimation.slurm run-files/estimation_$file.slurm
 
     # replace file name
-    gsed -i "s/filename/$file/" "run-files/estimation_$file.jl"
-    gsed -i "s/filename/$file/" "run-files/estimation_$file.slurm"
+    sed -i "s/filename/$file/" "run-files/estimation_$file.jl"
+    sed -i "s/filename/$file/" "run-files/estimation_$file.slurm"
 
     # submit job
-    sbatch  run-files/estimation_$file.slurm
+    cd run-files
+    sbatch estimation_$file.slurm
+    cd ..
 done
 

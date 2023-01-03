@@ -21,7 +21,7 @@ addprocs(SlurmManager())
     W                 = getW(K)
 
     # File for saving presting jld output 
-    files   = ["pretesting_dlogw1_du"*replace(string(dlogw_du_vals[i]), "." => "") for i = 1:length(dlogw_du_vals)]
+    files   = ["pretesting_fix_eps03_dlogw1_du"*replace(string(dlogw_du_vals[i]), "." => "") for i = 1:length(dlogw_du_vals)]
     files   = [replace(file, "-" => "_")  for file in files]
     files   = [file[end:end] =="0"  ? chop(file, tail=1) : file for file in files]
     file    = files[ja_idx]

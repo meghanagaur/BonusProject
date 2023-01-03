@@ -9,7 +9,7 @@ function vary_z1(modd; check_mult = false)
     z_ss_idx   = Int64(median(1:N_z))
 
     # Solve the model for different z_0
-    @time Threads.@threads for iz = 1:N_z
+    Threads.@threads for iz = 1:N_z
         modds[iz] =  solveModel(modd; z_1 = zgrid[iz], noisy = false, check_mult = check_mult)
     end
 
@@ -23,7 +23,7 @@ function vary_z1(modd; check_mult = false)
     a_1    = [modds[i].az[i] for i = 1:N_z]        # optimal effort @ start of contract
     aflag  = [modds[i].effort_flag for i = 1:N_z] 
 
-    return (w_0_B = w_0, θ_B = θ_1, W_B = W_1, Y_B = Y_1, ω_B = ω_1, J_B = J_1, 
+    return (modds = modds, w_0_B = w_0, θ_B = θ_1, W_B = W_1, Y_B = Y_1, ω_B = ω_1, J_B = J_1, 
             a_B = a_1, z_ss_idx = z_ss_idx, zgrid = zgrid, aflag = aflag)
 end
 
@@ -36,10 +36,9 @@ function solveHall(modd, z_ss_idx, Y_B, W_B)
     
     # Solve for expected PV of sum of the z_t's
     exp_z = zeros(length(zgrid)) 
-    @inbounds for (iz, z1) in enumerate(zgrid)
 
-        z0_idx  = findfirst(isequal(z1), zgrid)  # index of z0 on zgrid
-        
+    Threads.@threads for iz = 1:N_z
+
         # initialize guesses
         v0     = zgrid./(1-β*(1-s))
         v0_new = zeros(N_z)
@@ -54,8 +53,7 @@ function solveHall(modd, z_ss_idx, Y_B, W_B)
             iter +=1
         end
 
-        exp_z[iz]   = v0[z0_idx]
-
+        exp_z[iz]   = v0[iz]
     end
 
     aa       = Y_B[z_ss_idx]./exp_z[z_ss_idx]     # exactly match SS PV of output in the 2 models
@@ -69,11 +67,18 @@ function solveHall(modd, z_ss_idx, Y_B, W_B)
 end
 
 """
-Approximate slope of y(x) using forward differences,
+Approximate slope of y(x) by forward or central finite differences,
 where y and x are both vectors.
 """
-function slope(y, x)
-    return (y[2:end] - y[1:end-1])./(x[2:end] - x[1:end-1])
+function slope(y, x; diff = "forward")
+    if diff == "forward"
+        return (y[2:end] - y[1:end-1])./(x[2:end] - x[1:end-1])
+        dydx = [dydx ; NaN]
+    elseif diff == "central" 
+        dydx = (y[3:end] - y[1:end-2])./(x[3:end] - x[1:end-2])
+        dydx = [NaN; dydx ; NaN]
+    end
+    return dydx
 end
 
 """
@@ -114,17 +119,18 @@ end
 """
 Simulate employment, given θ(z_t) path
 """
-function simulate_employment(modd, T_sim, burnin, θ, minz_idx; u0 = 0.067, seed = 512)
+function simulate_employment(modd, T_sim, burnin, θ; minz_idx = 1, u0 = 0.067, seed = 512)
 
     @unpack s, f, zgrid, P_z = modd
 
-    # get productivity shocks
-    shocks  = simulateZShocks(P_z, zgrid, N = 1, T = T_sim + burnin, set_seed = true)
+    # Get sequence of productivity shocks
+    shocks  = simulateZShocks(P_z, zgrid, N = 1, T = T_sim + burnin, set_seed = true, seed = seed)
     @unpack z_shocks, z_shocks_idx, T = shocks
 
+    # Truncate the simulated productivity series
     z_shocks_idx = max.(z_shocks_idx, minz_idx)
 
-    # get relevant parameters
+    # Get the θ(z_t) series.
     @views θ_t   = θ[z_shocks_idx]   
 
     # Compute evolution of unemployment for z_t path
