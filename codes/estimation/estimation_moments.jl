@@ -259,6 +259,7 @@ zt_H      = zgrid[hall_sim.zt_idx]
 p1 = plot(log.(zt_B), log.(N_B), seriestype=:scatter, label=bonus, legend=:bottomright, ms=:3, mc=:red);
 plot!(log.(zt_B), log.(N_H), seriestype=:scatter, label=rigid, ms=:3, mc=:blue);
 xlabel!(L"\log z_t");
+ylabel!(L"\log n_t");
 savefig(p1, file_save*"scatter_logn.pdf")
 
 # Produce binscatter of log employment against log z

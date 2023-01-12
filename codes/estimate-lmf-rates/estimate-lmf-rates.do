@@ -25,19 +25,16 @@ gen srate   = f.st_unemp/(emp*(1 - 0.5*frate))
 gen qdate   = qofd(daten)
 format qdate %tq
 
-
 egen avg_frate    = mean(frate) 
 egen avg_srate    = mean(srate) 
 
 gen u_ss          = avg_srate/(avg_srate + avg_frate)
 
-
 tsfilter hp frate_hp = frate, smooth(100000) trend(frate_trend)
 tsfilter hp srate_hp = srate, smooth(100000)  trend(srate_trend)
 
-
-*egen avg_frate_hp    = mean(frate_trend) 
-*egen avg_srate_hp    = mean(srate_trend) 
+egen avg_frate_hp    = mean(frate_trend) 
+egen avg_srate_hp    = mean(srate_trend) 
 
 export delimited "data/mf_rates_monthly.csv", replace
 
