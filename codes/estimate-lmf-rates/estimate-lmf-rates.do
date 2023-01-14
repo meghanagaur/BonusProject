@@ -3,8 +3,11 @@ cd "/Users/meghanagaur/BonusProject/codes/estimate-lmf-rates"
 * Download monthly SA unemp + emp data from CPS and vacancies from JOLTS (all in thousands)
 freduse UEMPLT5 CE16OV UNEMPLOY JTSJOL UNRATE, clear
  
-* truncate covid for nows
-keep if year(daten) < 2020
+* sample period
+global start_year = 1951
+global end_year   = 2019
+
+keep if (year(daten) <= $end_year) & (year(daten) >= $start_year)
 
 gen mdate = mofd(daten)
 format mdate %tm

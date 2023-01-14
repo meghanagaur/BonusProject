@@ -1,5 +1,9 @@
 cd(dirname(@__FILE__))
 
+"""
+Produce main figures for the paper
+"""
+
 # turn off for cluster
 ENV["GKSwstype"] = "nul"
 

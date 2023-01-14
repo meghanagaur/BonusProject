@@ -67,21 +67,6 @@ function solveHall(modd, z_ss_idx, Y_B, W_B)
 end
 
 """
-Approximate slope of y(x) by forward or central finite differences,
-where y and x are both vectors.
-"""
-function slope(y, x; diff = "forward")
-    if diff == "forward"
-        return (y[2:end] - y[1:end-1])./(x[2:end] - x[1:end-1])
-        dydx = [dydx ; NaN]
-    elseif diff == "central" 
-        dydx = (y[3:end] - y[1:end-2])./(x[3:end] - x[1:end-2])
-        dydx = [NaN; dydx ; NaN]
-    end
-    return dydx
-end
-
-"""
 Return d log theta/d log z at the steady state μ_z.
 """
 function dlogtheta(modd; N_z = 21)

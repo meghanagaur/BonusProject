@@ -12,6 +12,7 @@ using DynamicModel, BenchmarkTools, DataStructures, Distributions, Optim, Sobol,
 ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2
 
 ## Required functions
+include("utils.jl")          
 include("obj_func.jl")       # objective functions
 include("simulation.jl")     # simulation functions
 

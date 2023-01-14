@@ -22,6 +22,8 @@ Pkg.add("DelimitedFiles")
 Pkg.add("Binscatters")
 Pkg.add("DataFrames")
 Pkg.add("LaTeXStrings")
+Pkg.add("SparseArrays")
+
 
 
 

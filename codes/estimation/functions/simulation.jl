@@ -190,21 +190,6 @@ function simulate(modd, shocks; u0 = 0.067, check_mult = false)
 end
 
 """
-Run an OLS regression of Y on X.
-"""
-function ols(Y, X; intercept = true)
-    
-    if intercept == true
-        XX = [ones(size(X,1)) X]
-    else
-        XX = X
-    end    
-
-    return  (XX'XX)\(XX'*Y)
-    #return  inv(XX'XX)(XX'*YY)
-end
-
-"""
 Simulate N X T shock panel for z. Include a burn-in period.
 """
 function simulateZShocks(P_z, zgrid; N = 10000, T = 100, z_1_idx = median(1:length(zgrid)), set_seed = true, seed = 512)
@@ -213,7 +198,7 @@ function simulateZShocks(P_z, zgrid; N = 10000, T = 100, z_1_idx = median(1:leng
         Random.seed!(seed)
     end
 
-    z_shocks, probs, z_shocks_idx  = simulateProd(P_z, zgrid, T; z_1_idx = z_1_idx, N = N, set_seed = false) # N X T  
+    z_shocks, z_shocks_idx  = simulateProd(P_z, zgrid, T; z_1_idx = z_1_idx, N = N, set_seed = false) # N X T  
 
     return (z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, N = N, T = T, z_1_idx = z_1_idx, seed = seed)
 end

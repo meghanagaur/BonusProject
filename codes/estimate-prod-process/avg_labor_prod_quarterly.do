@@ -1,47 +1,47 @@
 
+* Download the seasonally adjusted series of ALP
 freduse OPHNFB, clear
 
-gen year = year(daten)
-keep if year < 2020
+* sample period
+global start_year = 1951
+global end_year   = 2019
+
+keep if (year(daten) <= $end_year) & (year(daten) >= $start_year)
 
 rename OPHNFB alp
  
-* generate log alp
+* Take logs
 gen lalp = log(alp)
 
-
-
+* Generate the date
 gen qdate = qofd(daten)
 format qdate %tq
+
+* HP Filter the series
 tsset qdate
-tsfilter hp resid = lalp, smooth(100000)
+tsfilter hp lalp_hp = lalp, smooth(100000)
 
-/*
-* detrend log avg labor productivity using linear time trend and a constant
-sort daten
-gen t = _n
-reg lalp t
+* Estimate the AR(1) process
+reg lalp_hp l.lalp_hp
 predict resid, residuals
-tsset
-*/
 
+* extra check
+reg lalp_hp l.lalp_hp, nocons
 
-reg resid l.resid
-predict resid2, residuals
-reg resid l.resid, nocons
+* Bootstrap the estimate
 
-* try boostrapping
-gen lresid = L.resid
+* create a new variable for the lag
+gen lalp_hp_l = L.lalp_hp
 
-bootstrap  _b[lresid], nodots reps(10000): reg resid lresid
+bootstrap _b[lalp_hp_l], nodots reps(10000): reg lalp_hp lalp_hp_l
 gen rho = e(b)[1,1]
 
-* get variance of filtered log productivity
-bootstrap std=r(sd), nodots reps(10000): sum resid
+* get standard deviation of HP-filtered log ALP
+bootstrap std=r(sd), nodots reps(10000): sum lalp_hp
 gen std = e(b)[1,1]
 
-* get implied variance of innovation
+* get implied standard deviation of innovation
 gen sigma_e = sqrt((std^2)*(1-rho^2))
 
-* get variance of residuals
-bootstrap std=r(sd), nodots reps(10000): sum resid2
+* compute standard deviation of residuals (estimate for innovation)
+bootstrap std=r(sd), nodots reps(10000): sum resid
