@@ -3,7 +3,7 @@ cd "/Users/meghanagaur/BonusProject/codes/estimate-lmf-rates"
 * Download monthly SA unemp + emp data from CPS and vacancies from JOLTS (all in thousands)
 freduse UEMPLT5 CE16OV UNEMPLOY JTSJOL UNRATE, clear
  
-* sample period
+* Sample period
 global start_year = 1951
 global end_year   = 2019
 
@@ -20,9 +20,13 @@ rename CE16OV emp
 rename JTSJOL vacancies
 rename UNRATE urate 
 
+* Shimer adjustment
+gen st_unemp_adj = st_unemp
+replace st_unemp_adj = st_unemp*1.1 if mdate > ym(1994,1)
+
 * get mothly job-finding and separation rate, following Shimer
-gen frate   = 1 - (f.unemp - f.st_unemp)/unemp
-gen srate   = f.st_unemp/(emp*(1 - 0.5*frate))
+gen frate   = 1 - (f.unemp - f.st_unemp_adj)/unemp
+gen srate   = f.st_unemp_adj/(emp*(1 - 0.5*frate))
 
 * generate quarters
 gen qdate   = qofd(daten)

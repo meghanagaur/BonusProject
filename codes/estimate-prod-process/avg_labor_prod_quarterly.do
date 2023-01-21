@@ -21,6 +21,9 @@ format qdate %tq
 tsset qdate
 tsfilter hp lalp_hp = lalp, smooth(100000)
 
+ac lalp_hp, lags(1) generate(ac)
+list ac  in 1, clean
+
 * Estimate the AR(1) process
 reg lalp_hp l.lalp_hp
 predict resid, residuals
