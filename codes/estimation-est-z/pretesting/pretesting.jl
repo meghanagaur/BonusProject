@@ -6,7 +6,7 @@ addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
 @everywhere ε_val = 0.3
-file  = "pretesting_fix_eps"*replace(string(ε_val), "." => "")
+file  = "pretesting_fix_rho_eps"*replace(string(ε_val), "." => "")
 
 @everywhere begin
 
@@ -16,6 +16,7 @@ file  = "pretesting_fix_eps"*replace(string(ε_val), "." => "")
     data_mom, mom_key = moment_targets()
     K                 = length(data_mom)
     W                 = getW(K)
+    W[end-1,end-1]    = 0    # fix rho, drop this moment for now
 
     # Evalute objective function at i-th parameter vector
     function evaluate!(i, sob_seq, param_vals, param_est, shocks, data_mom, W)
@@ -33,7 +34,7 @@ file  = "pretesting_fix_eps"*replace(string(ε_val), "." => "")
                     (:σ_ϵ, 0.003) ])     # σ_ϵ
 
     # Parameters we will fix (if any) in ε, σ_η, χ, γ, hbar 
-    params_fix  = [:ε] 
+    params_fix  = [:ε :ρ] 
     for p in params_fix
         delete!(param_bounds, p)
     end

@@ -10,7 +10,7 @@ file  = "pretesting_fix_eps"*replace(string(ε_val), "." => "")*"_low_pt"
 
 @everywhere begin
 
-    include("functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
+    include("../functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
 
     # get moment targets
     data_mom, mom_key = moment_targets(dlw_dly = 0.05)
@@ -85,6 +85,6 @@ IR_flag = reduce(hcat, out_new[i][4] for i = 1:N)
 IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 
 # Save the output
-save("runs/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
+save("../smm/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
                             "W" => W, "data_mom" => data_mom))

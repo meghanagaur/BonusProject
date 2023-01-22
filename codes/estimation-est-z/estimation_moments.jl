@@ -45,10 +45,10 @@ end
 Function to simulate moments at estimated parameter values
 """
 function simulate_moments(Params; check_mult = false)
-    #@unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ = Params
-    #baseline = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ) 
-    @unpack σ_η, χ, γ, hbar, ε = Params
-    baseline = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ι = 0.8, s = 0.03) 
+    @unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ = Params
+    baseline = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ) 
+    #@unpack σ_η, χ, γ, hbar, ε = Params
+    #baseline = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ι = 0.8, s = 0.03) 
     out      = simulate(baseline, shocks; check_mult = check_mult)
     return out
 end

@@ -3,7 +3,7 @@ Workhouse function for the global multistart optimization algorithm, loosely fol
 Guvenen et al (2019), with NM simplex for local optimization step.
 """
 function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
-    I_min  = 10, test = false, bounds = true, max_iter_1 = 50, max_iter_2 = 50, crit = 1e-4, manual_bounds = true)
+    I_min  = 10, test = false, bounds = true, max_iter_1 = 50, max_iter_2 = 75, crit = 1e-6, manual_bounds = true)
 
     JJ          = length(param_vals)         # total num params (fixed + estimating)
     J           = length(param_bounds)       # num params we are estimating
