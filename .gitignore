@@ -2,9 +2,10 @@ references
 misc
 codes/estimation/figs/
 codes/estimation-est-z/figs/
-codes/estimation/runs/jld/
 codes/estimaton/jld/
 codes/estimation-est-z/jld/
 codes/estimation/tests/
 codes/estimation/smm/jld/
 codes/estimation-est-z/smm/jld/
+codes/estimation/smm/jld/run-files/
+codes/estimation-est-z/smm/jld/run-files/
