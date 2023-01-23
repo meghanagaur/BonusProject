@@ -20,6 +20,9 @@ addprocs(SlurmManager())
     K                 = length(data_mom)
     W                 = getW(K)
 
+    ## Specifciations for the shocks in simulation
+    shocks  = rand_shocks()
+        
     # File for saving presting jld output 
     files   = ["pretesting_fix_eps03_dlogw1_du"*replace(string(dlogw_du_vals[i]), "." => "") for i = 1:length(dlogw_du_vals)]
     files   = [replace(file, "-" => "_")  for file in files]
@@ -94,4 +97,4 @@ IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 # Save the output
 save("../smm/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
-                            "W" => W, "data_mom" => data_mom))
+                            "W" => W, "data_mom" => data_mom, "shocks" => shocks))

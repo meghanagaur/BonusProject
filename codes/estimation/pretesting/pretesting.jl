@@ -8,14 +8,21 @@ addprocs(SlurmManager())
 @everywhere ε_val = 0.3
 file  = "pretesting_fix_eps"*replace(string(ε_val), "." => "")*"_low_pt"
 
+@everywhere  include("../functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
+
 @everywhere begin
 
-    include("../functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
-
     # get moment targets
-    data_mom, mom_key = moment_targets(dlw_dly = 0.05)
+    data_mom, mom_key = moment_targets()
     K                 = length(data_mom)
     W                 = getW(K)
+
+    ## Specifciations for the shocks in simulation
+    @unpack N_z, P_z, zgrid = model()
+    N_sim                   = 50000
+    T_sim                   = 120         
+    burnin                  = 10000
+    shocks                  = build_shocks(N_z, P_z, zgrid, N_sim, T_sim, burnin)
 
     # Evalute objective function at i-th parameter vector
     function evaluate!(i, sob_seq, param_vals, param_est, shocks, data_mom, W)
@@ -87,4 +94,4 @@ IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 # Save the output
 save("../smm/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
-                            "W" => W, "data_mom" => data_mom))
+                            "W" => W, "data_mom" => data_mom, "shocks" => shocks, "modd" => model() ))

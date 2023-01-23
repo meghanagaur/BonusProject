@@ -102,6 +102,20 @@ function heatmap_moments(; σ_η = 0.406231, χ = 0.578895, γ = 0.562862, hbar 
 end
 
 """
+Simulate N X T shock panel for z. Include a burn-in period.
+"""
+function drawZShocks(P_z, zgrid; N = 10000, T = 100, z_1_idx = median(1:length(zgrid)), set_seed = true, seed = 512)
+    
+    if set_seed == true
+        Random.seed!(seed)
+    end
+
+    z_shocks, z_shocks_idx  = simulateProd(P_z, zgrid, T; z_1_idx = z_1_idx, N = N, set_seed = false) # N X T  
+
+    return (z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, N = N, T = T, z_1_idx = z_1_idx, seed = seed)
+end
+
+"""
 Simulate employment, given θ(z_t) path
 """
 function simulate_employment(modd, T_sim, burnin, θ; minz_idx = 1, u0 = 0.067, seed = 512)
@@ -109,8 +123,7 @@ function simulate_employment(modd, T_sim, burnin, θ; minz_idx = 1, u0 = 0.067, 
     @unpack s, f, zgrid, P_z = modd
 
     # Get sequence of productivity shocks
-    shocks  = simulateZShocks(P_z, zgrid, N = 1, T = T_sim + burnin, set_seed = true, seed = seed)
-    @unpack z_shocks, z_shocks_idx, T = shocks
+    @unpack z_shocks, z_shocks_idx, T  = drawZShocks(P_z, zgrid, N = 1, T = T_sim + burnin, set_seed = true, seed = seed)
 
     # Truncate the simulated productivity series
     z_shocks_idx = max.(z_shocks_idx, minz_idx)

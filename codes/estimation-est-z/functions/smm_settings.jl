@@ -9,7 +9,7 @@ using Pkg; Pkg.add(url="https://github.com/meghanagaur/DynamicModel")
 
 ## Requred pacakges
 using DynamicModel, BenchmarkTools, DataStructures, Distributions, Optim, Sobol, SparseArrays,
-ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2
+ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2, NLopt
 
 ## Required functions
 include("utils.jl")          
@@ -64,6 +64,3 @@ function get_bounds(param_est, param_bounds)
    return lb, ub
 
 end
-
-## Specifciations for the shocks in simulation
-shocks  = rand_shocks()

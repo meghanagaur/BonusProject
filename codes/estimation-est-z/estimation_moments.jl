@@ -16,7 +16,7 @@ linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,leg
 
 ## Logistics
 vary_z_N     = 251
-file_str     = "fix_eps03"
+file_str     = "fix_rho_eps03"
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
 file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
 file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
@@ -24,8 +24,8 @@ mkpath(file_save)
 println("File name: "*file_str)
 
 # Load output
-est_output = readdlm(file_est, ',', Float64)            # open output across all jobs
-@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, W = load(file_pre) 
+est_output = readdlm(file_est, ',', Float64)            # open estimation output across all jobs
+@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, W, shocks = load(file_pre) # pretesting output
 
 # Get the final minimum 
 idx        = argmin(est_output[:,1])                    # check for the lowest function value across processes 
@@ -47,8 +47,6 @@ Function to simulate moments at estimated parameter values
 function simulate_moments(Params; check_mult = false)
     @unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ = Params
     baseline = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ) 
-    #@unpack σ_η, χ, γ, hbar, ε = Params
-    #baseline = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ι = 0.8, s = 0.03) 
     out      = simulate(baseline, shocks; check_mult = check_mult)
     return out
 end
@@ -86,10 +84,10 @@ println("std_Δlw: \t"*string(round.(std_Δlw, digits=4)))
 println("dlw1_du: \t"*string(round.(dlw1_du, digits=4)))
 println("dlw_dly: \t"*string(round.(dlw_dly, digits=4)))
 println("u_ss: \t\t"*string(round.(u_ss, digits=4)))
-println("alp_ρ: \t"*string(round.(alp_ρ, digits=4)))
+println("alp_ρ: \t\t"*string(round.(alp_ρ, digits=4)))
 println("alp_σ: \t\t"*string(round.(alp_σ, digits=4)))
 
-# Untargeted, alternative moments
+# Untargeted moments
 println("------------------------")
 println("UNTARGETED MOMENTS")
 println("------------------------")

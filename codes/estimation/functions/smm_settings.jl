@@ -8,7 +8,7 @@ using Pkg; Pkg.add(url="https://github.com/meghanagaur/DynamicModel")
 =#
 
 ## Requred pacakges
-using DynamicModel, BenchmarkTools, DataStructures, Distributions, Optim, Sobol,
+using DynamicModel, BenchmarkTools, DataStructures, Distributions, Optim, Sobol, NLopt,
 ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2
 
 ## Required functions
@@ -60,10 +60,3 @@ function get_bounds(param_est, param_bounds)
    return lb, ub
 
 end
-
-## Specifciations for the shocks in simulation
-@unpack N_z, P_z, zgrid = model()
-N_sim                   = 50000
-T_sim                   = 120         
-burnin                  = 10000
-shocks                  = build_shocks(N_z, P_z, zgrid, N_sim, T_sim, burnin)

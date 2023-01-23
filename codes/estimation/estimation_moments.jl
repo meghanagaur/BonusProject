@@ -8,7 +8,7 @@ Produce main figures for the paper
 ENV["GKSwstype"] = "nul"
 
 include("functions/smm_settings.jl")        # SMM inputs, settings, packages, etc.
-include("functions/calibration_vary_z1.jl") # vary z1 functions
+include("functions/vary_z1.jl") # vary z1 functions
 
 using DataFrames, Binscatters, DelimitedFiles, LaTeXStrings, Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
 xguidefontsize =13, yguidefontsize=13, xtickfontsize=8, ytickfontsize=8,
@@ -16,7 +16,7 @@ linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,leg
 
 ## Logistics
 vary_z_N     = 251
-file_str     = "fix_chi0"
+file_str     = "fix_eps03"
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
 file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
 file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
@@ -25,7 +25,7 @@ println("File name: "*file_str)
 
 # Load output
 est_output = readdlm(file_est, ',', Float64)            # open output across all jobs
-@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, W = load(file_pre) 
+@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, W, shocks = load(file_pre) 
 
 # Get the final minimum 
 idx        = argmin(est_output[:,1])                    # check for the lowest function value across processes 
