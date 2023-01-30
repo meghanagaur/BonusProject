@@ -3,7 +3,7 @@ Workhouse function for TikTak, a global multistart optimization algorithm, loose
 Guvenen et al (2019). Uses derivative-free local optimization.
 """
 function tiktak(init_points, file, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
-    I_min  = 10, test = false, max_iters = 50, crit = 1e-6, opt = Nothing)
+    I_min  = 10, test = false, max_iters = 50, crit = 1e-6, opt = nothing)
 
     JJ          = length(param_vals)         # total num params (fixed + estimating)
     J           = length(param_bounds)       # num params we are estimating

@@ -4,9 +4,8 @@ B denotes Bonus model.
 """
 function vary_z1(modd; check_mult = false)
 
-    @unpack ψ, zgrid, z_ss, N_z = modd
+    @unpack ψ, zgrid, z_ss_idx, N_z = modd
     modds      = OrderedDict{Int64, Any}()
-    z_ss_idx   = Int64(median(1:N_z))
 
     # Solve the model for different z_0
     Threads.@threads for iz = 1:N_z
@@ -23,16 +22,16 @@ function vary_z1(modd; check_mult = false)
     a_1    = [modds[i].az[i] for i = 1:N_z]        # optimal effort @ start of contract
     aflag  = [modds[i].effort_flag for i = 1:N_z] 
 
-    return (modds = modds, w_0_B = w_0, θ_B = θ_1, W_B = W_1, Y_B = Y_1, ω_B = ω_1, J_B = J_1, 
-            a_B = a_1, z_ss_idx = z_ss_idx, zgrid = zgrid, aflag = aflag)
+    return (modds = modds, w_0 = w_0, θ = θ_1, W = W_1, Y = Y_1, ω = ω_1, J = J_1, 
+            a = a_1, zgrid = zgrid, aflag = aflag)
 end
 
 """
-Produce Hall economy aggregates, matching SS Y and W from Bonus economy.
+Produce Hall economy aggregates, matching SS Y_B and W_B from Bonus economy.
 """
-function solveHall(modd, z_ss_idx, Y_B, W_B)
+function solveHall(modd, Y_B, W_B)
 
-    @unpack zgrid, κ, ι, s, β, N_z, P_z = modd
+    @unpack zgrid, κ, ι, s, β, N_z, P_z, z_ss_idx = modd
     
     # Solve for expected PV of sum of the z_t's
     exp_z = zeros(length(zgrid)) 
@@ -63,7 +62,7 @@ function solveHall(modd, z_ss_idx, Y_B, W_B)
     qθ       = min.(1, max.(0, κ./JJ))            # job-filling rate
     θ        = (qθ.^(-ι) .- 1).^(1/ι).*(qθ .!= 0) # implied tightness
 
-    return (a_H = aa, W_H = WW, J_H = JJ, Y_H = YY, θ_H = θ, zz = exp_z)
+    return (a = aa, W = WW, J = JJ, Y = YY, θ = θ, zz = exp_z)
 end
 
 """
@@ -102,28 +101,15 @@ function heatmap_moments(; σ_η = 0.406231, χ = 0.578895, γ = 0.562862, hbar 
 end
 
 """
-Simulate N X T shock panel for z. Include a burn-in period.
-"""
-function drawZShocks(P_z, zgrid; N = 10000, T = 100, z_1_idx = median(1:length(zgrid)), set_seed = true, seed = 512)
-    
-    if set_seed == true
-        Random.seed!(seed)
-    end
-
-    z_shocks, z_shocks_idx  = simulateProd(P_z, zgrid, T; z_1_idx = z_1_idx, N = N, set_seed = false) # N X T  
-
-    return (z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, N = N, T = T, z_1_idx = z_1_idx, seed = seed)
-end
-
-"""
 Simulate employment, given θ(z_t) path
 """
-function simulate_employment(modd, T_sim, burnin, θ; minz_idx = 1, u0 = 0.067, seed = 512)
+function simulate_employment(modd, T_sim, burnin, θ; minz_idx = 1, u0 = 0.069, seed = 512)
 
     @unpack s, f, zgrid, P_z = modd
 
     # Get sequence of productivity shocks
-    @unpack z_shocks, z_shocks_idx, T  = drawZShocks(P_z, zgrid, N = 1, T = T_sim + burnin, set_seed = true, seed = seed)
+    shocks  = drawZShocks(P_z, zgrid, N = 1, T = T_sim + burnin, set_seed = true, seed = seed)
+    @unpack z_shocks, z_shocks_idx, T = shocks
 
     # Truncate the simulated productivity series
     z_shocks_idx = max.(z_shocks_idx, minz_idx)

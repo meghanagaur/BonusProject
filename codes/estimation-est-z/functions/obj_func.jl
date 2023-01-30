@@ -35,8 +35,8 @@ function objFunction(xx, param_vals, param_est, shocks, data_mom, W)
         end
     end
 
-    @unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ = Params
-    baseline    = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ) 
+    @unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ, ι = Params
+    baseline    = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι  = ι) 
 
     # Simulate the model and compute moments
     out        = simulate(baseline, shocks)
@@ -97,8 +97,8 @@ function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, dat
         end
     end
 
-    @unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ = Params
-    baseline    = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ) 
+    @unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ, ι = Params
+    baseline    = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
 
     # Simulate the model and compute moments
     out        = simulate(baseline, shocks)

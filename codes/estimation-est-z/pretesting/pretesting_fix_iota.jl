@@ -5,7 +5,10 @@ cd(dirname(@__FILE__))
 addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
-file  = "pretesting_fix_chi0"
+@everywhere ε_val = 0.3
+@everywhere ι_val = 0.8
+
+file  = "pretesting_fix_rho_eps"*replace(string(ε_val), "." => "")*"_iota"*replace(string(ι_val), "." => "")
 
 @everywhere begin
 
@@ -15,6 +18,7 @@ file  = "pretesting_fix_chi0"
     data_mom, mom_key = moment_targets()
     K                 = length(data_mom)
     W                 = getW(K)
+    W[end-1,end-1]    = 0    # fix rho, drop alp_ρ for now
 
     ## Specifciations for the shocks in simulation
     shocks  = rand_shocks()
@@ -26,17 +30,17 @@ file  = "pretesting_fix_chi0"
 
     # Define the baseline values
     param_vals  = OrderedDict{Symbol, Real}([ 
-                    (:ε,   0.3),         # ε
+                    (:ε,   ε_val),       # ε
                     (:σ_η, 0.2759),      # σ_η 
-                    (:χ, 0.0),           # χ
+                    (:χ, 0.4417),        # χ
                     (:γ, 0.4916),        # γ
                     (:hbar, 1.0),        # hbar
                     (:ρ, 0.95^(1/3)),    # ρ
                     (:σ_ϵ, 0.003),       # σ_ϵ
-                    (:ι, 1.25) ])        # ι
+                    (:ι, ι_val) ])       # ι
 
     # Parameters we will fix (if any) in ε, σ_η, χ, γ, hbar 
-    params_fix  = [:χ] 
+    params_fix  = [:ε :ρ] 
     for p in params_fix
         delete!(param_bounds, p)
     end

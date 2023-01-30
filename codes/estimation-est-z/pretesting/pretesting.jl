@@ -34,7 +34,8 @@ file  = "pretesting_fix_rho_eps"*replace(string(ε_val), "." => "")
                     (:γ, 0.4916),        # γ
                     (:hbar, 1.0),        # hbar
                     (:ρ, 0.95^(1/3)),    # ρ
-                    (:σ_ϵ, 0.003) ])     # σ_ϵ
+                    (:σ_ϵ, 0.003),       # σ_ϵ
+                    (:ι, 1.25) ])        # ι
 
     # Parameters we will fix (if any) in ε, σ_η, χ, γ, hbar 
     params_fix  = [:ε :ρ] 

@@ -9,8 +9,13 @@ global end_year   = 2019
 
 keep if (year(daten) <= $end_year) & (year(daten) >= $start_year)
 
+* monthly date
 gen mdate = mofd(daten)
 format mdate %tm
+
+* quarterly date
+gen qdate = qofd(dofm(mdate))
+format %tq qdate
 
 tsset mdate
 
@@ -21,21 +26,16 @@ rename JTSJOL vacancies
 rename UNRATE urate 
 
 * Shimer adjustment
-gen st_unemp_adj = st_unemp
+gen st_unemp_adj     = st_unemp
 replace st_unemp_adj = st_unemp*1.1 if mdate > ym(1994,1)
 
 * get mothly job-finding and separation rate, following Shimer
-gen frate   = 1 - (f.unemp - f.st_unemp_adj)/unemp
-gen srate   = f.st_unemp_adj/(emp*(1 - 0.5*frate))
+gen frate  		     = 1 - (f.unemp - f.st_unemp_adj)/unemp
+gen srate   		 = f.st_unemp_adj/(emp*(1 - 0.5*frate))
 
-* generate quarters
-gen qdate   = qofd(daten)
-format qdate %tq
-
-egen avg_frate    = mean(frate) 
-egen avg_srate    = mean(srate) 
-
-gen u_ss          = avg_srate/(avg_srate + avg_frate)
+egen avg_frate       = mean(frate) 
+egen avg_srate       = mean(srate) 
+gen u_ss             = avg_srate/(avg_srate + avg_frate)
 
 tsfilter hp frate_hp = frate, smooth(100000) trend(frate_trend)
 tsfilter hp srate_hp = srate, smooth(100000)  trend(srate_trend)
@@ -47,6 +47,13 @@ export delimited "data/mf_rates_monthly.csv", replace
 
 * take quarterly averages to smooth data
 collapse (mean) urate frate srate vacancies unemp, by(qdate)
+
+tsset qdate 
+
+gen log_urate        = log(urate)
+tsfilter hp urate_hp = log_urate, smooth(100000) trend(urate_trend)
+egen std_urate_hp    = sd(urate_trend)
+
 
 /*
 * hp-filter the two series

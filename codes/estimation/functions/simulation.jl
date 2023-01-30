@@ -192,7 +192,7 @@ end
 """
 Simulate N X T shock panel for z. Include a burn-in period.
 """
-function simulateZShocks(P_z, zgrid; N = 10000, T = 100, z_1_idx = median(1:length(zgrid)), set_seed = true, seed = 512)
+function drawZShocks(P_z, zgrid; N = 10000, T = 100, z_1_idx = median(1:length(zgrid)), set_seed = true, seed = 512)
     
     if set_seed == true
         Random.seed!(seed)
@@ -229,14 +229,14 @@ function build_shocks( N_z, P_z, zgrid, N_sim, T_sim, burnin; set_seed = true, s
     η_shocks     = OrderedDict{Int, Array{Real,2}}()
 
     for iz = 1:length(zgrid)
-        temp                = simulateZShocks(P_z, zgrid, N = λ_N_z[iz], T = T_sim, z_1_idx = iz, set_seed = false)
+        temp                = drawZShocks(P_z, zgrid, N = λ_N_z[iz], T = T_sim, z_1_idx = iz, set_seed = false)
         z_shocks[iz]        = temp.z_shocks
         z_shocks_idx[iz]    = temp.z_shocks_idx
         η_shocks[iz]        = rand(Normal(0, 1), size(z_shocks[iz])) # N x T  <- standard normal
     end
 
     # Create one long z_t string: set z_1 to default value of 1.
-    zstring  = simulateZShocks(P_z, zgrid, N = 1, T = N_sim + burnin, set_seed = false)
+    zstring  = drawZShocks(P_z, zgrid, N = 1, T = N_sim + burnin, set_seed = false)
 
     # Create an ordered tuple that contains the zshocks
     return (η_shocks = η_shocks, z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, indices = indices, indices_y = indices_y,

@@ -24,7 +24,7 @@ function hp_filter(y::AbstractVector{T}, λ::Real) where T <: Real
 end
 
 """
-Run OLS regression of Y on X
+Run an OLS regression of Y on X.
 """
 function ols(Y, X; intercept = true)
     
@@ -34,7 +34,7 @@ function ols(Y, X; intercept = true)
         XX = X
     end    
 
-    return (XX'XX)\(XX'*Y)
+    return  (XX'XX)\(XX'*Y)
     #return  inv(XX'XX)(XX'*YY)
 end
 
@@ -42,13 +42,13 @@ end
 Approximate slope of y(x) by forward or central finite differences,
 where y and x are both vectors.
 """
-function slope(y, x; diff = "forward")
+function slope(y, x; diff = "central")
     if diff == "forward"
         return (y[2:end] - y[1:end-1])./(x[2:end] - x[1:end-1])
         dydx = [dydx ; NaN]
     elseif diff == "central" 
         dydx = (y[3:end] - y[1:end-2])./(x[3:end] - x[1:end-2])
-        dydx = [NaN; dydx ; NaN]
+        dydx = [NaN; dydx; NaN]
     end
     return dydx
 end

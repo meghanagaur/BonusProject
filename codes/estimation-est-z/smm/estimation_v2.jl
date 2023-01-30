@@ -10,7 +10,7 @@ N_procs        = 20                                     # number of jobs in job 
 N_string       = 25                                     # length of each worker string
 
 # Local optimization settings if using NLopt
-algorithm      = :LN_BOBYQA                             # LN_NELDERMEAD, algorithm for NLopt, can ignore if using Optim
+algorithm      = :LN_BOBYQA                             # LN_NELDERMEAD, algorithm for NLopt, set to :OPTIM if using Optim
 ftol_rel       = 1e-6                                   # relative function tolerance: set to 0 if no tol
 xtol_rel       = 0                                      # relative parameter tolerance: set to 0 if no tol
 max_time       = 60*90                                  # max time for local optimization (in seconds), 0 = no limit
@@ -28,23 +28,28 @@ include("../../functions/tik-tak_job_array_v2.jl") # tik-tak code
 @unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W, shocks = load(file_load) 
 
 # Define the NLopt optimization object
-opt = Opt(algorithm, J) 
+if algorithm == :OPTIM
+    opt = nothing
+else
+    opt = Opt(algorithm, J) 
 
-# Objective function
-# need to add dummy gradient: https://discourse.julialang.org/t/nlopt-forced-stop/47747/3
-obj(x, dummy_gradient!)  = objFunction(x, param_vals, param_est, shocks, data_mom, W)[1]
-opt.min_objective        = obj
+    # Objective function
+    # need to add dummy gradient: https://discourse.julialang.org/t/nlopt-forced-stop/47747/3
+    obj(x, dummy_gradient!)  = objFunction(x, param_vals, param_est, shocks, data_mom, W)[1]
+    opt.min_objective        = obj
 
-# Bound constraints
-lower, upper = get_bounds(param_est, param_bounds)
-opt.lower_bounds = lower 
-opt.upper_bounds = upper
+    # Bound constraints
+    lower, upper = get_bounds(param_est, param_bounds)
+    opt.lower_bounds = lower 
+    opt.upper_bounds = upper
 
-# Tolerance values 
-opt.stopval  = 0
-opt.ftol_rel = ftol_rel 
-opt.xtol_rel = xtol_rel
-opt.maxtime  = max_time
+    # Tolerance values 
+    opt.stopval  = 0
+    opt.ftol_rel = ftol_rel 
+    opt.xtol_rel = xtol_rel
+    opt.maxtime  = max_time
+
+end
 
 # Sort and reshape the parameters for distribution across jobs
 Nend           = N_procs*N_string                  # number of initial points

@@ -42,13 +42,13 @@ end
 Approximate slope of y(x) by forward or central finite differences,
 where y and x are both vectors.
 """
-function slope(y, x; diff = "forward")
+function slope(y, x; diff = "central")
     if diff == "forward"
         return (y[2:end] - y[1:end-1])./(x[2:end] - x[1:end-1])
         dydx = [dydx ; NaN]
     elseif diff == "central" 
         dydx = (y[3:end] - y[1:end-2])./(x[3:end] - x[1:end-2])
-        dydx = [NaN; dydx ; NaN]
+        dydx = [NaN; dydx; NaN]
     end
     return dydx
 end
