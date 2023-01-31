@@ -192,8 +192,8 @@ end
 minz  = z0 - δ
 maxz  = z0 + δ
 
-rigid   = "Rigid Wage: Fixed w and a"
-perfpay = "Incentive Pay: Variable w and a"
+rigid      = "Rigid Wage: Fixed w and a"
+perfpay    = "Incentive Pay: Variable w and a"
 
 plot(x -> globalApproxFixed(x, z0).J, minz, maxz, legend =:topleft, label = rigid, linecolor=:blue)
 plot!(x -> J(x), minz, maxz, label = perfpay, linecolor=:red)
@@ -219,6 +219,12 @@ ylabel!(L"a(z)")
 xlabel!(L"z")
 savefig("static-figs/slides/a_Hall_vs_Bonus.pdf")
 
+plot(x -> globalApproxFixed(x, z0).v, minz, maxz, legend =:topleft, label = rigid, linecolor=:blue)
+plot!(x -> V(x), minz, maxz, label = perfpay, linecolor=:red)
+ylabel!(L"v(z)")
+xlabel!(L"z")
+savefig("static-figs/slides/v_Hall_vs_Bonus.pdf")
+
 δ     = 0.05
 minz  = z0 - δ
 maxz  = z0 + δ
@@ -235,29 +241,42 @@ minz  = z0 - δ
 maxz  = z0 + δ
 
 # set χ value
-χ = 0.4
+χ           = 0.3
+perfpay     = "Incentive Pay: Constant unemployment benefit"
+perfpay_chi = "Incentive Pay: Cyclical unemployment benefit"
 
-plot(x -> globalApproxFixed(x, z0; χ = χ).J, minz, maxz, legend =:topleft, label = rigid, linecolor=:blue)
-plot!(x -> staticModel(z = x, χ = χ).J, minz, maxz, label = perfpay, linecolor=:red)
+plot(x -> staticModel(z = x, χ = 0.0).J, minz, maxz, label = perfpay, linecolor=:red, legend=:bottomright)
+plot!(x -> staticModel(z = x, χ = χ).J, minz, maxz, label = perfpay_chi, linecolor=:black, linestyle=:dash)
 ylabel!(L"J")
 xlabel!(L"z")
 savefig("static-figs/slides/J_Hall_vs_Bonus_cyc_b.pdf")
 
-plot(x -> globalApproxFixed(x, z0;  χ = χ).n, minz, maxz, legend =:topleft, label = rigid, linecolor=:blue)
-plot!(x ->  staticModel(z = x, χ = χ).n, minz, maxz, label = perfpay, linecolor=:red)
+plot(x -> staticModel(z = x, χ = 0.0).n, minz, maxz, label = perfpay, linecolor=:red, legend=:bottomright)
+plot!(x -> staticModel(z = x, χ = χ).n, minz, maxz, label = perfpay_chi, linecolor=:black,linestyle=:dash)
 ylabel!(L"n(z)")
 xlabel!(L"z")
 savefig("static-figs/slides/n_Hall_vs_Bonus_cyc_b.pdf")
 
-plot(x -> globalApproxFixed(x, z0; χ = χ).w, minz, maxz, legend =:topleft, label = rigid, linecolor=:blue)
-plot!(x -> staticModel(z = x, χ = χ).w, minz, maxz, label = perfpay, linecolor=:red)
+plot(x -> staticModel(z = x, χ = 0.0).w, minz, maxz, label = perfpay, linecolor=:red, legend=:bottomright)
+plot!(x -> staticModel(z = x, χ = χ).w, minz, maxz, label = perfpay_chi, linecolor=:black,linestyle=:dash)
 ylabel!(L"\mathbb{E}[w|z]")
 xlabel!(L"z")
 savefig("static-figs/slides/w_Hall_vs_Bonus_cyc_b.pdf")
 
-plot(x -> globalApproxFixed(x, z0; χ = χ).a, minz, maxz, legend =:topleft, label = rigid, linecolor=:blue)
-plot!(x ->  staticModel(z = x, χ = χ).a, minz, maxz, label = perfpay, linecolor=:red)
+plot(x -> staticModel(z = x, χ = 0.0).a, minz, maxz, label = perfpay, linecolor=:red, legend=:bottomright)
+plot!(x -> staticModel(z = x, χ = χ).a, minz, maxz, label = perfpay_chi, linecolor=:black,linestyle=:dash)
 ylabel!(L"a(z)")
 xlabel!(L"z")
 savefig("static-figs/slides/a_Hall_vs_Bonus_cyc_b.pdf")
 
+plot(x -> staticModel(z = x, χ = 0.0).b, minz, maxz, label = perfpay, linecolor=:red, legend=:bottomright)
+plot!(x -> staticModel(z = x, χ = χ).b, minz, maxz, label = perfpay_chi, linecolor=:black,linestyle=:dash)
+ylabel!(L"b(z)")
+xlabel!(L"z")
+savefig("static-figs/slides/b_Hall_vs_Bonus_cyc_b.pdf")
+
+plot(x -> staticModel(z = x, χ = 0.0).v, minz, maxz, label = perfpay, linecolor=:red, legend=:bottomright)
+plot!(x -> staticModel(z = x, χ = χ).v, minz, maxz, label = perfpay_chi, linecolor=:black, linestyle=:dash)
+ylabel!(L"v(z)")
+xlabel!(L"z")
+savefig("static-figs/slides/v_Hall_vs_Bonus_cyc_b.pdf")

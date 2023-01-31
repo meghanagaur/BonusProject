@@ -1,4 +1,4 @@
-cd "/Users/meghanagaur/BonusProject/codes/estimate-lmf-rates"
+cd "/Users/meghanagaur/BonusProject/codes/estimate-lm-statistics"
 
 * Download monthly SA unemp + emp data from CPS and vacancies from JOLTS (all in thousands)
 freduse UEMPLT5 CE16OV UNEMPLOY JTSJOL UNRATE, clear

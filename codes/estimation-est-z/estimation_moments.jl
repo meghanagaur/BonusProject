@@ -1,12 +1,11 @@
 cd(dirname(@__FILE__))
 
-"""
-Produce main figures/moments for the paper
-"""
+# Produce main figures/moments for the paper
 
 # turn off for cluster
 ENV["GKSwstype"] = "nul"
 
+# Load helper files
 include("functions/smm_settings.jl")                    # SMM inputs, settings, packages, etc.
 include("functions/vary_z1.jl")                         # vary z1 functions
 
@@ -15,7 +14,10 @@ xguidefontsize =13, yguidefontsize=13, xtickfontsize=8, ytickfontsize=8,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,legendfontsize = 10)
 
 ## Logistics
-vary_z_N     = 251
+vary_z_N             = 251
+N_sim_macro          = 10^4
+N_sim_macro_workers  = 5*10^3
+
 file_str     = "fix_rho_eps03"
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
 file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
@@ -54,7 +56,7 @@ end
 
 # Get moments (check for multiplicity and verfiy solutions are the same)
 modd       = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
-shocks     = rand_shocks()
+shocks     = rand_shocks(; N_sim_macro = N_sim_macro, N_sim_macro_workers = N_sim_macro_workers)
 output     = simulate_moments(modd, shocks; check_mult = false)   # skip multiplicity check
 output2    = simulate_moments(modd, shocks; check_mult = true)    # check multiplicity of roots (slow)
 
@@ -105,9 +107,9 @@ println("θ(μ_z): \t"*string(round.(solveModel(modd).θ, digits=4)))
 
 # Get the Bonus model aggregates
 modd       = model(N_z = vary_z_N, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι);
-modd_0chi  = model(N_z = vary_z_N, χ = 0, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι);
+modd_chi0  = model(N_z = vary_z_N, χ = 0, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι);
 bonus      = vary_z1(modd);
-bonus_chi0 = vary_z1(modd_0chi);
+bonus_chi0 = vary_z1(modd_chi0);
 
 # Get the Hall aggregates
 hall       = solveHall(modd, bonus.Y, bonus.W)
@@ -162,19 +164,24 @@ yaxis!(L"\omega(z_1)");
 savefig(p5, file_save*"omega.pdf")
 
 # Plot C term <- using omega 
-dω_1 = slope(bonus.ω, modd.zgrid)
+ω_B  = bonus.ω
+dω_B = slope(ω_B, modd.zgrid)
 @unpack χ, β, ρ, s, μ_z = modd 
 B    = (χ/(1-β*ρ))
 A    = (log(γ) + β*B*(1-ρ)*μ_z)/(1-β)
-ω_2   = A .+ B*logz
+ω_2  = A .+ B*logz
+@assert(maximum(abs.(ω_B - ω_2)) < 10^-5 )
 dω_2 = B./zgrid
+@assert( minimum( max.(abs.(dω_B - dω_2) .< 10^-3, isnan.(dω_B)) )  == 1 )
+
+# Compute the direct effect on the IR constraint
 dIR  = dω_2.*(ρ*β - 1)/(1-ρ*β*(1-s))
 
 # Plot tightness fluctuations: dlog θ / d log z
 tt_B   = slope(bonus.θ, zgrid).*zgrid./bonus.θ
 tt_H   = slope(hall.θ, zgrid).*zgrid./hall.θ
 tt_B0  = slope(bonus_chi0.θ, zgrid).*zgrid./bonus_chi0.θ
-idx1   = findfirst(x -> ~isnan(x) && x > 0 && x < 120, tt_H)
+idx1   = findfirst(x -> ~isnan(x) && x > 0 && x < 120, tt_H) # start at reasonable scale
 
 p6 = plot(logz[idx1:end], tt_B[idx1:end], linecolor=:red, label=fip, legend=:topright);
 plot!(logz[idx1:end], tt_H[idx1:end], linecolor=:blue,label=rigid);
@@ -198,7 +205,7 @@ savefig(file_save*"y_w_movements.pdf")
 # Compute dJ/dz when C term is 0
 @unpack P_z, zgrid, N_z, ρ, β, s, z_ss_idx = modd;
 
-# Solve for dJ/dz when C term = 0 (direct effect)
+# Solve for dJ/dz when C term = 0 (direct effect), conditional on initial z_1
 JJ_EVT   = zeros(length(zgrid)) 
 Threads.@threads for iz = 1:N_z
 
@@ -220,7 +227,7 @@ Threads.@threads for iz = 1:N_z
 
 end
 
-# Solve for dJ/dz in Hall 
+# Solve for dJ/dz in Hall directly using above formula
 JJ_H_2   = zeros(length(zgrid)) 
 Threads.@threads for iz = 1:N_z
 
@@ -261,7 +268,7 @@ JJ_EVT[z_ss_idx]-JJ_B0[z_ss_idx]    # c term
 p1 = plot(logz[minz_idx:maxz_idx], JJ_EVT[minz_idx:maxz_idx], linecolor=:black, label = "Incentive Pay: No C term", legend =:bottomright);
 plot!(logz[minz_idx:maxz_idx], JJ_B[minz_idx:maxz_idx], linecolor=:red,  label = fip);
 plot!(logz[minz_idx:maxz_idx], JJ_H[minz_idx:maxz_idx], linecolor=:blue, label = rigid);
-plot!(logz[minz_idx:maxz_idx], JJ_B0[minz_idx:maxz_idx], linecolor=:yellow, label = ip, legend =:bottom)
+plot!(logz[minz_idx+1:maxz_idx], JJ_B0[minz_idx+1:maxz_idx], linecolor=:yellow, label = ip, legend =:bottom)
 xaxis!(L"z_1");
 yaxis!(L"\frac{d J(z_1) }{d z_1}");
 savefig(p1, file_save*"hall_bonus_cterm.pdf")
@@ -285,8 +292,8 @@ savefig(file_save*"cterm_multiplier.pdf")
 ## Scatter plot of log employment
 T_sim     = 5000
 burnin    = 10000
-bonus_sim = simulate_employment(modd, T_sim, burnin, bonus.θ)
-hall_sim  = simulate_employment(modd, T_sim, burnin, hall.θ)
+bonus_sim = simulate_employment(modd, T_sim, burnin, bonus.θ; minz_idx = minz_idx)
+hall_sim  = simulate_employment(modd, T_sim, burnin, hall.θ; minz_idx = minz_idx)
 
 # n_t and z_t 
 N_B       = bonus_sim.nt

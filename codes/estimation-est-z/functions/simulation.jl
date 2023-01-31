@@ -108,7 +108,7 @@ function simulate(modd, shocks; u0 = 0.069, check_mult = false)
 
         # Compute evolution of unemployment for the z_t path
         T             = T_sim_macro + burnin
-        T_q_macro     = Int(T_q/3)
+        T_q_macro     = Int(T_sim_macro/3)
         u_t           = zeros(T, N_sim_macro)
         u_t[1,:]     .= u0
 
@@ -291,7 +291,7 @@ function simulateALP(z_shocks_idx, s_shocks, jf_shocks,  η_shocks_macro, zgrid,
                     z_1[n]      = zt               # new initial z for contract
                     y_m[n, t]   = y_z[zt, zt]      # new output level     
                 else                               # remain unemployed
-                    active[n,t] = 0
+                    active[n,t] = 0                 
                 end 
             end
 
@@ -299,13 +299,13 @@ function simulateALP(z_shocks_idx, s_shocks, jf_shocks,  η_shocks_macro, zgrid,
     end
 
     # construct quarterly averages
-    ly_q                 = zeros(T_q) # quarterly log output
+    ly_q = zeros(T_q) # quarterly log output
     #y_m[:,burnin+1:end] += η_shocks_macro.*zgrid[z_shocks_idx[burnin+1:end]]'
 
     @views @inbounds for t = 1:T_q
         t_q     = t*3
-        output  = vec(y_m[:, burnin+1:end][:, (t_q - 2):t_q])
-        emp     = vec(active[:, burnin+1:end][:,t_q - 2:t_q])
+        output  = vec(y_m[:, burnin+1:end][:,(t_q - 2):t_q])
+        emp     = vec(active[:, burnin+1:end][:,(t_q - 2):t_q])
         ly_q[t] = log.(max(mean(output[emp.==1]), eps()))
     end
 

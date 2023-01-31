@@ -37,13 +37,14 @@ function staticModel(; z = 1, ν = 0.72, ψ = 0.9, κ = 0.213,
             z = z, r = r, b = b, σ = σ)
 end
 
-# Compute various eq objects as a function of z, at baseline configuration
+# Compute various eq objects as a function of z, at baseline calibration
 W(x)   =  staticModel(z = x).w
 A(x)   =  staticModel(z = x).a
 Y(x)   =  staticModel(z = x).y
 N(x)   =  staticModel(z = x).n
 J(x)   =  staticModel(z = x).J
 W(x)   =  staticModel(z = x).w
+V(x)   =  staticModel(z = x).v
 
 """ 
 Compute dlogn/dlog z, following analytical formula.
@@ -62,7 +63,6 @@ function derivAnalytical(x)
     # expressions from static_model.pdf
     #return ((1 - ν)*ν^(-1))*a*x/J(x)
     #return ((1 - ν)*ν^(-1))/(1 - w/y) 
-
 end
 
 """
@@ -87,7 +87,7 @@ function globalApproxFixed(x, x0; χ = 0.0)
    
     d = ((1 - ν)*ν^(-1))/(1 - w/y) # emp fluctuations
 
-    return (J = J, n = n, d = d, w = w, a = a)
+    return (J = J, n = n, d = d, w = w, a = a, v = v)
 end
 
 """
@@ -109,7 +109,7 @@ function globalApproxNash(x, x0; β = staticModel().ν, χ = 0.0)
     
     d = ((1 - ν)*ν^(-1))*(1-β)*a*x/J # emp fluctuations
 
-    return (J = J, n = n, d = d)
+    return (J = J, n = n, d = d, v = v)
 end
 
 """
@@ -127,15 +127,15 @@ function globalApproxFixedA(x, x0; χ = 0.0)
     dw_dz = (x^5 + (x^3)*2ϕ*r*σ^2)/((ϕ)*(x^2 +ϕ*r*σ^2)^2)
     d     = ((1 - ν)*ν^(-1))*(a - dw_dz)*x/J # emp fluctuations
 
-    return (J = J, n = n, d = d)
+    return (J = J, n = n, d = d, v = v)
 end
 
 """
 Compute J, N, D as a function of z = z, holding fixed w at w*(x0)
 """
-function globalApproxFixedW(x, x0)
-    @unpack ν, w, ψ, κ, ϕ, σ, r = staticModel(z = x0) # solve model at z = x0
-    @unpack a                   = staticModel(z = x)  # solve model at z = x
+function globalApproxFixedW(x, x0; χ = 0.0)
+    @unpack ν, w, ψ, κ, ϕ, σ, r = staticModel(z = x0, χ = χ) # solve model at z = x0
+    @unpack a                   = staticModel(z = x, χ = χ)  # solve model at z = x
 
     y = a*x             # get output
     J = y - w           # get profits at z = x, holding fixed w at x0
@@ -145,7 +145,7 @@ function globalApproxFixedW(x, x0)
     da_dz = (x^4 + (x^2)*3ϕ*r*σ^2)/((ϕ)*(x^2 +ϕ*r*σ^2)^2)
     d      = ((1 - ν)*ν^(-1))*(a + x*da_dz)*x/J # emp fluctuations
 
-    return (J = J, n = n, d = d)
+    return (J = J, n = n, d = d, v = v)
 end
 
 # Compute the numerical elasticities

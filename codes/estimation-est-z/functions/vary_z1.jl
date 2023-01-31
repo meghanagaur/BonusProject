@@ -17,7 +17,7 @@ function vary_z1(modd; check_mult = false)
     θ_1    = [modds[i].θ for i = 1:N_z]            # tightness
     W_1    = w_0/ψ                                 # EPV of wages
     Y_1    = [modds[i].Y for i = 1:N_z]            # EPV of output
-    ω_1    = [modds[i].ω_0 for i = 1:N_z]          # EPV value of unemployment at z0
+    ω_1    = [modds[i].ω for i = 1:N_z]            # EPV value of unemployment at z0
     J_1    = Y_1 - W_1                             # EPV profits
     a_1    = [modds[i].az[i] for i = 1:N_z]        # optimal effort @ start of contract
     aflag  = [modds[i].effort_flag for i = 1:N_z] 
@@ -33,36 +33,29 @@ function solveHall(modd, Y_B, W_B)
 
     @unpack zgrid, κ, ι, s, β, N_z, P_z, z_ss_idx = modd
     
-    # Solve for expected PV of sum of the z_t's
-    exp_z = zeros(length(zgrid)) 
-
-    Threads.@threads for iz = 1:N_z
-
-        # initialize guesses
-        v0     = zgrid./(1-β*(1-s))
-        v0_new = zeros(N_z)
-        iter   = 1
-        err    = 10
-        
-        # solve via simple value function iteration
-        @inbounds while err > 10^-10 && iter < 500
-            v0_new = zgrid + β*(1-s)*P_z*v0
-            err    = maximum(abs.(v0_new - v0))
-            v0     = copy(v0_new)
-            iter +=1
-        end
-
-        exp_z[iz]   = v0[iz]
+    # Solve for expected PV of sum of the z_t's 
+    v0     = zgrid./(1-β*(1-s))
+    v0_new = zeros(N_z)
+    iter   = 1
+    err    = 10
+    
+    # solve via simple value function iteration
+    @inbounds while err > 10^-10 && iter < 500
+        v0_new = zgrid + β*(1-s)*P_z*v0
+        err    = maximum(abs.(v0_new - v0))
+        v0     = copy(v0_new)
+        iter +=1
     end
+    
 
-    aa       = Y_B[z_ss_idx]./exp_z[z_ss_idx]     # exactly match SS PV of output in the 2 models
-    WW       = W_B[z_ss_idx]                      # match SS PV of wages (E_0[w_t] = w_0 from martingale property)
-    YY       = aa.*exp_z                          # Hall economy output 
-    JJ       = YY .- WW                           # Hall economy profits
-    qθ       = min.(1, max.(0, κ./JJ))            # job-filling rate
-    θ        = (qθ.^(-ι) .- 1).^(1/ι).*(qθ .!= 0) # implied tightness
+    a       = Y_B[z_ss_idx]./v0[z_ss_idx]        # exactly match SS PV of output in the 2 models
+    W       = W_B[z_ss_idx]                      # match SS PV of wages (E_0[w_t] = w_0 from martingale property)
+    Y       = a.*v0                              # Hall economy output 
+    J       = Y .- W                             # Hall economy profits
+    qθ      = min.(1, max.(0, κ./J))             # job-filling rate
+    θ       = (qθ.^(-ι) .- 1).^(1/ι).*(qθ .!= 0) # implied tightness
 
-    return (a = aa, W = WW, J = JJ, Y = YY, θ = θ, zz = exp_z)
+    return (a = a, W = W, J = J, Y = Y, θ = θ, Z = v0)
 end
 
 """
@@ -71,13 +64,15 @@ Return d log theta/d log z at the steady state μ_z.
 function dlogtheta(modd; N_z = 21)
 
     # vary initial z1
-    modd2 = model(N_z = N_z, σ_η = modd.σ_η, χ = modd.χ, γ = modd.γ, hbar = modd.hbar, ε = modd.ε)
-    @unpack θ_B, z_ss_idx, zgrid = vary_z1(modd2)
+    modd2 = model(N_z = N_z, σ_η = modd.σ_η, χ = modd.χ, γ = modd.γ, hbar = modd.hbar, ε = modd.ε,
+                    ρ = modd.ρ, σ_ϵ = modd.σ_ϵ, ι = modd.ι)
+
+    @unpack θ, zgrid = vary_z1(modd2)
 
     # compute d log theta/d log z
-    dlogθ  = slope(θ_B, zgrid).*zgrid[1:end-1]./θ_B[1:end-1]
+    dlogθ  = slope(θ, zgrid; diff = "forward").*zgrid[1:end-1]./θ[1:end-1]
 
-    return  dlogθ[z_ss_idx]
+    return  dlogθ[modd2.z_ss_idx]
 end
 
 """
@@ -89,9 +84,8 @@ function heatmap_moments(; σ_η = 0.406231, χ = 0.578895, γ = 0.562862, hbar 
     out          = simulate(baseline, shocks)
     dlogθ_dlogz  = dlogtheta(baseline)
 
-    mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss, dlogθ_dlogz, out.dlw_dly_2, out.u_ss_2]  
-    # out.dlw1_dlz, out.avg_Δlw,  out.dlY_dlz, out.dlu_dlz, out.std_u, out.std_z, out.std_Y, out.std_w0]
-
+    mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss, dlogθ_dlogz, out.u_ss_2]  
+    
     # Flags
     flag     = out.flag
     flag_IR  = out.flag_IR
