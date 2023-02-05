@@ -10,10 +10,10 @@ N_procs        = 20                                     # number of jobs in job 
 N_string       = 25                                     # length of each worker string
 
 # Local optimization settings if using NLopt
-algorithm      = :LN_BOBYQA                             # LN_NELDERMEAD, algorithm for NLopt, set to :OPTIM if using Optim
-ftol_rel       = 1e-6                                   # relative function tolerance: set to 0 if no tol
-xtol_rel       = 0                                      # relative parameter tolerance: set to 0 if no tol
-max_time       = 60*90                                  # max time for local optimization (in seconds), 0 = no limit
+algo_nlopt           = :LN_NELDERMEAD                   # :LN_BOBYQA, algorithm for NLopt, set to :OPTIM if using Optim
+ftol_rel_nlopt       = 1e-6                             # relative function tolerance: set to 0 if no tol
+xtol_rel_nlopt       = 0                                # relative parameter tolerance: set to 0 if no tol
+max_time_nlopt       = 60*60                            # max time for local optimization (in seconds), 0 = no limit
 
 # Task number for job array
 idx = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
@@ -25,13 +25,16 @@ include("../../functions/smm_settings.jl")         # SMM inputs, settings, packa
 include("../../functions/tik-tak_job_array_v2.jl") # tik-tak code 
 
 # Load the pretesting ouput. Use the "best" Sobol points for our starting points.
-@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W, shocks = load(file_load) 
+@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W = load(file_load) 
+
+## Specifciations for the shocks in simulation
+shocks  = rand_shocks()
 
 # Define the NLopt optimization object
-if algorithm == :OPTIM
+if algo_nlopt == :OPTIM
     opt = nothing
 else
-    opt = Opt(algorithm, J) 
+    opt = Opt(algo_nlopt, J) 
 
     # Objective function
     # need to add dummy gradient: https://discourse.julialang.org/t/nlopt-forced-stop/47747/3
@@ -45,9 +48,9 @@ else
 
     # Tolerance values 
     opt.stopval  = 0
-    opt.ftol_rel = ftol_rel 
-    opt.xtol_rel = xtol_rel
-    opt.maxtime  = max_time
+    opt.ftol_rel = ftol_rel_nlopt 
+    opt.xtol_rel = xtol_rel_nlopt
+    opt.maxtime  = max_time_nlopt
 
 end
 

@@ -1,49 +1,48 @@
 using Distributed, SlurmClusterManager
-
 cd(dirname(@__FILE__))
 
 # Start the worker processes
 addprocs(SlurmManager())
+println(nprocs())
+
+# File location for saving jld output + slurm idx
+file  = "pretesting_fix_sigma0"
 
 @everywhere begin
 
-    # Get slurm idx
-    ja_idx  = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
-
     include("../functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
 
-    # different values of the cyclicality of new hire wages
-    dlogw_du_vals     = [-0.5, -1.5, -2.0]
-
     # get moment targets
-    data_mom, mom_key = moment_targets(dlw1_du = dlogw_du_vals[ja_idx])
+    data_mom, mom_key = moment_targets()
     K                 = length(data_mom)
     W                 = getW(K)
+    W[1,1]            = 0    # set σ_η = 0, drop standard deviation of log wage growth
+    W[3,3]            = 0    # set σ_η = 0, drop pass-through moment
 
     ## Specifciations for the shocks in simulation
     shocks  = rand_shocks()
-        
-    # File for saving presting jld output 
-    files   = ["pretesting_fix_eps03_dlogw1_du"*replace(string(dlogw_du_vals[i]), "." => "") for i = 1:length(dlogw_du_vals)]
-    files   = [replace(file, "-" => "_")  for file in files]
-    files   = [file[end:end] =="0"  ? chop(file, tail=1) : file for file in files]
-    file    = files[ja_idx]
 
     # Evalute objective function at i-th parameter vector
     function evaluate!(i, sob_seq, param_vals, param_est, shocks, data_mom, W)
         return objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W)
     end
 
-    # Define the baseline values for parameters
+    # Define the baseline values
     param_vals  = OrderedDict{Symbol, Real}([ 
-                (:ε,  0.3),                    # ε
-                (:σ_η, 0.4062),                # σ_η 
-                (:χ, 0.5789),                  # χ
-                (:γ, 0.5629),                  # γ
-                (:hbar, 3.5205) ])             # hbar
+                    (:ε,   0.3),         # ε
+                    (:σ_η, 0.0),         # σ_η 
+                    (:χ, 0.0),           # χ
+                    (:γ, 0.4916),        # γ
+                    (:hbar, 3.3),        # hbar
+                    (:ρ, 0.95^(1/3)),    # ρ
+                    (:σ_ϵ, 0.003),       # σ_ϵ
+                    (:ι, 0.8) ])         # ι
 
-    # Parameters we will fix (if any) among ε, σ_η, χ, γ, hbar 
-    delete!(param_bounds, :ε)
+    # Parameters we will fix (if any) in ε, σ_η, χ, γ, hbar 
+    params_fix  = [:σ_η, :hbar, :ε] 
+    for p in params_fix
+        delete!(param_bounds, p)
+    end
 
     # Parameters that we will estimate
     J           = length(param_bounds)
@@ -54,7 +53,7 @@ addprocs(SlurmManager())
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 50000
+    I_max        = 30000
     lb           = zeros(J)
     ub           = zeros(J)
 
@@ -64,12 +63,11 @@ addprocs(SlurmManager())
     end
 
     s            = SobolSeq(lb, ub)
-    seq          = skip(s, 10000, exact=true)
+    seq          = skip(s, 10000, exact = true)
     sob_seq      = reduce(hcat, next!(seq) for i = 1:I_max)
-
 end
 
-# Evaluate the objective function for each parameter vector i=1
+# Evaluate the objective function for each parameter vector
 @time output = pmap(i -> evaluate!(i, sob_seq, param_vals, param_est, shocks, data_mom, W), 1:I_max) 
 
 # Kill the processes
@@ -97,4 +95,4 @@ IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 # Save the output
 save("../smm/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
-                            "W" => W, "data_mom" => data_mom, "shocks" => shocks))
+                            "W" => W, "data_mom" => data_mom))

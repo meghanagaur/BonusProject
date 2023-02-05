@@ -3,7 +3,7 @@ cd(dirname(@__FILE__))
 
 using Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
 xguidefontsize =15, yguidefontsize=15, xtickfontsize=13, ytickfontsize=13,
-linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,legendfontsize = 9)
+linewidth = 3, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,legendfontsize = 9)
 
 # Load helper functions
 include("staticModel.jl")
@@ -197,7 +197,7 @@ perfpay    = "Incentive Pay: Variable w and a"
 
 plot(x -> globalApproxFixed(x, z0).J, minz, maxz, legend =:topleft, label = rigid, linecolor=:blue)
 plot!(x -> J(x), minz, maxz, label = perfpay, linecolor=:red)
-ylabel!(L"J")
+ylabel!(L"\mathbb{E}[J|z]")
 xlabel!(L"z")
 savefig("static-figs/slides/J_Hall_vs_Bonus.pdf")
 
@@ -235,48 +235,77 @@ ylabel!(L"d \log n/d \log z")
 xlabel!(L"z")
 savefig("static-figs/slides/dlogn_dlogz_Hall_vs_Bonus.pdf")
 
-## Cyclical unemployment benefit: b = γ + χ*log(γ)
+## Adding in cyclical unemployment benefit: b = γ + χ*log(γ)
 δ     = 0.1
 minz  = z0 - δ
 maxz  = z0 + δ
 
 # set χ value
 χ           = 0.3
-perfpay     = "Incentive Pay: Constant unemployment benefit"
-perfpay_chi = "Incentive Pay: Cyclical unemployment benefit"
+rigid       = "Rigid Wage: Fixed w and a"
+perfpay     = "Incentive Pay: Acyclical b"
+perfpay_chi = "Incentive Pay: Procyclical b"
+exogWage    = "Fixed effort: Exogenously procyclical w"
 
+# profits
 plot(x -> staticModel(z = x, χ = 0.0).J, minz, maxz, label = perfpay, linecolor=:red, legend=:bottomright)
-plot!(x -> staticModel(z = x, χ = χ).J, minz, maxz, label = perfpay_chi, linecolor=:black, linestyle=:dash)
-ylabel!(L"J")
+plot!(x -> globalApproxFixed(x, z0).J, minz, maxz,  label = rigid, linecolor=:blue, linestyle=:dash)
+plot!(x -> staticModel(z = x, χ = χ).J, minz, maxz, label = perfpay_chi, linecolor=:black, linestyle=:dashdot)
+plot!(x -> exogCycWage(x; χ = χ).J, minz, maxz, label = exogWage, linecolor=:green, linestyle=:dot)
+ylabel!(L"\mathbb{E}[J|z]")
 xlabel!(L"z")
+
 savefig("static-figs/slides/J_Hall_vs_Bonus_cyc_b.pdf")
 
+# employment
 plot(x -> staticModel(z = x, χ = 0.0).n, minz, maxz, label = perfpay, linecolor=:red, legend=:bottomright)
-plot!(x -> staticModel(z = x, χ = χ).n, minz, maxz, label = perfpay_chi, linecolor=:black,linestyle=:dash)
+plot!(x -> globalApproxFixed(x, z0).n, minz, maxz, label = rigid, linecolor=:blue, linestyle=:dash)
+plot!(x -> staticModel(z = x, χ = χ).n, minz, maxz, label = perfpay_chi, linecolor=:black,linestyle=:dashdot)
+plot!(x -> exogCycWage(x; χ = χ).n, minz, maxz, label = exogWage, linecolor=:green, linestyle=:dot)
 ylabel!(L"n(z)")
 xlabel!(L"z")
+
 savefig("static-figs/slides/n_Hall_vs_Bonus_cyc_b.pdf")
 
-plot(x -> staticModel(z = x, χ = 0.0).w, minz, maxz, label = perfpay, linecolor=:red, legend=:bottomright)
-plot!(x -> staticModel(z = x, χ = χ).w, minz, maxz, label = perfpay_chi, linecolor=:black,linestyle=:dash)
+# wages
+plot(x -> staticModel(z = x, χ = 0.0).w, minz, maxz, label = perfpay, linecolor=:red, legend=:false)
+plot!(x -> globalApproxFixed(x, z0).w, minz, maxz, label = rigid, linecolor=:blue, linestyle=:dash)
+plot!(x -> staticModel(z = x, χ = χ).w, minz, maxz, label = perfpay_chi, linecolor=:black,linestyle=:dashdot)
+plot!(x -> exogCycWage(x; χ = χ).w, minz, maxz, label = exogWage, linecolor=:green, linestyle=:dot)
 ylabel!(L"\mathbb{E}[w|z]")
 xlabel!(L"z")
+
 savefig("static-figs/slides/w_Hall_vs_Bonus_cyc_b.pdf")
 
-plot(x -> staticModel(z = x, χ = 0.0).a, minz, maxz, label = perfpay, linecolor=:red, legend=:bottomright)
-plot!(x -> staticModel(z = x, χ = χ).a, minz, maxz, label = perfpay_chi, linecolor=:black,linestyle=:dash)
+# effort
+plot(x -> staticModel(z = x, χ = 0.0).a, minz, maxz, label = perfpay, linecolor=:red, legend=:false)
+plot!(x -> globalApproxFixed(x, z0).a, minz, maxz, label = rigid, linecolor=:blue, linestyle=:dash)
+plot!(x -> staticModel(z = x, χ = χ).a, minz, maxz, label = perfpay_chi, linecolor=:black,linestyle=:dashdot)
+plot!(x -> exogCycWage(x; χ = χ).a, minz, maxz, label = exogWage, linecolor=:green, linestyle=:dot)
 ylabel!(L"a(z)")
 xlabel!(L"z")
+
 savefig("static-figs/slides/a_Hall_vs_Bonus_cyc_b.pdf")
 
-plot(x -> staticModel(z = x, χ = 0.0).b, minz, maxz, label = perfpay, linecolor=:red, legend=:bottomright)
-plot!(x -> staticModel(z = x, χ = χ).b, minz, maxz, label = perfpay_chi, linecolor=:black,linestyle=:dash)
+# unemployment benefit
+plot(x -> staticModel(z = x, χ = 0.0).b, minz, maxz, label = "Constant b", linecolor=:red, legend=:bottomright)
+plot!(x -> staticModel(z = x, χ = χ).b, minz, maxz, label = "Procyclical b", linecolor=:black,linestyle=:dash)
 ylabel!(L"b(z)")
 xlabel!(L"z")
+
 savefig("static-figs/slides/b_Hall_vs_Bonus_cyc_b.pdf")
 
+# vacancies
 plot(x -> staticModel(z = x, χ = 0.0).v, minz, maxz, label = perfpay, linecolor=:red, legend=:bottomright)
-plot!(x -> staticModel(z = x, χ = χ).v, minz, maxz, label = perfpay_chi, linecolor=:black, linestyle=:dash)
+plot!(x -> globalApproxFixed(x, z0).v, minz, maxz, label = rigid, linecolor=:blue, linestyle=:dash)
+plot!(x -> staticModel(z = x, χ = χ).v, minz, maxz, label = perfpay_chi, linecolor=:black,linestyle=:dashdot)
+plot!(x -> exogCycWage(x; χ = χ).v, minz, maxz, label = exogWage, linecolor=:green, linestyle=:dot)
 ylabel!(L"v(z)")
 xlabel!(L"z")
+
 savefig("static-figs/slides/v_Hall_vs_Bonus_cyc_b.pdf")
+
+# additional check
+plot(x -> dJexogCycWage(x, χ = χ).check, minz, maxz,  linecolor=:black, legend=:bottomright, label ="direct effect of z on linearity constraint")
+plot!(x -> dJexogCycWage(x, χ = χ).diff_1, minz, maxz, linecolor=:red, legend=:bottomright, label ="dJ/dz  procyc b - dJ/dz  exog w")
+plot!(x -> dJexogCycWage(x, χ = χ).diff_2, minz, maxz,  linecolor=:blue, legend=:bottomright, linestyle=:dash,  label ="dJ/dz acyc b - dJ/dz  rigid w")

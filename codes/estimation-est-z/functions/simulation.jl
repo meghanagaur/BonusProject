@@ -55,7 +55,7 @@ function simulate(modd, shocks; u0 = 0.069, check_mult = false)
             hp_z[:,iz]    = hp.(az)  # h'(a(z|z_1))
 
             # Expectation of the log wage of new hires, given z_1 = z
-            lw1_z[iz]     = log(w_0) - 0.5*(ψ*hp_z[iz,iz]*σ_η)^2 
+            lw1_z[iz]     = log(max(eps(), w_0)) - 0.5*(ψ*hp_z[iz,iz]*σ_η)^2 
            
             # Tightness and job-finding rate, given z_1 = z
             θ_z[iz]       = θ      

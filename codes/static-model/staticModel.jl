@@ -20,9 +20,9 @@ Default parameters from Shimer (2005) (exc. r, ϕ, σ)
 function staticModel(; z = 1, ν = 0.72, ψ = 0.9, κ = 0.213, 
     ϕ = 1, r = 0.8, γ = 0.4, χ = 0.0, σ = 0.2)
 
-    b = γ + χ*log(z)                         # unemployment benefit
-    β = z^2 / (z^2 + ϕ*r*σ^2)           # optimal contract
-    α = b + β^2 * (ϕ*r*σ^2 - z^2 )/(2ϕ) # optimal contract
+    b = γ*z^χ                           # unemployment benefit
+    β = z^2 / (z^2 + ϕ*r*σ^2)           # optimal linear contract - constant
+    α = b + β^2 * (ϕ*r*σ^2 - z^2 )/(2ϕ) # optimal linear contract - slope
     a = β*z/ϕ                           # optimal effort
     y = a*z                             # E[output]
     w = α + β*y                         # E[wage] (optimal linear contract)
@@ -30,7 +30,7 @@ function staticModel(; z = 1, ν = 0.72, ψ = 0.9, κ = 0.213,
     v = (ψ*J/κ)^(1/ν)                   # vacancies (given by free entry condition)
     f = ψ*v^(1 - ν)                     # job-finding rate
     q = ψ*v^(-ν)                        # job-filling rate
-    n = copy(f)                         # employment
+    n = copy(f)                         # employment, since u = 1
 
     return (α = α, β = β, a = a, w = w, y = y, J = J, f = f,
             q = q, v = v, n = n, ν = ν, ψ = ψ, κ = κ, ϕ = ϕ, 
@@ -172,3 +172,47 @@ function derivNumericalFixedW(x, x0)
     g     = ForwardDiff.derivative(NN, x)  
     return g*x/NN(x)
 end 
+
+"""
+Compute J, N, D as a function of z = z,
+holding fixed effort. Exogenously impose 
+w(z) = w(z_0) + w(z | χ = χ) - w(z | χ = 0) 
+"""
+function exogCycWage(x; x0 = 1.0, χ = 0.0)
+
+    # solve model at z = x0, to get fixed effort
+    @unpack ν, a, ψ, κ, ϕ, σ, r, w = staticModel(z = x0, χ = χ) 
+    w_cyc      = staticModel(z = x, χ = χ).w    # procyclical wage
+    w_acyc     = staticModel(z = x, χ = 0.0).w  # acyclical wage
+    
+    w += (w_cyc - w_acyc) # construct cyclical wage
+    y  = a*x              # get expected output
+    J  = y - w            # get expected profits at z = x
+    v  = (ψ*J/κ)^(1/ν)    # get vacancies from free entry condition
+    n  = ψ*v^(1 - ν)      # get job-finding/employment
+
+    return (J = J, n = n, a = a, w = w, v = v)
+end
+
+"""
+Compare dJ/dz in the procyclical incentive pay 
+and fixed effort, procyclical wage economy
+"""
+function dJexogCycWage(z; χ = 0.0)
+   
+    # difference between procyclical b incentive pay + exogenous wage
+    g_1    = ForwardDiff.derivative(x-> staticModel(z = x, χ = χ).J, z)  
+    g_2    = ForwardDiff.derivative(x -> exogCycWage(x; χ = χ).J, z)  
+
+    # difference between acyclical b incentive pay + rigid wage
+    g_3    = ForwardDiff.derivative(x -> staticModel(z = x, χ = 0.0).J, z)  
+    g_4    = ForwardDiff.derivative(x -> globalApproxFixed(x, z0).J , z)  
+
+    # direct effect of z on constraints in incentive pay model 
+    @unpack r, σ, ϕ  = staticModel()
+    extra_term = (z^3)*(r*σ^2)/(z^2 + ϕ*r*σ^2)^2
+
+    return (diff_1 = g_3 - g_4, diff_2 = g_1 - g_2, check = extra_term)
+
+end 
+

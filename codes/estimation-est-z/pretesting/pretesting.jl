@@ -6,7 +6,7 @@ addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
 @everywhere ε_val = 0.3
-file  = "pretesting_fix_rho_eps"*replace(string(ε_val), "." => "")
+file  = "pretesting_fix_eps"*replace(string(ε_val), "." => "")
 
 @everywhere begin
 
@@ -16,7 +16,6 @@ file  = "pretesting_fix_rho_eps"*replace(string(ε_val), "." => "")
     data_mom, mom_key = moment_targets()
     K                 = length(data_mom)
     W                 = getW(K)
-    W[end-1,end-1]    = 0    # fix rho, drop alp_ρ for now
 
     ## Specifciations for the shocks in simulation
     shocks  = rand_shocks()
@@ -35,10 +34,10 @@ file  = "pretesting_fix_rho_eps"*replace(string(ε_val), "." => "")
                     (:hbar, 1.0),        # hbar
                     (:ρ, 0.95^(1/3)),    # ρ
                     (:σ_ϵ, 0.003),       # σ_ϵ
-                    (:ι, 1.25) ])        # ι
+                    (:ι, 0.8) ])         # ι
 
     # Parameters we will fix (if any) in ε, σ_η, χ, γ, hbar 
-    params_fix  = [:ε :ρ] 
+    params_fix  = [:ε] 
     for p in params_fix
         delete!(param_bounds, p)
     end
@@ -94,4 +93,4 @@ IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 # Save the output
 save("../smm/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
-                            "W" => W, "data_mom" => data_mom, "shocks" => shocks))
+                            "W" => W, "data_mom" => data_mom))
