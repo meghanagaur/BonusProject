@@ -8,14 +8,13 @@ addprocs(SlurmManager())
 @everywhere ε_val = 0.3
 file  = "pretesting_fix_eps"*replace(string(ε_val), "." => "")
 
+# Load SMM inputs, settings, packages, etc.
+@everywhere include("../functions/smm_settings.jl") 
+
 @everywhere begin
 
-    include("../functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
-
-    # get moment targets
-    data_mom, mom_key = moment_targets()
-    K                 = length(data_mom)
-    W                 = getW(K)
+    # get moment targets and weight matrix
+    @unpack data_mom, mom_key, K, W = moment_targets()
 
     ## Specifciations for the shocks in simulation
     shocks  = rand_shocks()
@@ -37,13 +36,17 @@ file  = "pretesting_fix_eps"*replace(string(ε_val), "." => "")
                     (:ι, 0.8) ])         # ι
 
     # Parameters we will fix (if any) in ε, σ_η, χ, γ, hbar 
-    params_fix  = [:ε] 
+    params_fix   = [:ε] 
+    param_bounds = get_param_bounds()
     for p in params_fix
         delete!(param_bounds, p)
     end
 
     # Parameters that we will estimate
     J           = length(param_bounds)
+    
+    @assert(K >= J)
+
     param_est   = OrderedDict{Symbol, Int64}()
     for (i, dict) in enumerate(collect(param_bounds))
         local key = dict[1]

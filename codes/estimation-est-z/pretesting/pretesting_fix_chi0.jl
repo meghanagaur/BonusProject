@@ -8,14 +8,14 @@ println(nprocs())
 # File location for saving jld output + slurm idx
 file  = "pretesting_fix_chi0"
 
+# Load SMM inputs, settings, packages, etc.
+@everywhere include("../functions/smm_settings.jl") 
+
 @everywhere begin
 
-    include("../functions/smm_settings.jl") # SMM inputs, settings, packages, etc.
-
-    # get moment targets
-    data_mom, mom_key = moment_targets()
-    K                 = length(data_mom)
-    W                 = getW(K)
+    # get moment targets and weight matrix
+    drop_mom = Dict(:dlw1_du => false, :dlw_dly => false, :alp_ρ => false, :alp_σ => false) # parameter bounds
+    @unpack data_mom, mom_key, K, W = moment_targets(; drop_mom = drop_mom)
 
     ## Specifciations for the shocks in simulation
     shocks  = rand_shocks()
@@ -28,22 +28,26 @@ file  = "pretesting_fix_chi0"
     # Define the baseline values
     param_vals  = OrderedDict{Symbol, Real}([ 
                     (:ε,   0.3),         # ε
-                    (:σ_η, 0.2759),      # σ_η 
+                    (:σ_η, 0.0),         # σ_η 
                     (:χ, 0.0),           # χ
                     (:γ, 0.4916),        # γ
-                    (:hbar, 1.0),        # hbar
-                    (:ρ, 0.95^(1/3)),    # ρ
-                    (:σ_ϵ, 0.003),       # σ_ϵ
+                    (:hbar, 3.9587),     # hbar
+                    (:ρ, 0.9808),        # ρ
+                    (:σ_ϵ, 0.0042),      # σ_ϵ
                     (:ι, 0.8) ])         # ι
 
-    # Parameters we will fix (if any) in ε, σ_η, χ, γ, hbar 
-    params_fix  = [:χ] 
+    # Parameters we will fix (if any) in: ε, σ_η, χ, γ, hbar, ρ, σ_ϵ
+    params_fix   = [:χ, :ε, :hbar, :ρ, :σ_ϵ] 
+    param_bounds = get_param_bounds()
     for p in params_fix
         delete!(param_bounds, p)
     end
 
     # Parameters that we will estimate
     J           = length(param_bounds)
+    
+    @assert(J >= K)
+
     param_est   = OrderedDict{Symbol, Int64}()
     for (i, dict) in enumerate(collect(param_bounds))
         local key = dict[1]
@@ -51,7 +55,7 @@ file  = "pretesting_fix_chi0"
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 50000
+    I_max        = 25000
     lb           = zeros(J)
     ub           = zeros(J)
 

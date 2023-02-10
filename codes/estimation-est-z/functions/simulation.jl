@@ -92,19 +92,18 @@ function simulate(modd, shocks; u0 = 0.069, check_mult = false)
         z_idx_macro    = simulateZShocks(P_z, p_z, z_shocks_macro, N_sim_macro, T_sim_macro + burnin; z_1_idx = logz_ss_idx)
        
         # Macro moments 
-        logz_t         = logz[z_idx_macro]      # log z_t series 
         @views lw1_t   = lw1_z[z_idx_macro]     # E[log w_1 | z_t] series
         @views θ_t     = θ_z[z_idx_macro]       # θ(z_t) series
         @views f_t     = f_z[z_idx_macro]       # f(θ(z_t)) series
 
         # Bootstrap across N_sim_macro simulations
         dlw1_du_n     = zeros(N_sim_macro)
-        dlu_dlz_n     = zeros(N_sim_macro)
         std_u_n       = zeros(N_sim_macro)
 
         # Bootstrap across N_sim_macro_est_alp simulations
         alp_ρ_n       = zeros(N_sim_macro_est_alp) 
         alp_σ_n       = zeros(N_sim_macro_est_alp)
+        dlu_dlz_n     = zeros(N_sim_macro_est_alp)
 
         # Compute evolution of unemployment for the z_t path
         T             = T_sim_macro + burnin
@@ -119,34 +118,30 @@ function simulate(modd, shocks; u0 = 0.069, check_mult = false)
             end
 
             # Estimate d E[log w_1] / d u (pooled ols)
-            #@views dlw1_du_n[n] = ols(vec(lw1_t[burnin+1:end, n]), vec(u_t[burnin+1:end, n]))[2]
             @views dlw1_du_n[n]  = cov(lw1_t[burnin+1:end, n], u_t[burnin+1:end, n])/max(eps(), var(u_t[burnin+1:end, n]))
 
-            # Estimate d log u / d  log z (monthly, pooled OLS), nudge to avoid runtime error
-            #@views dlu_dlz_n[n] = ols(log.( max.(u_t[burnin+1:end, n], eps() )), vec(logz_t[burnin+1:end, n]))[2]
-            @views dlu_dlz_n[n]  = cov(log.(max.(u_t[burnin+1:end, n], eps())), logz_t[burnin+1:end, n])/max(eps(), var(logz_t[burnin+1:end, n]))
-
-            # Compute quuarterly average of log u_t in post-burn-in period
-            u_q             = [mean(u_t[burnin+1:end, n][(t_q*3 - 2):t_q*3]) for t_q = 1:T_q_macro] 
+            # Compute quarterly average of log u_t in post-burn-in period
+            @views u_q           = [mean(u_t[burnin+1:end, n][(t_q*3 - 2):t_q*3]) for t_q = 1:T_q_macro] 
+            
             # hp-filter the quarterly log unemployment series, nudge to avoid runtime error
-            logu_q_resid, _ = hp_filter(log.(max.(u_q, eps())), 10^5)  
-            # compute standard deviation
-            std_u_n[n]      = std(logu_q_resid)
-
+            logu_q_resid, _      = hp_filter(log.(max.(u_q, eps())), 10^5)  
+            
+            # Compute the standard deviation
+            std_u_n[n]           = std(logu_q_resid)
         end
 
         # Standard deviation and persistence of average labor productivity 
         Threads.@threads for n = 1:N_sim_macro_est_alp
-            alp_ρ_n[n], alp_σ_n[n] = simulateALP(z_idx_macro[:,n], s_shocks, jf_shocks, η_shocks_macro, zgrid,
+            alp_ρ_n[n], alp_σ_n[n], dlu_dlz_n[n] = simulateALP(z_idx_macro[:,n], s_shocks, jf_shocks, η_shocks_macro, zgrid,
                                             N_sim_macro_workers, T_sim_macro, burnin, T_q_macro, s, f_z, y_z)
         end
 
         # Compute cross-simulation averages
         dlw1_du = mean(dlw1_du_n)
-        dlu_dlz = mean(dlu_dlz_n)
         std_u   = mean(std_u_n) 
         alp_ρ   = mean(alp_ρ_n)
         alp_σ   = mean(alp_σ_n)
+        dlu_dlz = mean(dlu_dlz_n)
 
         # Compute nonstochastic SS unemployment: define u_ss = s/(s + f(θ(z_ss)), at log z_ss = μ_z
         u_ss   = s/(s  + f(θ_z[logz_ss_idx]))
@@ -300,16 +295,21 @@ function simulateALP(z_shocks_idx, s_shocks, jf_shocks,  η_shocks_macro, zgrid,
 
     # construct quarterly averages
     ly_q = zeros(T_q) # quarterly log output
+    lu_q = zeros(T_q)
     #y_m[:,burnin+1:end] += η_shocks_macro.*zgrid[z_shocks_idx[burnin+1:end]]'
 
     @views @inbounds for t = 1:T_q
         t_q     = t*3
         output  = vec(y_m[:, burnin+1:end][:,(t_q - 2):t_q])
-        emp     = vec(active[:, burnin+1:end][:,(t_q - 2):t_q])
-        ly_q[t] = log.(max(mean(output[emp.==1]), eps()))
+        emp     = vec(active[:, burnin+1:end][:,(t_q - 2):t_q]) # who is employed
+        ly_q[t] = log.(max(mean(output[emp.==1]), eps()))       # average labor productivity
+        lu_q[t] = log.(max(1 - mean(emp), eps()))               # average quarterly unemployment
     end
 
-    # hp-filter the quarterly log output series
+    # Estimate d log u_t+1 / d  log ALP_t (monthly, pooled OLS)
+    @views dlu_dlz  = cov(lu_q[2:end], ly_q[1:end-1])/max(eps(), var(ly_q[1:end-1]))
+
+    # hp-filter the quarterly log output and unemployment series
     ly_q_resid, _ = hp_filter(ly_q, λ)
 
     # Compute standard deviation of log ALP
@@ -318,7 +318,7 @@ function simulateALP(z_shocks_idx, s_shocks, jf_shocks,  η_shocks_macro, zgrid,
     # Compute persistence of log ALP (OLS)
     alp_ρ  = first(autocor(ly_q_resid, [1]))
 
-    return (alp_ρ = alp_ρ, alp_σ = alp_σ)
+    return (alp_ρ = alp_ρ, alp_σ = alp_σ, dlu_dlz = dlu_dlz)
 end
 
 """

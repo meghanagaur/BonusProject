@@ -268,7 +268,7 @@ xlabel!(L"z")
 savefig("static-figs/slides/n_Hall_vs_Bonus_cyc_b.pdf")
 
 # wages
-plot(x -> staticModel(z = x, χ = 0.0).w, minz, maxz, label = perfpay, linecolor=:red, legend=:false)
+plot(x -> staticModel(z = x, χ = 0.0).w, minz, maxz, label = perfpay, linecolor=:red, legend=:bottomright)
 plot!(x -> globalApproxFixed(x, z0).w, minz, maxz, label = rigid, linecolor=:blue, linestyle=:dash)
 plot!(x -> staticModel(z = x, χ = χ).w, minz, maxz, label = perfpay_chi, linecolor=:black,linestyle=:dashdot)
 plot!(x -> exogCycWage(x; χ = χ).w, minz, maxz, label = exogWage, linecolor=:green, linestyle=:dot)
@@ -278,7 +278,7 @@ xlabel!(L"z")
 savefig("static-figs/slides/w_Hall_vs_Bonus_cyc_b.pdf")
 
 # effort
-plot(x -> staticModel(z = x, χ = 0.0).a, minz, maxz, label = perfpay, linecolor=:red, legend=:false)
+plot(x -> staticModel(z = x, χ = 0.0).a, minz, maxz, label = perfpay, linecolor=:red, legend=:bottomright)
 plot!(x -> globalApproxFixed(x, z0).a, minz, maxz, label = rigid, linecolor=:blue, linestyle=:dash)
 plot!(x -> staticModel(z = x, χ = χ).a, minz, maxz, label = perfpay_chi, linecolor=:black,linestyle=:dashdot)
 plot!(x -> exogCycWage(x; χ = χ).a, minz, maxz, label = exogWage, linecolor=:green, linestyle=:dot)

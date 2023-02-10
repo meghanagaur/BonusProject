@@ -122,3 +122,31 @@ function simulate_employment(modd, T_sim, burnin, θ; minz_idx = 1, u0 = 0.069, 
     return (nt = 1 .- u_t[burnin+1:end], zt_idx = z_shocks_idx[burnin+1:end])
 
 end
+
+"""
+Compute optimal effort
+"""
+function effort(z::T, w_0::T,  ψ, ε, hp, σ_η, hbar) where T<:AbstractFloat 
+    return find_zero(x-> x - max(eps(), ((z*x/w_0 - (ψ/ε)*(hp(x)*σ_η)^2)/hbar))^(ε/(1+ε)), 1.0)
+end
+
+"""
+Compute da/dz_1 and the components of da/dz_1
+"""
+function dadz(z::T, w_0::T,  ψ, ε, hp, σ_η, hbar)  where T<:AbstractFloat 
+
+    a      = effort(z, w_0,  ψ, ε, hp, σ_η, hbar)
+    Ω      = (ε/(1+ε))*hbar^(-ε/(1+ε))*(z*a/w_0 - (ψ/ε)*(hp(a)*σ_η)^2)^(-1/(1+ε))
+
+    da_dz  =  Ω*a/(w_0*(1 - Ω*(z/w_0 - (2*ψ*hbar/ε^2)*hp(a)*(σ_η^2)*a^(1/ε -1)) ))
+
+    da_dw0 = -Ω*a*z/((w_0^2)*(1 - Ω*(z/w_0 - (2*ψ*hbar/ε^2)*hp(a)*(σ_η^2)*a^(1/ε -1)) ))
+
+
+    A      = z*Ω*a/(w_0*(1 - Ω*(z/w_0 - (2*ψ*hbar/ε^2)*hp(a)*(σ_η^2)*a^(1/ε -1))))
+    Da_z   = A*z
+    Da_w   = A*z/w_0
+
+    return (da_dz =da_dz, da_dw0 =da_dw0, Da_z = Da_z, Da_w = Da_w)
+end
+

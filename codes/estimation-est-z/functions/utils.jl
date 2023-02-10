@@ -49,6 +49,9 @@ function slope(y, x; diff = "central")
     elseif diff == "central" 
         dydx = (y[3:end] - y[1:end-2])./(x[3:end] - x[1:end-2])
         dydx = [NaN; dydx; NaN]
+    elseif diff == "backward" 
+        return (y[2:end] - y[1:end-1])./(x[2:end] - x[1:end-1])
+        dydx = [NaN; dydx] 
     end
     return dydx
 end
