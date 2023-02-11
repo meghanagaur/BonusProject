@@ -124,7 +124,8 @@ function simulate_employment(modd, T_sim, burnin, θ; minz_idx = 1, u0 = 0.069, 
 end
 
 """
-Compute optimal effort
+Compute the optimal effort, given z_t and w_0, 
+without additional checks implemented in DynamicModel.
 """
 function effort(z::T, w_0::T,  ψ, ε, hp, σ_η, hbar) where T<:AbstractFloat 
     return find_zero(x-> x - max(eps(), ((z*x/w_0 - (ψ/ε)*(hp(x)*σ_η)^2)/hbar))^(ε/(1+ε)), 1.0)
@@ -142,11 +143,95 @@ function dadz(z::T, w_0::T,  ψ, ε, hp, σ_η, hbar)  where T<:AbstractFloat
 
     da_dw0 = -Ω*a*z/((w_0^2)*(1 - Ω*(z/w_0 - (2*ψ*hbar/ε^2)*hp(a)*(σ_η^2)*a^(1/ε -1)) ))
 
-
     A      = z*Ω*a/(w_0*(1 - Ω*(z/w_0 - (2*ψ*hbar/ε^2)*hp(a)*(σ_η^2)*a^(1/ε -1))))
     Da_z   = A*z
     Da_w   = A*z/w_0
 
-    return (da_dz =da_dz, da_dw0 =da_dw0, Da_z = Da_z, Da_w = Da_w)
+    return (da_dz = da_dz, da_dw0 = da_dw0, Da_z = Da_z, Da_w = Da_w)
 end
 
+"""
+Compute relelevant objects from our profit and wage decompositions 
+in the paper. 
+"""
+function decomposition(modd, bonus)
+
+    @unpack P_z, zgrid, N_z, ρ, β, s, z_ss_idx,  q, ψ, hp = modd
+
+    # Solve for dJ/dz when C term = 0 (direct effect), conditional on initial z_1
+    JJ_EVT   = zeros(N_z) 
+    Threads.@threads for iz = 1:N_z
+
+        # Initialize guess of direct effect
+        v0     = zgrid./(1-ρ*β*(1-s))
+        v0_new = zeros(N_z)
+        iter   = 1
+        err    = 10
+        
+        # solve via simple value function iteration
+        @inbounds while err > 10^-10 && iter < 1000
+            v0_new = bonus.modds[iz].az.*zgrid + ρ*β*(1-s)*P_z*v0
+            err    = maximum(abs.(v0_new - v0))
+            v0     = copy(v0_new)
+            iter +=1
+        end
+
+        ## Bargained vs Incentive Wage Flexibility
+        JJ_EVT[iz]   = v0[iz]/zgrid[iz]
+    end
+
+    # total wage flexibility
+    WF  = slope(bonus.W, zgrid)
+
+    # Solve for IWF
+    IWF          = zeros(N_z) 
+    dw0_dz1      = slope(bonus.w_0, zgrid)
+    dw0_dz1[1]   = slope(bonus.w_0, zgrid; diff = "forward")[1]
+    dw0_dz1[end] = slope(bonus.w_0, zgrid; diff = "backward")[end]
+
+    Threads.@threads for iz = 1:N_z
+
+        w_0   = bonus.modds[iz].w_0
+        Da_dz = [dadz.(z, w_0,  ψ, ε, hp, σ_η, hbar).Da_z for z in zgrid]
+        Da_dw = [dadz.(z, w_0,  ψ, ε, hp, σ_η, hbar).Da_w for z in zgrid]
+
+        # Initialize first term (effect of z_1 on z_t -> a)
+        da_dz     = zeros(N_z)
+        da_dz_new = zeros(N_z)
+        iter   = 1
+        err    = 10
+        
+        # solve via simple value function iteration
+        @inbounds while err > 10^-10 && iter < 1000
+            da_dz_new = Da_dz + ρ*β*(1-s)*P_z*da_dz
+            err       = maximum(abs.(da_dz_new - da_dz))
+            da_dz     = copy(da_dz_new)
+            iter +=1
+        end
+
+        # Initialize second term (effect of z_1 on w_0 -> a)
+        da_dw     = zeros(N_z)
+        da_dw_new = zeros(N_z)
+        iter      = 1
+        err       = 10
+        
+        # solve via simple value function iteration
+        @inbounds while err > 10^-10 && iter < 1000
+            da_dw_new = Da_dw + β*(1-s)*P_z*da_dw
+            err       = maximum(abs.(da_dw_new - da_dw))
+            da_dw     = copy(da_dw_new)
+            iter +=1
+        end
+
+        IWF[iz]   =  da_dz[iz]/zgrid[iz] - da_dw[iz]*dw0_dz1[iz]  # ψ*JJ_EVT[iz] 
+    end
+
+    # Solve for the BWF
+    BWF             = WF  - IWF  
+    resid           = BWF -  JJ_EVT  # partial kappa/q(θ(z_0)) / partial z_0
+    qq(x)           = -(x^(-1 + ι))*(1 + x^ι)^(-1 - 1/ι) # q'(θ)
+    total_resid     = -(κ./(q.(bonus.θ)).^2).*qq.(bonus.θ).*slope(bonus.θ, zgrid) # d kappa/q(θ(z_0)) / d z_0
+
+    return (JJ_EVT = JJ_EVT, WF = WF, BWF = BWF, IWF = IWF, resid = resid, total_resid = total_resid)
+    
+end
