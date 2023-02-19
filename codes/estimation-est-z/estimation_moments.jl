@@ -14,7 +14,7 @@ xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
 ## Logistics
-file_str     = ARGS[1]                              
+file_str     = "fix_eps03" #ARGS[1]                              
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
 file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
 file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
@@ -23,8 +23,8 @@ mkpath(file_save)
 println("File name: "*file_str)
 
 # Settings for simulation
-vary_chi             = true              # if varying chi for computing BWF
-vary_z_N             = 251        # number of gridpoints for first-order approach
+vary_params          = true              # if varying chi for computing BWF
+vary_z_N             = 51 #251               # number of gridpoints for first-order approach
 N_sim_macro          = 10^4 #5*10^3      # number of panels for macro stats exc. ALP
 N_sim_macro_workers  = 5*10^3 #10^3      # number of workers for ALP simulation
 N_sim_macro_est_alp  = 10^4 #500         # number of panels for ALP simulation
@@ -51,8 +51,7 @@ end
 Function to simulate moments at estimated parameter values
 """
 function simulate_moments(modd, shocks; check_mult = false)
-    out      = simulate(modd, shocks; check_mult = check_mult)
-    return out
+    return simulate(modd, shocks; check_mult = check_mult)
 end
 
 # Unpack parameters
@@ -106,7 +105,7 @@ println("u_ss_2: \t"*string(round.(u_ss_2, digits=4)))
 println("dlu_dlz: \t"*string(round.(dlu_dlz, digits=4)))
 println("std_logu: \t"*string(round.(std_u, digits=4)))
 
-@unpack θ, w_0, Y = solveModel(modd)
+@unpack θ, w_0, Y = solveModel(modd; noisy = false);
 @unpack ψ         = modd
 
 println("θ(μ_z): \t"*string(round.(θ, digits=4)))
@@ -115,8 +114,8 @@ println("W/Y (ss): \t"*string(round.(w_0/(ψ*Y), digits=4)))
 ## Vary initial productivity z_1 experiments
 
 # Get the Bonus model aggregates
-modd       = model(N_z = vary_z_N, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι)
-modd_chi0  = model(N_z = vary_z_N, χ = 0, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι) 
+modd       = model(N_z = vary_z_N, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
+modd_chi0  = model(N_z = vary_z_N, χ = 0.0, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
 bonus      = vary_z1(modd)
 bonus_chi0 = vary_z1(modd_chi0)
 
@@ -131,14 +130,14 @@ fip        = "Incentive Pay: variable w and a"
 ip         = "Incentive Pay, setting "*L"\chi = 0"
 zgrid      = modd.zgrid
 logz       = log.(zgrid)
-minz_idx   = max( findfirst(x -> x >=  -0.05, logz)  , max(findfirst(x -> x > 10^-8, hall.θ), findfirst(x -> x > 10^-8, bonus.θ)))
+minz_idx   = max( findfirst(x -> x >=  -0.05, logz), max(findfirst(x -> x > 10^-8, hall.θ), findfirst(x -> x > 10^-8, bonus.θ)))
 maxz_idx   = findlast(x -> x <=  0.05, logz)
 maxz_idx   = isnothing(maxz_idx) ? vary_z_N : maxz_idx
 range_1    = minz_idx:maxz_idx
 dz         = 0.05
 
 # Get decomposition components
-@unpack JJ_EVT, WF, BWF, IWF, resid, total_resid = decomposition(modd, bonus)
+@unpack JJ_EVT, WF, BWF_1, IWF_1, resid_1,  BWF_2, IWF_2, resid_2, total_resid = decomposition(modd, bonus)
 
 # Plot EPDV of profits
 p1 = plot(logz[range_1], bonus.J[range_1], linecolor=:red, label=fip, legend=:topleft)
@@ -252,11 +251,13 @@ end
 JJ_B      = slope(bonus.J, zgrid; diff = "central")
 JJ_H      = slope(hall.J, zgrid; diff = "central")
 JJ_B0     = slope(bonus_chi0.J, zgrid; diff = "central")
+c_term    = JJ_B - JJ_EVT
 
 plot(zgrid[range_2], JJ_B[range_2] - JJ_H[range_2], linecolor=:red, label = fip)
 plot(zgrid[range_2], JJ_B[range_2] - JJ_EVT[range_2], linecolor=:red, label = fip)
 plot(zgrid[range_2], JJ_H[range_2] - JJ_H_2[range_2], linecolor=:red, label = fip)
 plot(zgrid[range_2], JJ_B0[range_2] - JJ_EVT[range_2], linecolor=:red, label = fip)
+plot(zgrid[range_2], JJ_H[range_2] - JJ_EVT[range_2], linecolor=:red, label = fip)
 
 JJ_EVT[z_ss_idx] - JJ_B[z_ss_idx]     # c term
 JJ_EVT[z_ss_idx] - JJ_H_2[z_ss_idx]   # c term
@@ -274,7 +275,6 @@ yaxis!(L"\frac{d J(z_0) }{d z_0}")
 savefig(p1, file_save*"dJ_dz_0_c_term.pdf")
 
 # Print the C term at steady state
-c_term = JJ_B - JJ_EVT
 println("C term at μ_z: \t"*string(round(c_term[z_ss_idx], digits=5)))
 
 # plot the lower bound
@@ -324,53 +324,127 @@ xlabel!(L"\log z_t")
 savefig(file_save*"binscatter_logn.pdf")
 
 ## Share of Incentive Wage Flexibility
+println("------------------------")
+println("WAGE FLEXIBILITY")
+println("------------------------")
 
-println("IWF Share: \t"*string(round((IWF./WF)[z_ss_idx], digits=5)))
+println("IWF Share: \t\t"*string(round((IWF_1./WF)[z_ss_idx], digits=5)))
+println("IWF Share: \t\t"*string(round((IWF_2./WF)[z_ss_idx], digits=5)))
 
 ## Share of bargained wage flexibility
-WF_chi0       = slope(bonus_chi0.W, zgrid) # total wage flexibility
+WF_chi0  = slope(bonus_chi0.W, zgrid) # total wage flexibility
+BWF_3    = -(c_term./WF)
 
-println("BWF Share: \t\t"*string(round((BWF./WF)[z_ss_idx],digits=5)))
-println("BWF Share (Direct): \t"*string(round(-(c_term./WF)[z_ss_idx],digits=5)))
-println("WF with χ = 0/ WF \t"*string(round((WF_chi0./WF)[z_ss_idx],digits=5)))
+println("BWF Share #1: \t\t"*string(round((BWF_1./WF)[z_ss_idx],digits=5)))
+println("BWF Share #2: \t\t"*string(round((BWF_2./WF)[z_ss_idx],digits=5)))
+println("BWF Share #3: \t\t"*string(round(BWF_3[z_ss_idx],digits=5)))
+println("WF with χ = 0/WF \t"*string(round((WF_chi0./WF)[z_ss_idx],digits=5)))
 
-plot((IWF./WF)[range_1])
-plot!((BWF./WF)[range_1])
+plot(logz[range_2], (BWF_1./WF)[range_2], label="BWF #1")
+plot!(logz[range_2], (BWF_2./WF)[range_2], label="BWF #2")
+plot!(logz[range_2], (BWF_3)[range_2],label="BWF #3", linestyle=:dash)
+ylabel!("BWF share")
+xlabel!(L"\log z_0")
+
 savefig(file_save*"WF_shares.pdf")
 
 # plot the comparison of partial, total derivative of the residual + dJ/dz in Bonus model
-plot(JJ_B[range_1], label=L"\frac{d J(z_0) }{d z_0}", legend=:bottomright)
-plot!(-resid[range_1], label=L"\frac{\partial \kappa/q(z_0) }{\partial z_0}"*" (residual)", linestyle=:dash)
-plot!(total_resid[range_1], label=L"\frac{d \kappa/q(z_0) }{d z_0}"*" (direct)", linestyle=:dashdot)
+plot(logz[range_2], JJ_B[range_2], label=L"\frac{d J(z_0) }{d z_0}", legend=:bottomright)
+plot!(logz[range_2], -resid_1[range_2], label=L"\frac{\partial \kappa/q(z_0) }{\partial z_0}"*" (method 1 )", linestyle=:dashdot)
+plot!(logz[range_2],-resid_2[range_2], label=L"\frac{\partial \kappa/q(z_0) }{\partial z_0}"*" (method 2)", linestyle=:dot)
+plot!(logz[range_2],total_resid[range_2], label=L"\frac{d \kappa/q(z_0) }{d z_0}"*" (direct)", linestyle=:dash)
+
 savefig(file_save*"dJ_dz_resids.pdf")
 
-# Vary χ = 0 to χ = 1
-if vary_chi
+# Vary params and compute BWF
+if vary_params
     
-    function bwf_vary_chi(modd)
-        
+    function bwf(modd)
         bonus      = vary_z1(modd)
-        @unpack JJ_EVT, WF, BWF, IWF, resid, total_resid = decomposition(modd, bonus)
-
-        return (BWF./WF)[modd.z_ss_idx]
-
+        @unpack WF, BWF_1, BWF_2 = decomposition(modd, bonus)
+        return (BWF_1./WF)[modd.z_ss_idx], (BWF_2./WF)[modd.z_ss_idx], maximum(bonus.IR_flag*1.0)
     end
 
-    N_χ      = 20
+    # vary χ
+    N_χ      = 30
     χ_grid   = LinRange(0.0, 1.0, N_χ)
-    bwf_grid = zeros(N_χ)
-   
+    bwf_grid = zeros(3, N_χ)
+
     Threads.@threads for i = 1:N_χ
-        bwf_grid[i] =  bwf_vary_chi(model(χ = χ_grid[i], γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι))
+        bwf_grid[:,i] .=  bwf(model(χ = χ_grid[i], γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, 
+                             ι = ι, ρ = ρ, σ_ϵ = σ_ϵ))
     end
 
-    plot(χ_grid, bwf_grid)
+    plot(χ_grid, bwf_grid[1,:], label="BWF share #1", legend=:right)
+    plot!(χ_grid, bwf_grid[2,:], label = "BWF share #2")
     xlabel!(L"\chi")
     ylabel!("BWF share")
+
     savefig(file_save*"bwf_vary_chi.pdf")
 
-end
+    # vary ε
+    N_ε      = 30
+    ε_grid   = LinRange(0.2, 0.5, N_ε)
 
+    Threads.@threads for i = 1:N_ε
+        bwf_grid[:,i] .=  bwf(model(χ = χ, γ = γ, hbar = hbar, ε = ε_grid[i], σ_η = σ_η, 
+                                            ι = ι, ρ = ρ, σ_ϵ = σ_ϵ))
+    end
+
+    # check IR constraint
+    max_idx = findfirst(isequal(1), bwf_grid[3,:])
+    max_idx = isnothing(max_idx)  ? N_ε : max_idx
+    range   = 1:max_idx
+
+    plot(ε_grid[range], bwf_grid[1,range], label="BWF share #1", legend=:right)
+    plot!(ε_grid[range], bwf_grid[2,range], label = "BWF share #2")
+    xlabel!(L"\varepsilon")
+    ylabel!("BWF share")
+
+    savefig(file_save*"bwf_vary_eps.pdf")
+
+    # vary hbar
+    N_h        = 30
+    hbar_grid  = LinRange(1.0, 4.0, N_h)
+
+    Threads.@threads for i = 1:N_h
+        bwf_grid[:,i] .=  bwf(model(χ = χ, γ = γ, hbar = hbar_grid[i], ε = ε, σ_η = σ_η, 
+                             ι = ι, ρ = ρ, σ_ϵ = σ_ϵ))
+    end
+
+    # check IR constraint
+    max_idx = findfirst(isequal(1), bwf_grid[3,:])
+    max_idx = isnothing(max_idx)  ? N_h : max_idx
+    range   = 1:max_idx
+
+    plot(hbar_grid[range], bwf_grid[1,range], label="BWF share #1", legend=:right)
+    plot!(hbar_grid[range], bwf_grid[2,range], label = "BWF share #2")
+    xlabel!(L"\bar{h}")
+    ylabel!("BWF share")
+
+    savefig(file_save*"bwf_vary_hbar.pdf")
+
+    # vary σ_η
+    N_s     = 30
+    σ_grid  = LinRange(0.0, 0.5, N_s)
+
+    Threads.@threads for i = 1:N_s
+        bwf_grid[:,i] .=  bwf(model(χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_grid[i], 
+                                ι = ι, ρ = ρ, σ_ϵ = σ_ϵ))
+    end
+
+    # check IR constraint
+    max_idx = findfirst(isequal(1), bwf_grid[3,:])
+    max_idx = isnothing(max_idx)  ? N_s : max_idx
+    range   = 1:max_idx
+
+    p1 = plot(σ_grid[range], bwf_grid[1,range], ylabel="BWF share #1")
+    p2 = plot(σ_grid[range], bwf_grid[2,range], ylabel = "BWF share #2")
+    xlabel!(L"\sigma_\eta")
+    plot(p1, p2, layout = (2,1), legend=:false)
+
+    savefig(file_save*"bwf_vary_sigma_eta.pdf")
+end
 
 #=
 # effort as a function of z, w_0

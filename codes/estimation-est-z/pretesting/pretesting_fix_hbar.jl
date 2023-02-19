@@ -5,8 +5,8 @@ cd(dirname(@__FILE__))
 addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
-@everywhere ε_val = 0.3
-file  = "pretesting_fix_eps"*replace(string(ε_val), "." => "")
+@everywhere hbar_val = 1.0
+file  = "pretesting_fix_hbar"*replace(string(hbar_val), "." => "")
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
@@ -26,17 +26,17 @@ file  = "pretesting_fix_eps"*replace(string(ε_val), "." => "")
 
     # Define the baseline values
     param_vals  = OrderedDict{Symbol, Real}([ 
-                    (:ε,   ε_val),       # ε
+                    (:ε,   0.3),         # ε
                     (:σ_η, 0.2759),      # σ_η 
                     (:χ, 0.4417),        # χ
                     (:γ, 0.4916),        # γ
-                    (:hbar, 1.0),        # hbar
+                    (:hbar, hbar_val),   # hbar
                     (:ρ, 0.95^(1/3)),    # ρ
                     (:σ_ϵ, 0.003),       # σ_ϵ
                     (:ι, 0.8) ])         # ι
 
     # Parameters we will fix (if any) in ε, σ_η, χ, γ, hbar 
-    params_fix   = [:ε] 
+    params_fix   = [:hbar] 
     param_bounds = get_param_bounds()
     for p in params_fix
         delete!(param_bounds, p)

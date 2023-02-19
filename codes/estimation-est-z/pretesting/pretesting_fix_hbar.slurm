@@ -10,4 +10,4 @@
 module purge
 module load julia/1.6.1
 
-julia pretesting.jl
+julia pretesting_fix_hbar.jl

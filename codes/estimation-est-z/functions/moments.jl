@@ -13,17 +13,18 @@ function vary_z1(modd; check_mult = false)
     end
 
     ## Store series of interest
-    w_0    = [modds[i].w_0 for i = 1:N_z]          # w0 (constant)
-    θ_1    = [modds[i].θ for i = 1:N_z]            # tightness
-    W_1    = w_0/ψ                                 # EPV of wages
-    Y_1    = [modds[i].Y for i = 1:N_z]            # EPV of output
-    ω_1    = [modds[i].ω for i = 1:N_z]            # EPV value of unemployment at z0
-    J_1    = Y_1 - W_1                             # EPV profits
-    a_1    = [modds[i].az[i] for i = 1:N_z]        # optimal effort @ start of contract
-    aflag  = [modds[i].effort_flag for i = 1:N_z] 
+    w_0     = [modds[i].w_0 for i = 1:N_z]          # w0 (constant)
+    θ_1     = [modds[i].θ for i = 1:N_z]            # tightness
+    W_1     = w_0/ψ                                 # EPV of wages
+    Y_1     = [modds[i].Y for i = 1:N_z]            # EPV of output
+    ω_1     = [modds[i].ω for i = 1:N_z]            # EPV value of unemployment at z0
+    J_1     = Y_1 - W_1                             # EPV profits
+    a_1     = [modds[i].az[i] for i = 1:N_z]        # optimal effort @ start of contract
+    aflag   = [modds[i].effort_flag for i = 1:N_z]  # effort flag
+    IR_flag = [modds[i].flag_IR for i = 1:N_z]      # IR flag 
 
     return (modds = modds, w_0 = w_0, θ = θ_1, W = W_1, Y = Y_1, ω = ω_1, J = J_1, 
-            a = a_1, zgrid = zgrid, aflag = aflag)
+            a = a_1, zgrid = zgrid, aflag = aflag, IR_flag = IR_flag)
 end
 
 """
@@ -125,7 +126,7 @@ end
 
 """
 Compute the optimal effort, given z_t and w_0, 
-without additional checks implemented in DynamicModel.
+without the additional checks implemented in DynamicModel.
 """
 function effort(z::T, w_0::T,  ψ, ε, hp, σ_η, hbar) where T<:AbstractFloat 
     return find_zero(x-> x - max(eps(), ((z*x/w_0 - (ψ/ε)*(hp(x)*σ_η)^2)/hbar))^(ε/(1+ε)), 1.0)
@@ -138,12 +139,12 @@ function dadz(z::T, w_0::T,  ψ, ε, hp, σ_η, hbar)  where T<:AbstractFloat
 
     a      = effort(z, w_0,  ψ, ε, hp, σ_η, hbar)
     Ω      = (ε/(1+ε))*hbar^(-ε/(1+ε))*(z*a/w_0 - (ψ/ε)*(hp(a)*σ_η)^2)^(-1/(1+ε))
+    denom  = (1 - Ω*(z/w_0 - (2*ψ/ε)*hp(a)*(σ_η^2)*(hbar/ε)*a^(1/ε - 1)) )
 
-    da_dz  =  Ω*a/(w_0*(1 - Ω*(z/w_0 - (2*ψ*hbar/ε^2)*hp(a)*(σ_η^2)*a^(1/ε -1)) ))
+    da_dz  =  Ω*a/(w_0*denom)
+    da_dw0 = -Ω*a*z/((w_0^2)*denom)
 
-    da_dw0 = -Ω*a*z/((w_0^2)*(1 - Ω*(z/w_0 - (2*ψ*hbar/ε^2)*hp(a)*(σ_η^2)*a^(1/ε -1)) ))
-
-    A      = z*Ω*a/(w_0*(1 - Ω*(z/w_0 - (2*ψ*hbar/ε^2)*hp(a)*(σ_η^2)*a^(1/ε -1))))
+    A      = z*Ω*a/(w_0*denom)
     Da_z   = A*z
     Da_w   = A*z/w_0
 
@@ -152,11 +153,11 @@ end
 
 """
 Compute relelevant objects from our profit and wage decompositions 
-in the paper. 
+in the paper. modd = model object, bonus = model solves for each initial z_0.
 """
 function decomposition(modd, bonus)
 
-    @unpack P_z, zgrid, N_z, ρ, β, s, z_ss_idx,  q, ψ, hp = modd
+    @unpack P_z, zgrid, N_z, ρ, β, s, z_ss_idx, q, ψ, hp = modd
 
     # Solve for dJ/dz when C term = 0 (direct effect), conditional on initial z_1
     JJ_EVT   = zeros(N_z) 
@@ -171,6 +172,8 @@ function decomposition(modd, bonus)
         # solve via simple value function iteration
         @inbounds while err > 10^-10 && iter < 1000
             v0_new = bonus.modds[iz].az.*zgrid + ρ*β*(1-s)*P_z*v0
+            #v0_new = bonus.modds[iz].az + β*(1-s)*P_z*v0
+            
             err    = maximum(abs.(v0_new - v0))
             v0     = copy(v0_new)
             iter +=1
@@ -184,7 +187,8 @@ function decomposition(modd, bonus)
     WF  = slope(bonus.W, zgrid)
 
     # Solve for IWF
-    IWF          = zeros(N_z) 
+    IWF_1        = zeros(N_z) 
+    IWF_2        = zeros(N_z) 
     dw0_dz1      = slope(bonus.w_0, zgrid)
     dw0_dz1[1]   = slope(bonus.w_0, zgrid; diff = "forward")[1]
     dw0_dz1[end] = slope(bonus.w_0, zgrid; diff = "backward")[end]
@@ -223,15 +227,20 @@ function decomposition(modd, bonus)
             iter +=1
         end
 
-        IWF[iz]   =  da_dz[iz]/zgrid[iz] - da_dw[iz]*dw0_dz1[iz]  # ψ*JJ_EVT[iz] 
+        IWF_1[iz]   =  da_dz[iz]/zgrid[iz] - da_dw[iz]*dw0_dz1[iz] 
+        IWF_2[iz]   =  da_dz[iz]/zgrid[iz] #- da_dw[iz]*ψ*JJ_EVT[iz]  
+
     end
 
     # Solve for the BWF
-    BWF             = WF  - IWF  
-    resid           = BWF -  JJ_EVT  # partial kappa/q(θ(z_0)) / partial z_0
+    BWF_1           = WF  - IWF_1 
+    BWF_2           = WF  - IWF_2
+    resid_1         = BWF_1 -  JJ_EVT  # partial kappa/q(θ(z_0)) / partial z_0
+    resid_2         = BWF_2 -  JJ_EVT  # partial kappa/q(θ(z_0)) / partial z_0
     qq(x)           = -(x^(-1 + ι))*(1 + x^ι)^(-1 - 1/ι) # q'(θ)
     total_resid     = -(κ./(q.(bonus.θ)).^2).*qq.(bonus.θ).*slope(bonus.θ, zgrid) # d kappa/q(θ(z_0)) / d z_0
 
-    return (JJ_EVT = JJ_EVT, WF = WF, BWF = BWF, IWF = IWF, resid = resid, total_resid = total_resid)
+    return (JJ_EVT = JJ_EVT, WF = WF, BWF_1 = BWF_1, BWF_2 = BWF_2, IWF_1 = IWF_1, 
+            IWF_2 = IWF_2, resid_1 = resid_1, resid_2 = resid_2, total_resid = total_resid)
     
 end
