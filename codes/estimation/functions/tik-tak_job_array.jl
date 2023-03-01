@@ -1,18 +1,14 @@
 """
-Workhouse function for the global multistart optimization algorithm, loosely following
-Guvenen et al (2019), with NM simplex for local optimization step.
+Workhouse function for TikTak, a global multistart optimization algorithm, loosely following
+Guvenen et al (2019). Uses derivative-free local optimization.
 """
-function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
-    I_min  = 10, test = false, bounds = true, max_iter_1 = 50, max_iter_2 = 75, crit = 1e-6, manual_bounds = true)
+function tiktak(init_points, file, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
+    I_min  = 10, test = false, max_iters = 50, crit = 1e-6, opt = Nothing)
 
     JJ          = length(param_vals)         # total num params (fixed + estimating)
     J           = length(param_bounds)       # num params we are estimating
     N_str       = size(init_points, 2)       # number of initial points
     output      = zeros(JJ+1, N_str)         # JJ + 1 x N_str, record function + param values
-
-    if bounds == true
-        lower, upper = get_bounds(param_est, param_bounds)
-    end
 
     @inbounds for i = 1:N_str
 
@@ -23,17 +19,16 @@ function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, 
         if i <= I_min
 
             start      = init_points[:,i]
-            max_iter   = max_iter_1
 
         elseif i >  I_min
 
             cur_out    = readdlm(file, ',', Float64)                     # open current output across all jobs
-            i_last     = size(cur_out, 1)                                # sum completed iterations across all workers       
-            θ          = min( max(0.1, (i_last/I_max)^(1/2) ), 0.995 )   # updating parameter
+            i_last     = size(cur_out, 1)                                # sum completed iterations across all workers    
+            θ          = min((i_last/I_max)^2, 0.995)                    # updating parameter
+            #θ         = min( max(0.1, (i_last/I_max)^(1/2) ), 0.995 )   # updating parameter
             idx        = argmin(cur_out[:,1])                            # check for the lowest function value across processes 
             pstar      = cur_out[idx, 2:2+J-1]                           # get parameters 
             start      = @views (1-θ)*init_points[:,i] + θ*pstar         # set new start value for local optimization
-            max_iter   = max_iter_2                                      # max iterations 
 
             println("I_last: ", i_last)
             println("----------------------------")
@@ -42,39 +37,32 @@ function tiktak(init_points, file, init_x, param_bounds, param_vals, param_est, 
 
         if test == false
             
-            # LOCAL OPTIMIZATION WITH BOUNDS
-            if bounds == true
-
-                if manual_bounds == true
+            # Local NM-Simplex algorithm with manually enforeced bound constraints
+            if isnothing(opt)
+            
+                opt             = Optim.optimize(x -> objFunction_WB(x, start, param_bounds, param_vals, param_est, shocks, data_mom, W)[1], zeros(J), NelderMead(), 
+                                    Optim.Options(g_tol = crit, x_tol = crit,  f_tol = crit, iterations = max_iters, show_trace = true))
                 
-                    opt       = optimize(x -> objFunction_WB(x, start, param_bounds, param_vals, param_est, shocks, data_mom, W)[1], init_x, NelderMead(), 
-                                Optim.Options(g_tol = crit, x_tol = crit,  f_tol = crit, iterations = max_iter, show_trace = true))
+                arg_min_t       = Optim.minimizer(opt)
+                min_f           = Optim.minimum(opt) 
+                arg_min         = zeros(length(arg_min_t))
 
-                elseif manual_bounds == false
-
-                    opt       = optimize(x -> objFunction(x, param_vals, param_est, shocks, data_mom, W)[1], lower, upper, start, Fminbox(NelderMead()), 
-                                Optim.Options(g_tol = crit, x_tol = crit,  f_tol = crit, iterations = max_iter, show_trace = true))
-                
-                end
-
-                arg_min_t = Optim.minimizer(opt)
-               
-                arg_min   = zeros(length(arg_min_t))
+                # transform the parameters back
                 for (k, v) in param_est
                     arg_min[v]  = transform_params(arg_min_t[v], param_bounds[k], start[v])
                 end
 
-            # LOCAL OPTIMIZATION WITHOUT BOUNDS
+            # Local optimization using NLopt algorithm/settings 
             else
 
-                opt        = optimize(x -> objFunction(x, param_vals, param_est, shocks, data_mom, W)[1], start, NelderMead(), 
-                            Optim.Options(g_tol = crit, x_tol = crit, f_tol = crit, iterations = max_iter, show_trace = true))
+                (min_f, arg_min, ret) = NLopt.optimize(opt, start)
 
-                arg_min    = Optim.minimizer(opt)
+                println("minimum:\t\t"*string(min_f))
+                println("minimizer:\t\t"*string(arg_min))
+                println("reason for stopping:\t"*string(ret))
 
             end
 
-            min_f    = Optim.minimum(opt) 
 
         elseif test == true
 

@@ -19,11 +19,6 @@ file  = "pretesting_fix_hbar"*replace(string(hbar_val), "." => "")
     ## Specifciations for the shocks in simulation
     shocks  = rand_shocks()
 
-    # Evalute objective function at i-th parameter vector
-    function evaluate!(i, sob_seq, param_vals, param_est, shocks, data_mom, W)
-        return objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W)
-    end
-
     # Define the baseline values
     param_vals  = OrderedDict{Symbol, Real}([ 
                     (:ε,   0.3),         # ε
@@ -69,7 +64,7 @@ file  = "pretesting_fix_hbar"*replace(string(hbar_val), "." => "")
 end
 
 # Evaluate the objective function for each parameter vector
-@time output = pmap(i -> evaluate!(i, sob_seq, param_vals, param_est, shocks, data_mom, W), 1:I_max) 
+@time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W), 1:I_max) 
 
 # Kill the processes
 rmprocs(nprocs())
@@ -96,4 +91,4 @@ IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 # Save the output
 save("../smm/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
-                            "W" => W, "data_mom" => data_mom))
+                            "W" => W, "data_mom" => data_mom, "fix_a" => false))

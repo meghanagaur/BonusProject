@@ -14,7 +14,7 @@ xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
 ## Logistics
-file_str     = "fix_eps03" #ARGS[1]                              
+file_str     = "fix_hbar10" #ARGS[1]                              
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
 file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
 file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
@@ -23,15 +23,17 @@ mkpath(file_save)
 println("File name: "*file_str)
 
 # Settings for simulation
-vary_params          = true              # if varying chi for computing BWF
-vary_z_N             = 51 #251               # number of gridpoints for first-order approach
-N_sim_macro          = 10^4 #5*10^3      # number of panels for macro stats exc. ALP
-N_sim_macro_workers  = 5*10^3 #10^3      # number of workers for ALP simulation
-N_sim_macro_est_alp  = 10^4 #500         # number of panels for ALP simulation
+vary_params          = false                 # if varying chi for computing BWF
+fix_a                = false                 # solve and simulate model with fixed effort
+vary_z_N             = 51      # 251         # number of gridpoints for first-order approach
+N_sim_macro          = 5*10^3  #10^4 #5*10^3      # number of panels for macro stats exc. ALP
+N_sim_macro_workers  = 10^3    #5*10^3 #10^3      # number of workers for ALP simulation
+N_sim_macro_est_alp  = 500     #10^4 #500         # number of panels for ALP simulation
 
 # Load output
 est_output = readdlm(file_est, ',', Float64)            # open estimation output across all jobs
 @unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, W = load(file_pre) # pretesting output
+#@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, W, fix_a = load(file_pre) # pretesting output
 
 # Get the final minimum 
 idx        = argmin(est_output[:,1])                    # check for the lowest function value across processes 
@@ -47,21 +49,14 @@ for (k, v) in param_vals
     end
 end
 
-""" 
-Function to simulate moments at estimated parameter values
-"""
-function simulate_moments(modd, shocks; check_mult = false)
-    return simulate(modd, shocks; check_mult = check_mult)
-end
-
 # Unpack parameters
 @unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ, ι = Params
 
 # Get moments (check for multiplicity and verfiy solutions are the same)
 modd       = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
 shocks     = rand_shocks(; N_sim_macro = N_sim_macro, N_sim_macro_workers = N_sim_macro_workers, N_sim_macro_est_alp = N_sim_macro_est_alp)
-output     = simulate_moments(modd, shocks; check_mult = false)   # skip multiplicity check
-output2    = simulate_moments(modd, shocks; check_mult = true)    # check multiplicity of roots (slow)
+output     = simulate(modd, shocks; check_mult = false)      # skip multiplicity check
+output2    = simulate(modd, shocks; check_mult = true)      # check multiplicity of roots (slow)
 
 @assert(isapprox(output.std_Δlw, output2.std_Δlw), 10^-8)   # check on multiplicity of effort 
 @assert(isapprox(output.dlw1_du, output2.dlw1_du), 10^-8)   # check on multiplicity of effort
@@ -102,281 +97,293 @@ println("------------------------")
 println("UNTARGETED MOMENTS")
 println("------------------------")
 println("u_ss_2: \t"*string(round.(u_ss_2, digits=4)))
-println("dlu_dlz: \t"*string(round.(dlu_dlz, digits=4)))
+println("dlu_dly: \t"*string(round.(dlu_dly, digits=4)))
 println("std_logu: \t"*string(round.(std_u, digits=4)))
 
-@unpack θ, w_0, Y = solveModel(modd; noisy = false);
-@unpack ψ         = modd
+# Compute some extra moments
+@unpack θ, w_0, Y, az = solveModel(modd; noisy = false);
 
+println("a(μ_z): \t"*string(round.(az[modd.z_ss_idx], digits=4)))
 println("θ(μ_z): \t"*string(round.(θ, digits=4)))
-println("W/Y (ss): \t"*string(round.(w_0/(ψ*Y), digits=4)))
+println("W/Y (ss): \t"*string(round.(w_0/(modd.ψ*Y), digits=4)))
 
-## Vary initial productivity z_1 experiments
+## Vary initial productivity z_0 
 
 # Get the Bonus model aggregates
 modd       = model(N_z = vary_z_N, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
 modd_chi0  = model(N_z = vary_z_N, χ = 0.0, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
-bonus      = vary_z1(modd)
-bonus_chi0 = vary_z1(modd_chi0)
+bonus      = vary_z1(modd; fix_a = fix_a)
+bonus_chi0 = vary_z1(modd_chi0; fix_a = fix_a)
 
-@unpack P_z, zgrid, N_z, ρ, β, s, z_ss_idx,  q, ι, κ, χ, μ_z, ψ, hp = modd
+@unpack P_z, zgrid, N_z, ρ, β, s, z_ss_idx,  q, ι, κ, χ, μ_z, ψ, hp, logz = modd
 
-# Get Hall aggregates
-hall       = solveHall(modd, bonus.Y, bonus.W)
+# Print some cyclical fluctuations
+dlY_dlz      = slope(log.(bonus.Y), logz; diff = "central")
+dlW_dlz      = slope(log.(bonus.W), logz; diff = "central")
+dla0_dlz     = slope(log.(bonus.a), logz; diff = "central")
 
-# Plot labels
-rigid      = "Rigid Wage: fixed w and a"
-fip        = "Incentive Pay: variable w and a"
-ip         = "Incentive Pay, setting "*L"\chi = 0"
-zgrid      = modd.zgrid
-logz       = log.(zgrid)
-minz_idx   = max( findfirst(x -> x >=  -0.05, logz), max(findfirst(x -> x > 10^-8, hall.θ), findfirst(x -> x > 10^-8, bonus.θ)))
-maxz_idx   = findlast(x -> x <=  0.05, logz)
-maxz_idx   = isnothing(maxz_idx) ? vary_z_N : maxz_idx
-range_1    = minz_idx:maxz_idx
-dz         = 0.05
+println("dlY_dlz: \t"*string(round.(dlY_dlz[z_ss_idx], digits=4)))
+println("dlW_dlz: \t"*string(round.(dlW_dlz[z_ss_idx], digits=4)))
+println("dla_dlz: \t"*string(round.(dla0_dlz[z_ss_idx], digits=4)))
 
-# Get decomposition components
-@unpack JJ_EVT, WF, BWF_1, IWF_1, resid_1,  BWF_2, IWF_2, resid_2, total_resid = decomposition(modd, bonus)
+if fix_a == false
 
-# Plot EPDV of profits
-p1 = plot(logz[range_1], bonus.J[range_1], linecolor=:red, label=fip, legend=:topleft)
-plot!(logz[range_1], hall.J[range_1], linecolor=:blue,label=rigid)
-plot!(logz[range_1], bonus_chi0.J[range_1], linecolor=:cyan,label=ip, linestyle=:dash)
-xaxis!(L"\log z_0")
-yaxis!(L"J(z_0)")
+    # Get Hall aggregates
+    hall       = solveHall(modd, bonus.Y, bonus.W)
 
-savefig(p1, file_save*"profits.pdf")
+    # Plot labels
+    rigid      = "Rigid Wage: fixed w and a"
+    fip        = "Incentive Pay: variable w and a"
+    ip         = "Incentive Pay, setting "*L"\chi = 0"
+    minz_idx   = max( findfirst(x -> x >=  -0.05, logz), findfirst(x -> x > 10^-8, bonus.θ))
+    maxz_idx   = findlast(x -> x <=  0.05, logz)
+    maxz_idx   = isnothing(maxz_idx) ? vary_z_N : maxz_idx
+    range_1    = minz_idx:maxz_idx
+    dz         = 0.05
 
-# Plot effort 
-p2 = plot(logz[range_1], bonus.a[range_1], linecolor=:red, label=fip, legend=:topleft)
-hline!([hall.a], linecolor=:blue, label=rigid)
-plot!(logz[range_1], bonus_chi0.a[range_1], linecolor=:cyan,label=ip, linestyle=:dash)
-xaxis!(L"\log z_0")
-yaxis!(L"a(z_0|z_0)")
+    # Get decomposition components
+    @unpack JJ_EVT, WF, BWF, IWF, resid, total_resid = decomposition(modd, bonus; fix_a = fix_a)
 
-savefig(p2, file_save*"efforts.pdf")
+    # Plot EPDV of profits
+    p1 = plot(logz[range_1], bonus.J[range_1], linecolor=:red, label=fip, legend=:topleft)
+    plot!(logz[range_1], hall.J[range_1], linecolor=:blue,label=rigid)
+    plot!(logz[range_1], bonus_chi0.J[range_1], linecolor=:cyan,label=ip, linestyle=:dash)
+    xaxis!(L"\log z_0")
+    yaxis!(L"J(z_0)")
 
-# Plot EPDV of wages
-p3 = plot(logz[range_1], bonus.W[range_1], linecolor=:red, label=fip, legend=:topleft)
-hline!([hall.W], linecolor=:blue, label=rigid)
-plot!(logz[range_1], bonus_chi0.W[range_1], linecolor=:cyan,label=ip, linestyle=:dash)
-xaxis!(L"\log z_0")
-yaxis!(L"W(z_0)")
+    savefig(p1, file_save*"profits.pdf")
 
-savefig(p3, file_save*"wages.pdf")
+    # Plot effort 
+    p2 = plot(logz[range_1], bonus.a[range_1], linecolor=:red, label=fip, legend=:topleft)
+    hline!([hall.a], linecolor=:blue, label=rigid)
+    plot!(logz[range_1], bonus_chi0.a[range_1], linecolor=:cyan,label=ip, linestyle=:dash)
+    xaxis!(L"\log z_0")
+    yaxis!(L"a(z_0|z_0)")
 
-# Plot tightness
-p4 = plot(logz[range_1], bonus.θ[range_1], linecolor=:red, label=fip, legend=:topleft)
-plot!(logz[range_1], hall.θ[range_1], linecolor=:blue, label=rigid)
-plot!(logz[range_1], bonus_chi0.θ[range_1], linecolor=:cyan,label=ip, linestyle=:dash)
-xaxis!(L"\log z_0")
-yaxis!(L"\theta(z_0)")
+    savefig(p2, file_save*"efforts.pdf")
 
-savefig(p4, file_save*"tightness.pdf")
+    # Plot EPDV of wages
+    p3 = plot(logz[range_1], bonus.W[range_1], linecolor=:red, label=fip, legend=:topleft)
+    hline!([hall.W], linecolor=:blue, label=rigid)
+    plot!(logz[range_1], bonus_chi0.W[range_1], linecolor=:cyan,label=ip, linestyle=:dash)
+    xaxis!(L"\log z_0")
+    yaxis!(L"W(z_0)")
 
-# Plot omega (value of unemployment)
-p5 = plot(logz, bonus.ω, linecolor=:red, label=fip, legend=:topleft)
-plot!(logz, bonus_chi0.ω, linecolor=:cyan,label=ip, linestyle=:dash)
-xaxis!(L"\log z_0")
-yaxis!(L"\omega(z_0)")
-xlims!((-dz, dz))
+    savefig(p3, file_save*"wages.pdf")
 
-savefig(p5, file_save*"omega.pdf")
+    # Plot tightness
+    p4 = plot(logz[range_1], bonus.θ[range_1], linecolor=:red, label=fip, legend=:topleft)
+    plot!(logz[range_1], hall.θ[range_1], linecolor=:blue, label=rigid)
+    plot!(logz[range_1], bonus_chi0.θ[range_1], linecolor=:cyan,label=ip, linestyle=:dash)
+    xaxis!(L"\log z_0")
+    yaxis!(L"\theta(z_0)")
 
-# Plot tightness fluctuations: dlog θ / d log z
-tt_B    = slope(bonus.θ, zgrid).*zgrid./bonus.θ
-tt_H    = slope(hall.θ, zgrid).*zgrid./hall.θ
-tt_B0   = slope(bonus_chi0.θ, zgrid).*zgrid./bonus_chi0.θ
-idx1    = max( max( findfirst(x -> ~isnan(x) && ~iszero(x) && x < 120, tt_B)) , max( findfirst(x -> ~isnan(x)  && ~iszero(x)  && x < 120, tt_H))) # start at reasonable scale
-range_2 = idx1:maxz_idx
+    savefig(p4, file_save*"tightness.pdf")
 
-p6 = plot(logz[range_2], tt_B[range_2], linecolor=:red, label=fip, legend=:topright)
-plot!(logz[range_2], tt_H[range_2], linecolor=:blue,label=rigid)
-plot!(logz[range_2], tt_B0[range_2], linecolor=:cyan,label=ip, linestyle=:dash)
-xaxis!(L" \log z_0")
-yaxis!(L"\frac{d \log \theta(z_0) }{d \log z_0}")
+    # Plot omega (value of unemployment)
+    p5 = plot(logz, bonus.ω, linecolor=:red, label=fip, legend=:topleft)
+    plot!(logz, bonus_chi0.ω, linecolor=:cyan,label=ip, linestyle=:dash)
+    xaxis!(L"\log z_0")
+    yaxis!(L"\omega(z_0)")
+    xlims!((-dz, dz))
 
-savefig(p6, file_save*"dlogtheta.pdf")
+    savefig(p5, file_save*"omega.pdf")
 
-# Compute the direct effect on the IR constraint
-ω_B  = bonus.ω
-dω_B = slope(ω_B, modd.zgrid)
-B    = (χ/(1-β*ρ))
-A    = (log(γ) + β*B*(1-ρ)*μ_z)/(1-β)
-ω_2  = A .+ B*logz
-@assert(maximum(abs.(ω_B - ω_2)) < 10^-5 )
-dω_2 = B./zgrid
+    # Plot tightness fluctuations: dlog θ / d log z
+    tt_B    = slope(bonus.θ, zgrid).*zgrid./bonus.θ
+    tt_H    = slope(hall.θ, zgrid).*zgrid./hall.θ
+    tt_B0   = slope(bonus_chi0.θ, zgrid).*zgrid./bonus_chi0.θ
+    idx1    = max( max( findfirst(x -> ~isnan(x) && ~iszero(x) && x < 120, tt_B)) , max( findfirst(x -> ~isnan(x)  && ~iszero(x)  && x < 120, tt_H))) # start at reasonable scale
+    range_2 = idx1:maxz_idx
 
-@assert( minimum( max.(abs.(dω_B - dω_2) .< 10^-3, isnan.(dω_B)) )  == 1 )
+    p6 = plot(logz[range_2], tt_B[range_2], linecolor=:red, label=fip, legend=:topright)
+    plot!(logz[range_2], tt_H[range_2], linecolor=:blue,label=rigid)
+    plot!(logz[range_2], tt_B0[range_2], linecolor=:cyan,label=ip, linestyle=:dash)
+    xaxis!(L" \log z_0")
+    yaxis!(L"\frac{d \log \theta(z_0) }{d \log z_0}")
 
-dIR  = dω_2.*(ρ*β - 1)/(1-ρ*β*(1-s))
+    savefig(p6, file_save*"dlogtheta.pdf")
 
-#= Isolate effort/wage movements
-p1 = plot( zgrid, bonus.Y , label="Variable a", linecolor=:red, linewidth=3);
-plot!(p1, zgrid, hall.Y, label="Fixed a", linecolor=:blue);
-ylabel!(L"Y");
-xlabel!(L"z_1");
-p2 = plot(zgrid, bonus.W, label="Variable w",linecolor=:red);
-hline!(p2, [hall.W], label="Fixed w",linecolor=:blue);
-ylabel!(L"W");
-xlabel!(L"z_1");
-plot(p1, p2, layout = (2, 1), legend=:topleft);
-savefig(file_save*"y_w_movements.pdf")
-=#
+    # Compute the direct effect on the IR constraint
+    ω_B  = bonus.ω
+    dω_B = slope(ω_B, modd.zgrid)
+    B    = (χ/(1-β*ρ))
+    A    = (log(γ) + β*B*(1-ρ)*μ_z)/(1-β)
+    ω_2  = A .+ B*logz
 
-# Solve for dJ/dz in Hall directly
-JJ_H_2   = zeros(N_z) 
-Threads.@threads for iz = 1:N_z
+    @assert(maximum(abs.(ω_B - ω_2)) < 10^-4 )
 
-    # Initialize guess of direct effect
-    v0     = zgrid./(1-ρ*β*(1-s))
-    v0_new = zeros(N_z)
-    iter   = 1
-    err    = 10
-    
-    # solve via simple value function iteration
-    @inbounds while err > 10^-10 && iter < 1000
-        v0_new = zgrid + ρ*β*(1-s)*P_z*v0
-        err    = maximum(abs.(v0_new - v0))
-        v0     = copy(v0_new)
-        iter +=1
+    dω_2 = B./zgrid
+
+    @assert( minimum( max.(abs.(dω_B - dω_2) .< 10^-3, isnan.(dω_B)) )  == 1 )
+
+    dIR  = dω_2.*(ρ*β - 1)/(1-ρ*β*(1-s))
+
+    #= Isolate effort/wage movements
+    p1 = plot( zgrid, bonus.Y , label="Variable a", linecolor=:red, linewidth=3);
+    plot!(p1, zgrid, hall.Y, label="Fixed a", linecolor=:blue);
+    ylabel!(L"Y");
+    xlabel!(L"z_0");
+    p2 = plot(zgrid, bonus.W, label="Variable w",linecolor=:red);
+    hline!(p2, [hall.W], label="Fixed w",linecolor=:blue);
+    ylabel!(L"W");
+    xlabel!(L"z_0");
+    plot(p1, p2, layout = (2, 1), legend=:topleft);
+    savefig(file_save*"y_w_movements.pdf")
+    =#
+
+    # Solve for dJ/dz in Hall directly
+    JJ_H_2   = zeros(N_z) 
+    Threads.@threads for iz = 1:N_z
+
+        # Initialize guess of direct effect
+        v0     = zgrid./(1-ρ*β*(1-s))
+        v0_new = zeros(N_z)
+        iter   = 1
+        err    = 10
+        
+        # solve via simple value function iteration
+        @inbounds while err > 10^-10 && iter < 1000
+            v0_new = zgrid + ρ*β*(1-s)*P_z*v0
+            err    = maximum(abs.(v0_new - v0))
+            v0     = copy(v0_new)
+            iter +=1
+        end
+
+        JJ_H_2[iz]   = hall.a*v0[iz]/zgrid[iz]
+
     end
 
-    JJ_H_2[iz]   = hall.a*v0[iz]/zgrid[iz]
+    ## Compute C term and dJ/dz in Bonus, Hall
+    JJ_B      = slope(bonus.J, zgrid; diff = "central")
+    JJ_H      = slope(hall.J, zgrid; diff = "central")
+    JJ_B0     = slope(bonus_chi0.J, zgrid; diff = "central")
+    c_term    = JJ_B - JJ_EVT
 
-end
+    plot(zgrid[range_2], JJ_B[range_2] - JJ_H[range_2], linecolor=:red, label = fip)
+    plot(zgrid[range_2], JJ_B[range_2] - JJ_EVT[range_2], linecolor=:red, label = fip)
+    plot(zgrid[range_2], JJ_H[range_2] - JJ_H_2[range_2], linecolor=:red, label = fip)
+    plot(zgrid[range_2], JJ_B0[range_2] - JJ_EVT[range_2], linecolor=:red, label = fip)
+    plot(zgrid[range_2], JJ_H[range_2] - JJ_EVT[range_2], linecolor=:red, label = fip)
 
-## Compute C term and dJ/dz in Bonus, Hall
-JJ_B      = slope(bonus.J, zgrid; diff = "central")
-JJ_H      = slope(hall.J, zgrid; diff = "central")
-JJ_B0     = slope(bonus_chi0.J, zgrid; diff = "central")
-c_term    = JJ_B - JJ_EVT
+    JJ_EVT[z_ss_idx] - JJ_B[z_ss_idx]     # c term
+    JJ_EVT[z_ss_idx] - JJ_H_2[z_ss_idx]   # c term
+    JJ_EVT[z_ss_idx] - JJ_H[z_ss_idx]     # c term
+    JJ_EVT[z_ss_idx] - JJ_B0[z_ss_idx]    # c term
 
-plot(zgrid[range_2], JJ_B[range_2] - JJ_H[range_2], linecolor=:red, label = fip)
-plot(zgrid[range_2], JJ_B[range_2] - JJ_EVT[range_2], linecolor=:red, label = fip)
-plot(zgrid[range_2], JJ_H[range_2] - JJ_H_2[range_2], linecolor=:red, label = fip)
-plot(zgrid[range_2], JJ_B0[range_2] - JJ_EVT[range_2], linecolor=:red, label = fip)
-plot(zgrid[range_2], JJ_H[range_2] - JJ_EVT[range_2], linecolor=:red, label = fip)
+    ## C term graphs
+    p1 = plot(logz[range_2], JJ_EVT[range_2], linecolor=:black, label = "Incentive Pay: No C term", legend =:bottomright)
+    #plot!(logz[range_2], JJ_B[range_2], linecolor=:red,  label = fip)
+    plot!(logz[range_2], JJ_H[range_2], linecolor=:blue, label = rigid)
+    plot!(logz[range_2], JJ_B0[range_2], linecolor=:yellow, label = ip, legend =:bottom)
+    xaxis!(L"z_0")
+    yaxis!(L"\frac{d J(z_0) }{d z_0}")
 
-JJ_EVT[z_ss_idx] - JJ_B[z_ss_idx]     # c term
-JJ_EVT[z_ss_idx] - JJ_H_2[z_ss_idx]   # c term
-JJ_EVT[z_ss_idx] - JJ_H[z_ss_idx]     # c term
-JJ_EVT[z_ss_idx] - JJ_B0[z_ss_idx]    # c term
+    savefig(p1, file_save*"dJ_dz_0_c_term.pdf")
 
-## C term graphs
-p1 = plot(logz[range_2], JJ_EVT[range_2], linecolor=:black, label = "Incentive Pay: No C term", legend =:bottomright)
-#plot!(logz[range_2], JJ_B[range_2], linecolor=:red,  label = fip)
-plot!(logz[range_2], JJ_H[range_2], linecolor=:blue, label = rigid)
-plot!(logz[range_2], JJ_B0[range_2], linecolor=:yellow, label = ip, legend =:bottom)
-xaxis!(L"z_0")
-yaxis!(L"\frac{d J(z_0) }{d z_0}")
+    # Print the C term at steady state
+    println("C term at μ_z: \t"*string(round(c_term[z_ss_idx], digits=5)))
 
-savefig(p1, file_save*"dJ_dz_0_c_term.pdf")
+    # plot the lower bound
+    plot(logz[range_2], c_term[range_2]./dIR[range_2], legend=:bottomright, label=L"\mu(z)" )
+    plot!(logz[range_2], bonus.w_0[range_2], linestyle=:dash, label=L"w_{-1}(z)")
+    xaxis!(L"\log z_0")
 
-# Print the C term at steady state
-println("C term at μ_z: \t"*string(round(c_term[z_ss_idx], digits=5)))
+    savefig(file_save*"cterm_multiplier.pdf")
 
-# plot the lower bound
-plot(logz[range_2], c_term[range_2]./dIR[range_2], legend=:bottomright, label=L"\mu(z)" )
-plot!(logz[range_2], bonus.w_0[range_2], linestyle=:dash, label=L"w_{-1}(z)")
-xaxis!(L"\log z_0")
+    lm = c_term[range_1]./dIR[range_1]
+    plot(logz[range_1], slope(bonus.w_0[range_1], zgrid[range_1]))
+    plot!(logz[range_1], slope(lm, zgrid[range_1]),linestyle=:dash)
 
-savefig(file_save*"cterm_multiplier.pdf")
+    ## Scatter plot of log employment
+    T_sim     = 5000
+    burnin    = 10000
+    minz_idx  = max(findfirst(x -> x > 10^-6, hall.θ), findfirst(x -> x > 10^-6, bonus.θ))
+    bonus_sim = simulate_employment(modd, T_sim, burnin, bonus.θ; minz_idx = minz_idx)
+    hall_sim  = simulate_employment(modd, T_sim, burnin, hall.θ; minz_idx = minz_idx)
 
-lm = c_term[range_1]./dIR[range_1]
-plot(logz[range_1], slope(bonus.w_0[range_1], zgrid[range_1]))
-plot!(logz[range_1], slope(lm, zgrid[range_1]),linestyle=:dash)
+    # n_t and z_t 
+    N_B       = bonus_sim.nt
+    N_H       = hall_sim.nt
+    zt_B      = zgrid[bonus_sim.zt_idx]
+    zt_H      = zgrid[hall_sim.zt_idx]
 
-## Scatter plot of log employment
-T_sim     = 5000
-burnin    = 10000
-minz_idx  = max(findfirst(x -> x > 10^-6, hall.θ), findfirst(x -> x > 10^-6, bonus.θ))
-bonus_sim = simulate_employment(modd, T_sim, burnin, bonus.θ; minz_idx = minz_idx)
-hall_sim  = simulate_employment(modd, T_sim, burnin, hall.θ; minz_idx = minz_idx)
+    @assert(zt_B == zt_H)
 
-# n_t and z_t 
-N_B       = bonus_sim.nt
-N_H       = hall_sim.nt
-zt_B      = zgrid[bonus_sim.zt_idx]
-zt_H      = zgrid[hall_sim.zt_idx]
-@assert(zt_B == zt_H)
+    # raw scatter plot
+    p1 = plot(log.(zt_B), log.(N_B), seriestype=:scatter, label=fip, legend=:bottomright, ms=:3, mc=:red)
+    plot!(log.(zt_B), log.(N_H), seriestype=:scatter, label=rigid, ms=:3, mc=:blue)
+    xlabel!(L"\log z_t")
+    ylabel!(L"\log n_t")
 
-# raw scatter plot
-p1 = plot(log.(zt_B), log.(N_B), seriestype=:scatter, label=fip, legend=:bottomright, ms=:3, mc=:red)
-plot!(log.(zt_B), log.(N_H), seriestype=:scatter, label=rigid, ms=:3, mc=:blue)
-xlabel!(L"\log z_t")
-ylabel!(L"\log n_t")
+    savefig(p1, file_save*"scatter_logn.pdf")
 
-savefig(p1, file_save*"scatter_logn.pdf")
+    ## Produce binscatter of log employment against log z
+    nbins  = 100
+    df     = DataFrame(n = log.(N_B), z = log.(zt_B), model = "bonus")  # bonus
+    df_H   = DataFrame(n = log.(N_H), z = log.(zt_B), model = "hall" )  # hall
+    append!(df, df_H)
 
-## Produce binscatter of log employment against log z
-nbins  = 100
-df     = DataFrame(n = log.(N_B), z = log.(zt_B), model = "bonus")  # bonus
-df_H   = DataFrame(n = log.(N_H), z = log.(zt_B), model = "hall" )  # hall
-append!(df, df_H)
+    p2 = binscatter(groupby(df, :model), @formula(n ~ z), nbins; markersize = 4, seriestype = :linearfit, 
+            labels=[fip rigid], markercolor= [:red :blue], linecolor = [:red :blue], legend=:false)
+    ylabel!(L"\log n_t")
+    xlabel!(L"\log z_t")
 
-p2 = binscatter(groupby(df, :model), @formula(n ~ z), nbins; markersize = 4, seriestype = :linearfit, 
-        labels=[fip rigid], markercolor= [:red :blue], linecolor = [:red :blue], legend=:false)
-ylabel!(L"\log n_t")
-xlabel!(L"\log z_t")
+    savefig(file_save*"binscatter_logn.pdf")
 
-savefig(file_save*"binscatter_logn.pdf")
+    ## Share of Incentive Wage Flexibility
+    println("------------------------")
+    println("WAGE FLEXIBILITY")
+    println("------------------------")
 
-## Share of Incentive Wage Flexibility
-println("------------------------")
-println("WAGE FLEXIBILITY")
-println("------------------------")
+    println("IWF Share: \t\t"*string(round((IWF./WF)[z_ss_idx], digits=5)))
 
-println("IWF Share: \t\t"*string(round((IWF_1./WF)[z_ss_idx], digits=5)))
-println("IWF Share: \t\t"*string(round((IWF_2./WF)[z_ss_idx], digits=5)))
+    ## Share of bargained wage flexibility
+    WF_chi0  = slope(bonus_chi0.W, zgrid) # total wage flexibility
+    BWF_2    = -(c_term./WF)
 
-## Share of bargained wage flexibility
-WF_chi0  = slope(bonus_chi0.W, zgrid) # total wage flexibility
-BWF_3    = -(c_term./WF)
+    println("BWF Share #1: \t\t"*string(round((BWF./WF)[z_ss_idx],digits=5)))
+    println("BWF Share #2: \t\t"*string(round(BWF_2[z_ss_idx],digits=5)))
+    println("WF with χ = 0/WF \t"*string(round((WF_chi0./WF)[z_ss_idx],digits=5)))
 
-println("BWF Share #1: \t\t"*string(round((BWF_1./WF)[z_ss_idx],digits=5)))
-println("BWF Share #2: \t\t"*string(round((BWF_2./WF)[z_ss_idx],digits=5)))
-println("BWF Share #3: \t\t"*string(round(BWF_3[z_ss_idx],digits=5)))
-println("WF with χ = 0/WF \t"*string(round((WF_chi0./WF)[z_ss_idx],digits=5)))
+    plot(logz[range_2], (BWF./WF)[range_2], label="BWF #1")
+    plot!(logz[range_2], (BWF_2)[range_2],label="BWF #2", linestyle=:dash)
+    ylabel!("BWF share")
+    xlabel!(L"\log z_0")
 
-plot(logz[range_2], (BWF_1./WF)[range_2], label="BWF #1")
-plot!(logz[range_2], (BWF_2./WF)[range_2], label="BWF #2")
-plot!(logz[range_2], (BWF_3)[range_2],label="BWF #3", linestyle=:dash)
-ylabel!("BWF share")
-xlabel!(L"\log z_0")
+    savefig(file_save*"WF_shares.pdf")
 
-savefig(file_save*"WF_shares.pdf")
+    # plot the comparison of partial, total derivative of the residual + dJ/dz in Bonus model
+    plot(logz[range_2], JJ_B[range_2], label=L"\frac{d J(z_0) }{d z_0}", legend=:bottomright)
+    plot!(logz[range_2], -resid[range_2], label=L"\frac{\partial \kappa/q(z_0) }{\partial z_0}"*" (method 1 )", linestyle=:dashdot)
+    plot!(logz[range_2],total_resid[range_2], label=L"\frac{d \kappa/q(z_0) }{d z_0}"*" (direct)", linestyle=:dash)
 
-# plot the comparison of partial, total derivative of the residual + dJ/dz in Bonus model
-plot(logz[range_2], JJ_B[range_2], label=L"\frac{d J(z_0) }{d z_0}", legend=:bottomright)
-plot!(logz[range_2], -resid_1[range_2], label=L"\frac{\partial \kappa/q(z_0) }{\partial z_0}"*" (method 1 )", linestyle=:dashdot)
-plot!(logz[range_2],-resid_2[range_2], label=L"\frac{\partial \kappa/q(z_0) }{\partial z_0}"*" (method 2)", linestyle=:dot)
-plot!(logz[range_2],total_resid[range_2], label=L"\frac{d \kappa/q(z_0) }{d z_0}"*" (direct)", linestyle=:dash)
+    savefig(file_save*"dJ_dz_resids.pdf")
 
-savefig(file_save*"dJ_dz_resids.pdf")
+end 
 
+
+#=
 # Vary params and compute BWF
 if vary_params
     
     function bwf(modd)
-        bonus      = vary_z1(modd)
-        @unpack WF, BWF_1, BWF_2 = decomposition(modd, bonus)
-        return (BWF_1./WF)[modd.z_ss_idx], (BWF_2./WF)[modd.z_ss_idx], maximum(bonus.IR_flag*1.0)
+        bonus           = vary_z1(modd)
+        @unpack WF, BWF = decomposition(modd, bonus; fix_a = fix_a)
+        return (BWF./WF)[modd.z_ss_idx], maximum(bonus.IR_flag*1.0)
     end
 
     # vary χ
     N_χ      = 30
     χ_grid   = LinRange(0.0, 1.0, N_χ)
-    bwf_grid = zeros(3, N_χ)
+    bwf_grid = zeros(2, N_χ)
 
     Threads.@threads for i = 1:N_χ
-        bwf_grid[:,i] .=  bwf(model(χ = χ_grid[i], γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, 
+        bwf_grid[:, i] .=  bwf(model(χ = χ_grid[i], γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, 
                              ι = ι, ρ = ρ, σ_ϵ = σ_ϵ))
     end
 
-    plot(χ_grid, bwf_grid[1,:], label="BWF share #1", legend=:right)
-    plot!(χ_grid, bwf_grid[2,:], label = "BWF share #2")
+    plot(χ_grid, bwf_grid[1,:], label = "BWF share", legend=:right)
     xlabel!(L"\chi")
     ylabel!("BWF share")
 
@@ -384,7 +391,7 @@ if vary_params
 
     # vary ε
     N_ε      = 30
-    ε_grid   = LinRange(0.2, 0.5, N_ε)
+    ε_grid   = LinRange(0.3, 3.0, N_ε)
 
     Threads.@threads for i = 1:N_ε
         bwf_grid[:,i] .=  bwf(model(χ = χ, γ = γ, hbar = hbar, ε = ε_grid[i], σ_η = σ_η, 
@@ -392,12 +399,11 @@ if vary_params
     end
 
     # check IR constraint
-    max_idx = findfirst(isequal(1), bwf_grid[3,:])
+    max_idx = findfirst(isequal(1), bwf_grid[2,:])
     max_idx = isnothing(max_idx)  ? N_ε : max_idx
     range   = 1:max_idx
 
-    plot(ε_grid[range], bwf_grid[1,range], label="BWF share #1", legend=:right)
-    plot!(ε_grid[range], bwf_grid[2,range], label = "BWF share #2")
+    plot(ε_grid[range], bwf_grid[1,range], label = "BWF share", legend=:right)
     xlabel!(L"\varepsilon")
     ylabel!("BWF share")
 
@@ -413,12 +419,11 @@ if vary_params
     end
 
     # check IR constraint
-    max_idx = findfirst(isequal(1), bwf_grid[3,:])
+    max_idx = findfirst(isequal(1), bwf_grid[2,:])
     max_idx = isnothing(max_idx)  ? N_h : max_idx
     range   = 1:max_idx
 
-    plot(hbar_grid[range], bwf_grid[1,range], label="BWF share #1", legend=:right)
-    plot!(hbar_grid[range], bwf_grid[2,range], label = "BWF share #2")
+    plot(hbar_grid[range], bwf_grid[1,range], label = "BWF share #1", legend=:right)
     xlabel!(L"\bar{h}")
     ylabel!("BWF share")
 
@@ -434,17 +439,18 @@ if vary_params
     end
 
     # check IR constraint
-    max_idx = findfirst(isequal(1), bwf_grid[3,:])
+    max_idx = findfirst(isequal(1), bwf_grid[2,:])
     max_idx = isnothing(max_idx)  ? N_s : max_idx
     range   = 1:max_idx
 
-    p1 = plot(σ_grid[range], bwf_grid[1,range], ylabel="BWF share #1")
+    p1 = plot(σ_grid[range], bwf_grid[1,range], ylabel = "BWF share #1")
     p2 = plot(σ_grid[range], bwf_grid[2,range], ylabel = "BWF share #2")
     xlabel!(L"\sigma_\eta")
     plot(p1, p2, layout = (2,1), legend=:false)
 
     savefig(file_save*"bwf_vary_sigma_eta.pdf")
 end
+=#
 
 #=
 # effort as a function of z, w_0

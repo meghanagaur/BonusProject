@@ -6,16 +6,23 @@ addprocs(SlurmManager())
 println(nprocs())
 
 # File location for saving jld output + slurm idx
-file  = "pretesting_fix_sigma0"
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
+@everywhere hbar_val = 1.0
 
 @everywhere begin
 
+    # Get slurm job array idx
+    ja_idx  = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
+
+    # different values of the cyclicality of new hire wages
+    cyc_vals    = 1*[0.5, 1.5, 2.0, 2.5, 3.0]
+    cyc         = -cyc_vals[ja_idx]
+    file        = "pretesting_fix_hbar"*replace(string(hbar_val), "." => "")*"_cyc"*replace(string(cyc_vals[ja_idx]), "." => "")  
+
     # get moment targets and weight matrix
-    drop_mom = Dict(:std_Δlw => false, :dlw_dly => false, :alp_ρ => false, :alp_σ => false) 
-    @unpack data_mom, mom_key, K, W = moment_targets(; drop_mom = drop_mom)
+    @unpack data_mom, mom_key, K, W = moment_targets(dlw1_du = cyc)
 
     ## Specifciations for the shocks in simulation
     shocks  = rand_shocks()
@@ -23,16 +30,16 @@ file  = "pretesting_fix_sigma0"
     # Define the baseline values
     param_vals  = OrderedDict{Symbol, Real}([ 
                     (:ε,   0.3),         # ε
-                    (:σ_η, 0.0),         # σ_η 
+                    (:σ_η, 0.5),         # σ_η 
                     (:χ, 0.0),           # χ
                     (:γ, 0.4916),        # γ
-                    (:hbar, 3.9587),     # hbar
+                    (:hbar, hbar_val),   # hbar
                     (:ρ, 0.9808),        # ρ
                     (:σ_ϵ, 0.0042),      # σ_ϵ
                     (:ι, 0.8) ])         # ι
 
     # Parameters we will fix (if any) in: ε, σ_η, χ, γ, hbar, ρ, σ_ϵ
-    params_fix   = [:σ_η, :ε, :hbar, :ρ, :σ_ϵ] 
+    params_fix   = [:hbar] 
     param_bounds = get_param_bounds()
     for p in params_fix
         delete!(param_bounds, p)
@@ -50,7 +57,7 @@ file  = "pretesting_fix_sigma0"
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 25000
+    I_max        = 50000
     lb           = zeros(J)
     ub           = zeros(J)
 

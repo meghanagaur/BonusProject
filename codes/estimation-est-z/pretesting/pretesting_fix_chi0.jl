@@ -6,7 +6,7 @@ addprocs(SlurmManager())
 println(nprocs())
 
 # File location for saving jld output + slurm idx
-file  = "pretesting_fix_chi0"
+file  = "pretesting_fix_hbar1_chi0"
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
@@ -14,16 +14,10 @@ file  = "pretesting_fix_chi0"
 @everywhere begin
 
     # get moment targets and weight matrix
-    drop_mom = Dict(:dlw1_du => false, :dlw_dly => false, :alp_ρ => false, :alp_σ => false) # parameter bounds
-    @unpack data_mom, mom_key, K, W = moment_targets(; drop_mom = drop_mom)
+    @unpack data_mom, mom_key, K, W = moment_targets()
 
     ## Specifciations for the shocks in simulation
     shocks  = rand_shocks()
-
-    # Evalute objective function at i-th parameter vector
-    function evaluate!(i, sob_seq, param_vals, param_est, shocks, data_mom, W)
-        return objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W)
-    end
 
     # Define the baseline values
     param_vals  = OrderedDict{Symbol, Real}([ 
@@ -31,13 +25,13 @@ file  = "pretesting_fix_chi0"
                     (:σ_η, 0.0),         # σ_η 
                     (:χ, 0.0),           # χ
                     (:γ, 0.4916),        # γ
-                    (:hbar, 3.9587),     # hbar
+                    (:hbar, 1.0),        # hbar
                     (:ρ, 0.9808),        # ρ
                     (:σ_ϵ, 0.0042),      # σ_ϵ
                     (:ι, 0.8) ])         # ι
 
     # Parameters we will fix (if any) in: ε, σ_η, χ, γ, hbar, ρ, σ_ϵ
-    params_fix   = [:χ, :ε, :hbar, :ρ, :σ_ϵ] 
+    params_fix   = [:χ, :hbar] 
     param_bounds = get_param_bounds()
     for p in params_fix
         delete!(param_bounds, p)
@@ -46,7 +40,7 @@ file  = "pretesting_fix_chi0"
     # Parameters that we will estimate
     J           = length(param_bounds)
     
-    @assert(J >= K)
+    @assert(K >= J)
 
     param_est   = OrderedDict{Symbol, Int64}()
     for (i, dict) in enumerate(collect(param_bounds))
@@ -55,7 +49,7 @@ file  = "pretesting_fix_chi0"
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 25000
+    I_max        = 50000
     lb           = zeros(J)
     ub           = zeros(J)
 
@@ -97,4 +91,4 @@ IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 # Save the output
 save("../smm/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
-                            "W" => W, "data_mom" => data_mom))
+                            "W" => W, "data_mom" => data_mom, "fix_a" => false))

@@ -1,4 +1,4 @@
- """
+"""
 Objective function to be minimized during SMM -- WITHOUT BOUNDS.
 Variable descriptions below.
 xx           = evaluate objFunction @ these parameters 
@@ -23,7 +23,7 @@ u_ss         = 4th moment (SS unemployment rate)
 alp_ρ        = 5th moment (persistence of ALP)
 alp_σ        = 6th moment (std of ALP)
 """
-function objFunction(xx, param_vals, param_est, shocks, data_mom, W)
+function objFunction(xx, param_vals, param_est, shocks, data_mom, W; fix_a = false)
 
     # Get the relevant parameters
     Params =  OrderedDict{Symbol, Float64}()
@@ -36,10 +36,14 @@ function objFunction(xx, param_vals, param_est, shocks, data_mom, W)
     end
 
     @unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ, ι = Params
-    baseline    = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι  = ι) 
+    baseline   = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
 
     # Simulate the model and compute moments
-    out        = simulate(baseline, shocks)
+    if fix_a == true 
+        out        = simulateFixedEffort(baseline, shocks; a = Params[:a])
+    elseif fix_a == false
+        out        = simulate(baseline, shocks)
+    end
 
     # Record flags and update objective function
     flag       = out.flag
@@ -85,7 +89,7 @@ u_ss         = 4th moment (SS unemployment rate)
 alp_ρ        = 5th moment (ρ of ALP)
 alp_σ        = 6th moment (σ of ALP)
 """
-function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, data_mom, W)
+function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, data_mom, W; fix_a = false)
 
     Params =  OrderedDict{Symbol, Float64}()
     for (k, v) in param_vals
@@ -98,10 +102,14 @@ function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, dat
     end
 
     @unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ, ι = Params
-    baseline    = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
+    baseline   = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
 
     # Simulate the model and compute moments
-    out        = simulate(baseline, shocks)
+    if fix_a == true 
+        out        = simulateFixedEffort(baseline, shocks; a = Params[:a])
+    elseif fix_a == false
+        out        = simulate(baseline, shocks)
+    end
 
     # Record flags and update objective function
     flag       = out.flag
