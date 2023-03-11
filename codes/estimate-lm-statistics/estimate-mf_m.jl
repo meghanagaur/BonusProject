@@ -8,7 +8,7 @@ df = DataFrame(CSV.File(pwd()*"/data/mf_rates_monthly.csv"))
 # get relevant data
 idx       = findfirst(!ismissing, df.vacancies)
 frates    = df.frate[idx:end]
-tightness = df.vacancies[idx:end]./df.unemp[idx:end]
+tightness = df.tightness[idx:end]
 fr(θ, ι) = 1/(1 + θ^(-ι))^(1/ι)
 
 """
@@ -73,5 +73,13 @@ opt       = Optim.optimize(ι -> obj(ι, 1, df.avg_frate[1]), 0.2, 20,  Brent())
 #0.7999305738095385
 fr(1,ι_opt)
 
+# switch to job-finding rate of 0.47 for θ =1, u_ss = 0.06
+opt       = Optim.optimize(ι -> obj(ι, 1, 0.47), 0.2, 20,  Brent())
+ι_opt     = Optim.minimizer(opt)
+#0.9180482789470614
 
+
+fr(1,1.25)
+fr(1,0.92)
+fr(1,0.8)
 

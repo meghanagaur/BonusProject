@@ -3,7 +3,7 @@ cd(dirname(@__FILE__))
 
 using Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
 xguidefontsize =15, yguidefontsize=15, xtickfontsize=13, ytickfontsize=13,
-linewidth = 3, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,legendfontsize = 9)
+linewidth = 3, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px,legendfontsize = 13)
 
 # Load helper functions
 include("staticModel.jl")
@@ -42,28 +42,7 @@ plot!(derivNumerical, minz, maxz, label = "Numerical Elasticity", linestyle=:das
 ylabel!(L"d \log n/d \log z")
 xlabel!(L"z")
 
-#= Plot first order approximations
-
-# n as a function of z -- first order approx
-firstOrderApprox(z, z0)     = N(z0) + derivAnalytical(z0)*(N(z0)/z0)*(z - z0)
-
-# log n as a function of z -- first order approx 
-firstOrderApproxLogs(z, z0) = log(N(z0)) + (derivAnalytical(z0))*(z - log(z0))
-
-# Plot the first order approximation -- on n, z space
-plot(x -> N.(x), minz, maxz, legend =:bottomright, label= "Actual")
-plot!(x-> firstOrderApprox(x, z0), minz, maxz, label = "First Order Approximation")
-ylabel!(L"n")
-xlabel!(L"z")
-
-# Plot the first order approximation -- in logn, logz space
-plot(x -> log(N.(exp(x))), log(minz), log(maxz), legend =:bottomright, label= "Actual")
-plot!(x-> firstOrderApproxLogs(x, z0), log(minz), log(maxz), label = "First Order Approximation")
-ylabel!(L"\log n")
-xlabel!(L"\log z")
-=#
-
-# Update plotting window -- decrease δ
+## Update plotting window -- decrease δ
 δ     = 0.01
 minz  = z0 - δ
 maxz  = z0 + δ
@@ -112,7 +91,8 @@ savefig("static-figs/dlogn_dlogz_diff_models_analytical.pdf")
 
 ## Figures for slides
 
-str  = ["Rigid Wage: Fixed w and a"; "Incentive Pay: Variable w and a"]
+#str  = ["Rigid Wage: Fixed w and a"; "Incentive Pay: Variable w and a"]
+str  = ["Rigid Wage"; "Incentive Pay"]
 
 #col = [:blue, :green, :cyan, :red]
 col = [:blue, :red]
@@ -187,13 +167,12 @@ for i = 1:length(F)
     savefig("static-figs/slides/dlogn_dlogz_"*string(i)*".pdf")
 end
 
-# Plots with just Hall and Bonus; Update plotting window -- increase δ
-δ     = 0.1
-minz  = z0 - δ
-maxz  = z0 + δ
-
-rigid      = "Rigid Wage: Fixed w and a"
-perfpay    = "Incentive Pay: Variable w and a"
+## Plots with just Hall and Bonus; Update plotting window -- increase δ
+δ          = 0.05
+minz       = z0 - δ
+maxz       = z0 + δ
+rigid      = "Rigid Wage" #: Fixed w and a"
+perfpay    = "Flexible Incentive Pay" #: Variable w and a"
 
 plot(x -> globalApproxFixed(x, z0).J, minz, maxz, legend =:topleft, label = rigid, linecolor=:blue)
 plot!(x -> J(x), minz, maxz, label = perfpay, linecolor=:red)
@@ -225,6 +204,7 @@ ylabel!(L"v(z)")
 xlabel!(L"z")
 savefig("static-figs/slides/v_Hall_vs_Bonus.pdf")
 
+## Plot some other derivatives
 δ     = 0.05
 minz  = z0 - δ
 maxz  = z0 + δ
@@ -233,12 +213,12 @@ plot(x ->  globalApproxFixed(x, z0).d, minz, maxz, legend =:topleft, label = "Ha
 plot!(derivAnalytical, minz, maxz, label = perfpay, linecolor=:red)
 ylabel!(L"d \log n/d \log z")
 xlabel!(L"z")
-savefig("static-figs/slides/dlogn_dlogz_Hall_vs_Bonus.pdf")
+#savefig("static-figs/slides/dlogn_dlogz_Hall_vs_Bonus.pdf")
 
 ## Adding in cyclical unemployment benefit: b = γ + χ*log(γ)
-δ     = 0.1
-minz  = z0 - δ
-maxz  = z0 + δ
+δ           = 0.1
+minz        = z0 - δ
+maxz        = z0 + δ
 
 # set χ value
 χ           = 0.3
