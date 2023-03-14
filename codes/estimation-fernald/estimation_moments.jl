@@ -9,13 +9,14 @@ ENV["GKSwstype"] = "nul"
 include("functions/smm_settings.jl")                    # SMM inputs, settings, packages, etc.
 include("functions/moments.jl")                         # vary z1 functions
 
-using DataFrames, Binscatters, DelimitedFiles, LaTeXStrings, Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
+using DataFrames, Binscatters, DelimitedFiles, LaTeXStrings, IntervalArithmetic, IntervalRootFinding,
+Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
 xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
 ## Logistics
 big_run      = false #true        
-file_str     ="fix_hbar10_chi0" #ARGS[1]                              
+file_str     = "fix_hbar10" #ARGS[1]                              
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
 file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
 file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
@@ -31,8 +32,9 @@ if big_run == false
     N_sim_macro_est_alp  = 1000        # number of panels for ALP simulation
 else
     vary_z_N             = 201         # number of gridpoints for first-order 
+    N_sim_micro          = 2*10^4      # number of workers for wage simulations
     N_sim_macro          = 10^4        # number of panels for macro stats exc. ALP
-    N_sim_macro_workers  = 5*10^3      # number of workers for ALP simulation
+    N_sim_macro_workers  = 5000        # number of workers for ALP simulation
     N_sim_macro_est_alp  = 10^4        # number of panels for ALP simulation
 end
 
@@ -59,25 +61,27 @@ end
 
 # Get moments (check for multiplicity and verfiy solutions are the same)
 modd       = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
-shocks     = rand_shocks(; N_sim_macro = N_sim_macro, N_sim_macro_workers = N_sim_macro_workers, N_sim_macro_est_alp = N_sim_macro_est_alp)
+@unpack P_z, p_z, z_ss_idx = modd
+shocks     = rand_shocks(P_z, p_z; N_sim_macro = N_sim_macro, N_sim_macro_workers = N_sim_macro_workers, z0_idx = z_ss_idx)
 
 if fix_a == false
+   
+    sol          = solveModel(modd; tol1 = 10^(-13), tol2 = 10^(-13), tol3 =  10^(-13), noisy = false)
+    @time output = simulate(modd, shocks; check_mult = false, est_alp = true)         # skip multiplicity check
 
-    @time output     = simulate(modd, shocks; check_mult = false)         # skip multiplicity check
-    @time output2    = simulate(modd, shocks; check_mult = true)          # check multiplicity of roots (slow)
+    # check for multiplicity roots
+    println("Checking for multiplicity of roots..")
+    sol   = solveModel(modd; tol1 = 10^(-13), tol2 = 10^(-13), tol3 =  10^(-13), noisy = false)
+    a_min = 10^-8
+    a_max = 10
 
-    if (output2.flag == 0)
-        @assert(isapprox(output.std_Δlw, output2.std_Δlw), 10^-8)   # check on multiplicity of effort 
-        @assert(isapprox(output.dlw1_du, output2.dlw1_du), 10^-8)   # check on multiplicity of effort
-        @assert(isapprox(output.u_ss, output2.u_ss), 10^-8)         # check on multiplicity of effort
-        @assert(isapprox(output.dlw_dly, output2.dlw_dly), 10^-8)   # check on multiplicity of effort 
-        @assert(isapprox(output.alp_ρ, output2.alp_ρ), 10^-8)       # check on multiplicity of effort 
-        @assert(isapprox(output.alp_σ, output2.alp_σ), 10^-8)       # check on multiplicity of effort 
-        println("effort multiplicity check passed")
-    else
-        println("effort multiplicity check violated")
+    @unpack ψ, ε, q, κ, hp, σ_η, hbar = modd
+
+    for (iz,z) in enumerate(modd.zgrid)
+        println(roots( x -> x - ((z*x/sol.w_0 - (ψ/ε)*(hp(x)*σ_η)^2)/hbar)^(ε/(1+ε)) ,  a_min..a_max))
     end
 else 
+    sol          = solveModelFixedEffort(modd; a = Params[:a], noisy = false);
     @time output = simulateFixedEffort(modd, shocks; a = Params[:a])    
 end
 
@@ -105,8 +109,6 @@ println("std_Δlw: \t"*string(round.(std_Δlw, digits=4)))
 println("dlw1_du: \t"*string(round.(dlw1_du, digits=4)))
 println("dlw_dly: \t"*string(round.(dlw_dly, digits=4)))
 println("u_ss: \t\t"*string(round.(u_ss, digits=4)))
-println("alp_ρ: \t\t"*string(round.(alp_ρ, digits=4)))
-println("alp_σ: \t\t"*string(round.(alp_σ, digits=4)))
 
 # Untargeted moments
 println("------------------------")
@@ -114,15 +116,12 @@ println("UNTARGETED MOMENTS")
 println("------------------------")
 println("u_ss_2: \t"*string(round.(u_ss_2, digits=4)))
 println("dlu_dly: \t"*string(round.(dlu_dly, digits=4)))
-println("std_logu: \t"*string(round.(std_u, digits=4)))
-println("std_logz: \t"*string(round.(std_z, digits=4)))
+println("std logu: \t"*string(round.(std_u, digits=4)))
+println("std logz: \t"*string(round.(std_z, digits=4)))
+println("std logy: \t"*string(round.(alp_σ, digits=4)))
 
 # Compute some extra moments
-if fix_a == false
-    @unpack θ, w_0, Y, az = solveModel(modd; noisy = false);
-else 
-    @unpack θ, w_0, Y, az = solveModelFixedEffort(modd; a = Params[:a], noisy = false);
-end
+@unpack θ, w_0, Y, az  = sol
 
 println("a(μ_z): \t"*string(round.(az[modd.z_ss_idx], digits=4)))
 println("θ(μ_z): \t"*string(round.(θ, digits=4)))
@@ -180,9 +179,6 @@ JJ_H      = slopeFD(hall.J, zgrid; diff = "central")
 JJ_B0     = slopeFD(bonus_chi0.J, zgrid; diff = "central")
 c_term    = JJ_B - JJ_EVT
 
-## Print the C term at steady state
-println("C term at μ_z: \t"*string(round(c_term[z_ss_idx], digits=3)))
-
 ## Share of Incentive Wage Flexibility
 println("------------------------")
 println("WAGE FLEXIBILITY")
@@ -195,6 +191,9 @@ BWF_2    = -(c_term./WF)                # primary IWF measure
 println("IWF Share #1: \t\t"*string(round(1 - BWF_2[z_ss_idx], digits = 3)))
 println("IWF Share #2: \t\t"*string(round((IWF./WF)[z_ss_idx], digits = 3)))
 println("WF with χ = 0/WF \t"*string(round((WF_chi0./WF)[z_ss_idx], digits = 3)))
+
+## Print the C term at steady state
+println("C term at μ_z: \t\t"*string(round(c_term[z_ss_idx], digits=3)))
 
 if fix_a == false
    
@@ -354,7 +353,7 @@ end
 
 # Check convergence 
 indices    = sortperm(est_output[:,1])
-stop       = findlast(x -> x < 1, est_output[indices,1])
+stop       = findlast(x -> x < 0.025, est_output[indices,1])
 indices    = reverse(indices[1:stop])
 
 p1 = plot()

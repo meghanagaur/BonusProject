@@ -6,8 +6,7 @@ addprocs(SlurmManager())
 println(nprocs())
 
 # File location for saving jld output + slurm idx
-@everywhere hbar_val = 1.0
-file  = "pretesting_fix_hbar"*replace(string(hbar_val), "." => "")*"_chi0"
+file  = "pretesting_fix_chi0"
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
@@ -15,24 +14,28 @@ file  = "pretesting_fix_hbar"*replace(string(hbar_val), "." => "")*"_chi0"
 @everywhere begin
 
     # get moment targets and weight matrix
-    @unpack data_mom, mom_key, K, W = moment_targets()
-
-    ## Specifciations for the shocks in simulation
-    shocks  = rand_shocks()
-
+    @unpack data_mom, mom_key, K, W   = moment_targets()
+    W[mom_key[:u_ss], mom_key[:u_ss]] = 10.0
+    
     # Define the baseline values
-    param_vals  = OrderedDict{Symbol, Real}([ 
-                    (:ε,   0.3),         # ε
-                    (:σ_η, 0.0),         # σ_η 
-                    (:χ, 0.0),           # χ
-                    (:γ, 0.4916),        # γ
-                    (:hbar, hbar_val),   # hbar
-                    (:ρ, 0.9808),        # ρ
-                    (:σ_ϵ, 0.0042),      # σ_ϵ
-                    (:ι, 0.8) ])         # ι
+    @unpack ρ, σ_ϵ, ι = model()
+    param_vals        = OrderedDict{Symbol, Real}([ 
+                        (:a, 1.0),           # effort 
+                        (:ε,   0.5),         # ε
+                        (:σ_η, 0.0),         # σ_η 
+                        (:χ, 0.0),           # χ
+                        (:γ, 0.4916),        # γ
+                        (:hbar, 1.0),        # hbar
+                        (:ρ, ρ),             # ρ
+                        (:σ_ϵ, σ_ϵ),         # σ_ϵ
+                        (:ι, ι) ])           # ι
+
+    # Specifciations for the shocks in simulation
+    @unpack P_z, p_z, z_ss_idx = model(ρ = param_vals[:ρ], σ_ϵ = param_vals[:σ_ϵ])
+    shocks  = rand_shocks(P_z, p_z; N_sim_macro_workers = 1, z0_idx = z_ss_idx)
 
     # Parameters we will fix (if any) in: ε, σ_η, χ, γ, hbar, ρ, σ_ϵ
-    params_fix   = [:χ, :hbar] 
+    params_fix   = [:χ, :hbar, :ρ, :σ_ϵ] 
     param_bounds = get_param_bounds()
     for p in params_fix
         delete!(param_bounds, p)
@@ -50,7 +53,7 @@ file  = "pretesting_fix_hbar"*replace(string(hbar_val), "." => "")*"_chi0"
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 50000
+    I_max        = 5*10^4
     lb           = zeros(J)
     ub           = zeros(J)
 
@@ -65,6 +68,7 @@ file  = "pretesting_fix_hbar"*replace(string(hbar_val), "." => "")*"_chi0"
 end
 
 # Evaluate the objective function for each parameter vector
+I_max =10
 @time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W), 1:I_max) 
 
 # Kill the processes

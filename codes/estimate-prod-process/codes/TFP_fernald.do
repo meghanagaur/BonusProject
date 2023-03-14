@@ -3,10 +3,9 @@ cd "/Users/meghanagaur/BonusProject/codes/estimate-prod-process/codes"
 set graphics off
 
 * Load the Fernald data series
-import excel  date=A dtfp_util=N using "../data/quarterly_tfp.xlsx", sheet("quarterly") clear
+import excel date = A dtfp_util = N using "../data/quarterly_tfp.xlsx", sheet("quarterly") clear
 
 * Clean the data
-
 drop if _n == 1 | _n ==2
 
 gen year    = substr(date, 1,4)
@@ -26,15 +25,12 @@ tsset yq
 
 * set base year
 keep if year <= 2019 & year >= 1951
-gen tfp     = 100 if _n == 1
+gen ltfp      = log(100) if _n == 1
 
 local N = _N
 forvalues i = 2/`N' {
-	replace tfp = exp(log(l.tfp) + dtfp/400) in `i'
+	replace ltfp = l.ltfp + dtfp/400 in `i'
 }
-
-* Compute logs 
-gen ltfp = log(tfp)
 
 * HP-filter with smoothing parameter 
 tsfilter hp ltfp_hp     = ltfp, smooth(100000)
@@ -42,6 +38,9 @@ tsfilter hp ltfp_hp_low = ltfp, smooth(1600)
 
 * Standard deviations
 summ ltfp_hp  ltfp_hp_low
+
+* .0160301 for 10^5
+* .0096429 for 1600
 
 * Compute autocorrelations for 10^5
 ac ltfp_hp, lags(1) generate(ac)
@@ -54,3 +53,6 @@ ac ltfp_hp_low, lags(1) generate(ac_low)
 list ac_low in 1, clean
 
 reg ltfp_hp_low l.ltfp_hp_low
+
+* 0.87 for 10^5
+* 0.65 for 1600

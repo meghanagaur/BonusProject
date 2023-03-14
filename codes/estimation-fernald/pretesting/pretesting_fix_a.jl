@@ -6,7 +6,8 @@ addprocs(SlurmManager())
 println(nprocs())
 
 # File location for saving jld output + slurm idx
-file  = "pretesting_fix_a"
+@everywhere cyc = 1.0
+file  = "pretesting_fix_a_bwf"*replace(string(cyc), "." => "")
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
@@ -14,24 +15,25 @@ file  = "pretesting_fix_a"
 @everywhere begin
 
     # get moment targets and weight matrix
-    drop_mom = Dict(:dlw_dly => false, :std_Δlw => false, :alp_ρ => false, :alp_σ => false) # drop micro wage + ALP moments
-    @unpack data_mom, mom_key, K, W = moment_targets(; drop_mom = drop_mom)
+    drop_mom = Dict(:dlw_dly => false, :std_Δlw => false) # drop micro wage + ALP moments
+    @unpack data_mom, mom_key, K, W = moment_targets(dlw1_du = -cyc; drop_mom = drop_mom)
 
-    # Get productivity parameters 
-    shocks  = rand_shocks(N_sim_macro = 10^4, N_sim_macro_workers = 1, N_sim_micro = 1)
-    ρ, σ_ϵ  = calibrateZ(shocks; ρ_y =  data_mom[mom_key[:alp_ρ]], σ_y = data_mom[mom_key[:alp_σ]])
-        
     # Define the baseline values
-    param_vals  = OrderedDict{Symbol, Real}([
-                    (:a, 1.0),           # fixed effort 
-                    (:ε,   1.0),         # ε 
+    @unpack ρ, σ_ϵ, ι = model()
+    param_vals        = OrderedDict{Symbol, Real}([ 
+                    (:a, 1.0),           # effort 
+                    (:ε,   1.0),         # ε
                     (:σ_η, 0.0),         # σ_η 
                     (:χ, 0.0),           # χ
                     (:γ, 0.4916),        # γ
                     (:hbar, 1.0),        # hbar
                     (:ρ, ρ),             # ρ
                     (:σ_ϵ, σ_ϵ),         # σ_ϵ
-                    (:ι, 0.8) ])         # ι
+                    (:ι, ι) ])           # ι
+
+    # Specifciations for the shocks in simulation
+    @unpack P_z, p_z, z_ss_idx = model(ρ = param_vals[:ρ], σ_ϵ = param_vals[:σ_ϵ])
+    shocks  = rand_shocks(P_z, p_z; N_sim_macro_workers = 1, N_sim_micro = 1, T_sim_micro = 1, z0_idx = z_ss_idx)
 
     # Parameters we will fix (if any) in: ε, σ_η, χ, γ, hbar, ρ, σ_ϵ
     params_fix   = [:hbar, :ε, :σ_η, :ρ, :σ_ϵ] 
@@ -52,7 +54,7 @@ file  = "pretesting_fix_a"
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 100^2
+    I_max        = 200^2
     lb           = zeros(J)
     ub           = zeros(J)
 

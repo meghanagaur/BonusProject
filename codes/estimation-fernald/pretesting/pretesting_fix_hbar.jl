@@ -16,22 +16,27 @@ file  = "pretesting_fix_hbar"*replace(string(hbar_val), "." => "")
     # get moment targets and weight matrix
     @unpack data_mom, mom_key, K, W = moment_targets()
 
-    ## Specifciations for the shocks in simulation
-    shocks  = rand_shocks()
-
     # Define the baseline values
-    param_vals  = OrderedDict{Symbol, Real}([ 
-                    (:ε,   0.3),         # ε
-                    (:σ_η, 0.2759),      # σ_η 
-                    (:χ, 0.4417),        # χ
+    
+    # Define the baseline values
+    @unpack ρ, σ_ϵ, ι = model()
+    param_vals        = OrderedDict{Symbol, Real}([ 
+                    (:a, 1.0),           # effort 
+                    (:ε,   0.5),         # ε
+                    (:σ_η, 0.0),         # σ_η 
+                    (:χ, 0.0),           # χ
                     (:γ, 0.4916),        # γ
-                    (:hbar, hbar_val),   # hbar
-                    (:ρ, 0.95^(1/3)),    # ρ
-                    (:σ_ϵ, 0.003),       # σ_ϵ
-                    (:ι, 0.8) ])         # ι
+                    (:hbar, 1.0),        # hbar
+                    (:ρ, ρ),             # ρ
+                    (:σ_ϵ, σ_ϵ),         # σ_ϵ
+                    (:ι, ι) ])           # ι
+
+    # Specifciations for the shocks in simulation
+    @unpack P_z, p_z, z_ss_idx = model(ρ = param_vals[:ρ], σ_ϵ = param_vals[:σ_ϵ])
+    shocks  = rand_shocks(P_z, p_z; N_sim_macro_workers = 1, z0_idx = z_ss_idx)
 
     # Parameters we will fix (if any) in ε, σ_η, χ, γ, hbar 
-    params_fix   = [:hbar] 
+    params_fix   = [:hbar, :ρ, :σ_ϵ] 
     param_bounds = get_param_bounds()
     for p in params_fix
         delete!(param_bounds, p)
@@ -49,7 +54,7 @@ file  = "pretesting_fix_hbar"*replace(string(hbar_val), "." => "")
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 50000
+    I_max        = 5*10^4
     lb           = zeros(J)
     ub           = zeros(J)
 

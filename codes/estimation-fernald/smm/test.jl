@@ -3,22 +3,22 @@ using DelimitedFiles
 cd(dirname(@__FILE__))
 
 ## Logistics
-file_str         = "filename"
-file_load        = "../jld/pretesting_"*file_str*".jld2"  # file to-load location
-file_save        = "../jld/estimation_"*file_str*".txt"   # file to-save 
+file_str         = "fix_a_bwf10"
+file_load        = "jld/pretesting_"*file_str*".jld2"  # file to-load location
+file_save        = "jld/estimation_"*file_str*".txt"   # file to-save 
 N_procs          = 20                                     # number of jobs in job array
-N_string         = 50                                     # length of each worker string
+N_string         = 1                                     # length of each worker string
 
 # Local optimization settings if using NLopt
 algo_nlopt       = :NLopt                                 # set to :OPTIM if using Optim
 
 # Task number for job array
-idx = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
+idx = 1 #parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
 
 println("JLD FILE = ", file_str)
 
 # Load helper functions
-include("../../functions/smm_settings.jl")         # SMM inputs, settings, packages, etc.
+include("../functions/smm_settings.jl")         # SMM inputs, settings, packages, etc.
 
 # Load the pretesting ouput. Use the "best" Sobol points for our starting points.
 @unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W, fix_a = load(file_load) 
@@ -94,7 +94,7 @@ println("Threads: ", Threads.nthreads())
 
 # Run the optimization code 
 @time output = tiktak(init_points, file_save, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
-                        opt_1 = opt_1, opt_2 = opt_2, fix_a = fix_a)
+                        opt_1 = opt_1, opt_2 = opt_2, fix_a = fix_a, test = false)
 
 # Print output 
 for i = 1:N_string

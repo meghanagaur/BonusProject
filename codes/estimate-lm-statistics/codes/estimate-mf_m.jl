@@ -3,7 +3,7 @@ using CSV, DataFrames, Optim, StatsBase
 cd(dirname(@__FILE__))
 
 # Load the vacancy, unemploymentdatda
-df = DataFrame(CSV.File(pwd()*"/data/mf_rates_monthly.csv"))
+df = DataFrame(CSV.File("../data/mf_rates_monthly.csv"))
 
 # get relevant data
 idx       = findfirst(!ismissing, df.vacancies)
@@ -30,32 +30,32 @@ function obj2(ι, θ, frate_d)
 end
 
 # match monthly job-finding rates in the data, given tightness in the data - SSR obj
-opt     = Optim.optimize(ι -> obj(ι, tightness[1:end-1], frates[1:end-1]), 0.2, 20, Brent())
+opt     = Optim.optimize(ι -> obj(ι, tightness[1:end-1], frates[1:end-1]), 0.2, 2, Brent())
 ι_opt   = Optim.minimizer(opt)
 #0.8956788079165414
  
 # match monthly job-finding rates in the data, given tightness in the data - MAX obj
-opt     = Optim.optimize(ι -> obj2(ι, tightness[1:end-1], frates[1:end-1]), 0.2, 20, Brent())
+opt     = Optim.optimize(ι -> obj2(ι, tightness[1:end-1], frates[1:end-1]), 0.2, 2, Brent())
 ι_opt   = Optim.minimizer(opt)
 #0.835656603805031
 
 # match the average job-finding rate data over shorter series, given tightness in the data
-opt     = Optim.optimize(ι -> obj(ι, tightness[1:end-1],  mean(frates[1:end-1])), 0.2, 20, Brent())
+opt     = Optim.optimize(ι -> obj(ι, tightness[1:end-1],  mean(frates[1:end-1])), 0.2, 2, Brent())
 ι_opt   = Optim.minimizer(opt)
 #0.8299221156411114
 
 # match the average job-finding rate data over shorter series, given average tightness in the data
-opt       = Optim.optimize(ι -> obj(ι, mean(tightness), mean(frates[1:end-1])), 0.2, 20, Brent())
+opt       = Optim.optimize(ι -> obj(ι, mean(tightness), mean(frates[1:end-1])), 0.2, 2, Brent())
 ι_opt     = Optim.minimizer(opt)
 #0.8961947884957904
 
 # match the average job-finding rate data over ENTIRE series, given tightness in the data
-opt     = Optim.optimize(ι -> obj(ι, tightness[1:end-1], df.avg_frate[1]), 0.2, 20, Brent())
+opt     = Optim.optimize(ι -> obj(ι, tightness[1:end-1], df.avg_frate[1]), 0.2, 2, Brent())
 ι_opt   = Optim.minimizer(opt)
 #1.1399219041519928
 
 # match the average job-finding rate over ENTIRE SERIES, for average tightness in shorter series 
-opt       = Optim.optimize(ι -> obj(ι, mean(tightness),  df.avg_frate[1]), 0.2, 20, Brent())
+opt       = Optim.optimize(ι -> obj(ι, mean(tightness),  df.avg_frate[1]), 0.2, 2, Brent())
 ι_opt     = Optim.minimizer(opt)
 #1.3297469539291658
 
@@ -78,8 +78,7 @@ opt       = Optim.optimize(ι -> obj(ι, 1, 0.47), 0.2, 20,  Brent())
 ι_opt     = Optim.minimizer(opt)
 #0.9180482789470614
 
-
 fr(1,1.25)
 fr(1,0.92)
 fr(1,0.8)
-
+s/(s+f)  = 0.06

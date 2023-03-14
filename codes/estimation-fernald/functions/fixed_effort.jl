@@ -124,7 +124,7 @@ end
 """
 Simulate the model with fixed effort.
 """
-function simulateFixedEffort(modd, shocks; u0 = 0.069, a = 1.0)
+function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0)
     
     # Initialize moments to export (default = NaN)
     std_Δlw   = 0.0  # st dev of YoY wage growth
@@ -139,7 +139,7 @@ function simulateFixedEffort(modd, shocks; u0 = 0.069, a = 1.0)
     u_ss_2    = 0.0  # u_ss <- nonstochastic steady state
 
     # Get all of the relevant parameters, functions for the model
-    @unpack zgrid, logz, N_z, P_z, p_z, ψ, f, s, z_ss_idx = modd 
+    @unpack zgrid, logz, N_z, P_z, p_z, ψ, f, s, z_ss_idx, ρ, σ_ϵ = modd 
 
     # Generate model data for every point on zgrid:
 
@@ -175,36 +175,38 @@ function simulateFixedEffort(modd, shocks; u0 = 0.069, a = 1.0)
 
     end
 
-    # Composite flag
+    # Composite flag; compute simulation for 3 standard deviations of z shock
+    σ_z  = σ_ϵ/sqrt(1 - ρ^2)
+    idx  = findfirst(x-> x >= -3σ_z, logz) 
     flag = max(maximum(flag_z), sum(flag_IR_z) == N_z)
 
     # only compute moments if equilibria were found for all z
     if (flag < 1) 
 
         # Unpack the relevant shocks
-        @unpack burnin, z_shocks_macro, T_sim_macro, N_sim_macro = shocks
-        z_idx_macro    = simulateZShocks(P_z, p_z, z_shocks_macro, N_sim_macro, T_sim_macro + burnin; z_0_idx = z_ss_idx)
+        @unpack burnin, z_idx_macro, T_sim_macro, N_sim_macro = shocks
 
         # Compute model data for long z_t series (trim to post-burn-in when computing moment)
 
         # Macro moments 
+        z_idx_macro    = max.(z_idx_macro, idx)
         @views lw1_t   = lw1_z[z_idx_macro]     # E[log w_1 | z_t] series
         @views θ_t     = θ_z[z_idx_macro]       # θ(z_t) series
         @views f_t     = f_z[z_idx_macro]       # f(θ(z_t)) series
         zshocks_macro  = zgrid[z_idx_macro]     # z shocks
 
         # Bootstrap across N_sim_macro simulations
-        dlw1_du_n     = zeros(N_sim_macro)
-        std_u_n       = zeros(N_sim_macro)
-        alp_ρ_n       = zeros(N_sim_macro) 
-        alp_σ_n       = zeros(N_sim_macro)
-        dlu_dly_n     = zeros(N_sim_macro)
+        dlw1_du_n      = zeros(N_sim_macro)
+        std_u_n        = zeros(N_sim_macro)
+        alp_ρ_n        = zeros(N_sim_macro) 
+        alp_σ_n        = zeros(N_sim_macro)
+        dlu_dly_n      = zeros(N_sim_macro)
 
         # Compute evolution of unemployment for the z_t path
-        T             = T_sim_macro + burnin
-        T_q_macro     = Int(T_sim_macro/3)
-        u_t           = zeros(T, N_sim_macro)
-        u_t[1,:]     .= u0
+        T              = T_sim_macro + burnin
+        T_q_macro      = Int(T_sim_macro/3)
+        u_t            = zeros(T, N_sim_macro)
+        u_t[1,:]      .= u0
 
         Threads.@threads for n = 1:N_sim_macro
 
@@ -239,17 +241,16 @@ function simulateFixedEffort(modd, shocks; u0 = 0.069, a = 1.0)
         dlu_dly = mean(dlu_dly_n)
 
         # Compute stochastic mean of unemployment: E[u_t | t > burnin]
-        u_ss_2    = mean(vec(mean(u_t[burnin+1:end,:], dims = 1)))
+        u_ss    = mean(vec(mean(u_t[burnin+1:end,:], dims = 1)))
 
         # Compute nonstochastic SS unemployment: define u_ss = s/(s + f(θ(z_ss)), at log z_ss = μ_z
-        u_ss      = s/(s  + f(θ_z[z_ss_idx]))
-
+        u_ss_2  = s/(s  + f(θ_z[z_ss_idx]))
     end
     
-    # determine an IR error for all initial z
-    IR_err = sum(abs.(err_IR_z))
+    # determine an IR error for all initial z within 3 uncond. standard deviations
+    IR_err = sum(abs.(err_IR_z[idx:end]))
 
     # Export the simulation results
     return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, u_ss_2 = u_ss_2, alp_ρ = alp_ρ, 
-    alp_σ = alp_σ, dlu_dly = dlu_dly, std_u = std_u, std_z = std_z, flag = flag, flag_IR = maximum(flag_IR_z), IR_err = IR_err)
+    alp_σ = alp_σ, dlu_dly = dlu_dly, std_u = std_u, std_z = std_z, flag = flag, flag_IR = maximum(flag_IR_z[idx:end]), IR_err = IR_err)
 end

@@ -14,27 +14,25 @@ ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase
 ## Required functions
 include("utils.jl")                     # basic utility functions  
 include("obj_func.jl")                  # objective functions
-include("simulation.jl")                # simulation functions
+include("simulation_v2.jl")             # simulation functions
 include("fixed_effort.jl")              # solve the model with fixed effort
 include("tik-tak.jl")                   # tik-tak code 
 
 """
 Empirical moments that we are targeting;
-We use the identity matrix.
+Use the identity weight matrix.
 """
-function moment_targets(; std_Δlw = 0.064, dlw1_du = -1.0, dlw_dly = 0.039, u_ss = 0.069, drop_mom = nothing)
+function moment_targets(; std_Δlw = 0.064, dlw1_du = -1.0, dlw_dly = 0.039, u_ss = 0.06, drop_mom = nothing)
     
     # ordering of the moments
     mom_key       = OrderedDict{Symbol, Int64}([   
                             (:std_Δlw, 1),
                             (:dlw1_du, 2),
                             (:dlw_dly, 3),
-                            (:u_ss, 4),
-                            (:alp_ρ, 5), 
-                            (:alp_σ, 6) ]) 
+                            (:u_ss, 4) ]) 
 
     # vector of moments
-    data_mom      = [std_Δlw, dlw1_du, dlw_dly, u_ss, alp_ρ, alp_σ]   
+    data_mom      = [std_Δlw, dlw1_du, dlw_dly, u_ss]   
     W             = Matrix(1.0I, length(data_mom), length(data_mom)) 
     
     if !isnothing(drop_mom)
@@ -57,10 +55,10 @@ function get_param_bounds()
 
     # parameter bounds
     return OrderedDict{Symbol, Array{Real,1}}([ 
-                        (:ε,  [0.3,   3.0]),        # ε
-                        (:σ_η, [0.2, 0.6]),         # σ_η 
+                        (:ε,  [0.3,   5.0]),        # ε
+                        (:σ_η, [0.1, 0.6]),         # σ_η 
                         (:χ, [0.0, 1.0]),           # χ
-                        (:γ, [0.3, 0.9]),           # γ
+                        (:γ, [0.1, 0.9]),           # γ
                         (:hbar, [0.1, 5.0])  ])     # hbar
 end
 

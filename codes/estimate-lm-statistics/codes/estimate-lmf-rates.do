@@ -1,4 +1,4 @@
-cd "/Users/meghanagaur/BonusProject/codes/estimate-lm-statistics"
+cd "/Users/meghanagaur/BonusProject/codes/estimate-lm-statistics/codes"
 
 * Download monthly SA unemp + emp data from CPS and vacancies from JOLTS (all in thousands)
 freduse UEMPLT5 CE16OV UNEMPLOY JTSJOL UNRATE, clear
@@ -41,7 +41,7 @@ gen tightness 		 = vacancies/unemp
 
 summ urate srate frate
 
-export delimited "data/mf_rates_monthly.csv", replace
+export delimited "../data/mf_rates_monthly.csv", replace
 
 * take quarterly averages to smooth data
 collapse (mean) urate frate srate vacancies unemp, by(qdate)
@@ -73,4 +73,4 @@ egen avg_urate     = mean(urate)
 * generate tightness
 gen tightness     = vacancies/unemp
 
-export delimited "data/mf_rates_quarterly.csv", replace
+export delimited "../data/mf_rates_quarterly.csv", replace

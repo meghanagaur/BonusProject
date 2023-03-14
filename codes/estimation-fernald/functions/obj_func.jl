@@ -49,7 +49,7 @@ function objFunction(xx, param_vals, param_est, shocks, data_mom, W; fix_a = fal
     flag       = out.flag
     flag_IR    = out.flag_IR
     IR_err     = out.IR_err
-    mod_mom    = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss, out.alp_ρ, out.alp_σ]
+    mod_mom    = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
     d          = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
 
     # Adjust f accordingly
@@ -115,7 +115,7 @@ function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, dat
     flag       = out.flag
     flag_IR    = out.flag_IR
     IR_err     = out.IR_err
-    mod_mom    = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss, out.alp_ρ, out.alp_σ]
+    mod_mom    = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
     d          = (mod_mom - data_mom)./abs.(data_mom)  #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
 
     # Adjust f accordingly

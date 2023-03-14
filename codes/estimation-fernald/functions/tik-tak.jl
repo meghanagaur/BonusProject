@@ -56,7 +56,7 @@ function tiktak(init_points, file, param_bounds, param_vals, param_est, shocks, 
 
             # Local optimization using NLopt algorithm/settings 
             else 
-                if i_last/I_max <= 0.7 || isnothing(opt_2)
+                if i_last/I_max <= 0.6 || isnothing(opt_2)
                     (min_f, arg_min, ret) = NLopt.optimize(opt_1, start)
                 else
                     (min_f, arg_min, ret) = NLopt.optimize(opt_2, start)

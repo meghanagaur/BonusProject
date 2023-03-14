@@ -15,7 +15,7 @@ linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, le
 
 ## Logistics
 big_run      = false #true        
-file_str     ="fix_hbar10_chi0" #ARGS[1]                              
+file_str     ="fix_a_bwf2" #ARGS[1]                              
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
 file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
 file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
@@ -180,9 +180,6 @@ JJ_H      = slopeFD(hall.J, zgrid; diff = "central")
 JJ_B0     = slopeFD(bonus_chi0.J, zgrid; diff = "central")
 c_term    = JJ_B - JJ_EVT
 
-## Print the C term at steady state
-println("C term at μ_z: \t"*string(round(c_term[z_ss_idx], digits=3)))
-
 ## Share of Incentive Wage Flexibility
 println("------------------------")
 println("WAGE FLEXIBILITY")
@@ -195,6 +192,9 @@ BWF_2    = -(c_term./WF)                # primary IWF measure
 println("IWF Share #1: \t\t"*string(round(1 - BWF_2[z_ss_idx], digits = 3)))
 println("IWF Share #2: \t\t"*string(round((IWF./WF)[z_ss_idx], digits = 3)))
 println("WF with χ = 0/WF \t"*string(round((WF_chi0./WF)[z_ss_idx], digits = 3)))
+
+## Print the C term at steady state
+println("C term at μ_z: \t"*string(round(c_term[z_ss_idx], digits=3)))
 
 if fix_a == false
    
