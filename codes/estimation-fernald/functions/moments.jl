@@ -248,13 +248,13 @@ end
 """
 Simulate moments for heatmaps
 """
-function heatmap_moments(; σ_η = 0.406231, χ = 0.578895, γ = 0.562862, hbar = 3.52046, ε = 0.3)
+function heatmap_moments(; σ_η = 0.406231, χ = 0.578895, γ = 0.562862, hbar = 1.0, ε = 0.3)
 
     baseline     = model(σ_η = σ_η, hbar = hbar, ε = ε, γ = γ,  χ = χ) 
     out          = simulate(baseline, shocks)
     dlogθ_dlogz  = dlogtheta(baseline)
 
-    mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss, dlogθ_dlogz, out.u_ss_2]  
+    mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss, dlogθ_dlogz]  
     
     # Flags
     flag     = out.flag
