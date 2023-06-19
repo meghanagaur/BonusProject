@@ -77,7 +77,7 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, est_alp = false)
 
         # Unpack the relevant shocks
         @unpack N_sim_micro, T_sim_micro, N_sim_macro, T_sim_macro, z_idx_macro, N_sim_macro_est_alp, N_sim_macro_workers, 
-            burnin, z_idx_micro, η_shocks_micro, s_shocks_micro, jf_shocks_micro = shocks
+        burnin, z_idx_micro, η_shocks_micro, s_shocks_micro, jf_shocks_micro, s_shocks_macro, jf_shocks_macro = shocks
 
         # scale normal shocks by σ_η
         η_shocks_micro = η_shocks_micro*σ_η 
@@ -135,7 +135,7 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, est_alp = false)
         if est_alp == true
             
             Threads.@threads for n = 1:N_sim_macro_est_alp
-                alp_ρ_n[n], alp_σ_n[n], dlu_dly_n[n] = simulateALP(z_idx_macro[:,n], s_shocks, jf_shocks, N_sim_macro_workers, T_sim_macro, 
+                alp_ρ_n[n], alp_σ_n[n], dlu_dly_n[n] = simulateALP(z_idx_macro[:,n], s_shocks_micro, jf_shocks_macro, N_sim_macro_workers, T_sim_macro, 
                                                                     burnin, T_q_macro, s, f_z, y_z)
             end
 

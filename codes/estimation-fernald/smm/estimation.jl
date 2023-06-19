@@ -37,14 +37,14 @@ if algo_nlopt == :OPTIM
     opt_1 = nothing
     opt_2 = nothing
 else
-    opt_1  = Opt(:LN_BOBYQA, J)  #Opt(:LN_SBPLX, J) 
+    opt_1  = Opt(:LN_BOBYQA, J)  #Opt(:LN_SBPLX, J) # nothing for Optim
     opt_2  = Opt(:LN_BOBYQA, J) 
 
     # Objective function
     # need to add dummy gradient: https://discourse.julialang.org/t/nlopt-forced-stop/47747/3
     obj(x, dummy_gradient!)   = objFunction(x, param_vals, param_est, shocks, data_mom, W; fix_a = fix_a)[1]
-    opt_2.min_objective       = obj
     opt_1.min_objective       = obj 
+    opt_2.min_objective       = obj
 
     # Bound constraints
     lower, upper              = get_bounds(param_est, param_bounds)
@@ -58,7 +58,7 @@ else
     opt_1.ftol_rel = 1e-4
     opt_1.ftol_abs = 1e-4
     opt_1.xtol_rel = 0.0  
-    opt_1.maxtime  = (60*60) 
+    opt_1.maxtime  = 1.25*(60*60) 
 
     opt_2.stopval  = 1e-4
     opt_2.ftol_rel = 1e-6

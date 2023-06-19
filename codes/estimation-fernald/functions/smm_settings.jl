@@ -14,7 +14,7 @@ ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase
 ## Required functions
 include("utils.jl")                     # basic utility functions  
 include("obj_func.jl")                  # objective functions
-include("simulation_v2.jl")             # simulation functions
+include("simulation_v3.jl")             # simulation functions
 include("fixed_effort.jl")              # solve the model with fixed effort
 include("tik-tak.jl")                   # tik-tak code 
 
@@ -51,11 +51,11 @@ end
 """
 Bounds on parameters to be estimated
 """
-function get_param_bounds()
+function get_param_bounds(; ε_lb = 0.3, ε_ub = 4.0)
 
     # parameter bounds
     return OrderedDict{Symbol, Array{Real,1}}([ 
-                        (:ε,  [0.3,   5.0]),        # ε
+                        (:ε,  [ε_lb, ε_ub]),        # ε
                         (:σ_η, [0.1, 0.6]),         # σ_η 
                         (:χ, [0.0, 1.0]),           # χ
                         (:γ, [0.1, 0.9]),           # γ

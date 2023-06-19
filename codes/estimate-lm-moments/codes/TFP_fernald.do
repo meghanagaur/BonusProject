@@ -1,6 +1,6 @@
 clear all
 
-cd "/Users/meghanagaur/BonusProject/codes/estimate-lm-statistics/codes"
+cd "/Users/meghanagaur/BonusProject/codes/estimate-lm-moments/codes"
 
 *set graphics off
 
@@ -77,8 +77,10 @@ save "../data/quarterly_data", replace
 
 * do some extra checks
 tsset 
-reg lurate ltfp
-reg lurate lalp
 
+reg ltightness ltfp
+reg lurate ltfp
+reg lurate ltfp
+reg lfrate ltightness
 reg f1.lurate ltfp
 reg f1.lurate lalp

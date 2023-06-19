@@ -39,7 +39,7 @@ function tiktak(init_points, file, param_bounds, param_vals, param_est, shocks, 
         if test == false
             
             # Local NM-Simplex algorithm with manually enforced bound constraints via logistic transformation
-            if isnothing(opt_1) 
+            if ( (isnothing(opt_1) && i_last/I_max <= 0.6 && !isnothing(opt_2)) || (isnothing(opt_1) && isnothing(opt_2)) )
 
                 optim           = Optim.optimize(x -> objFunction_WB(x, start, param_bounds, param_vals, param_est, shocks, data_mom, W; fix_a = fix_a)[1], 
                                     zeros(J), NelderMead(), Optim.Options(g_tol = crit, f_tol = crit, x_tol = crit, iterations = max_iters))

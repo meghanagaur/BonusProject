@@ -1,5 +1,5 @@
 
-cd "/Users/meghanagaur/BonusProject/codes/estimate-lm-statistics/codes"
+cd "/Users/meghanagaur/BonusProject/codes/estimate-lm-moments/codes"
 
 clear all 
 

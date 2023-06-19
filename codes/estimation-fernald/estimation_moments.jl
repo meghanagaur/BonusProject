@@ -88,46 +88,48 @@ end
 # Unpack parameters
 @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, alp_ρ, alp_σ, u_ss_2, dlu_dly, std_u, flag, flag_IR, IR_err, std_z  = output
 
+# CHANGE ROUNDING MODE TO ROUND NEAREST AWAY 
+
 # Estimated parameters
 println("------------------------")
 println("ESTIMATED PARAMETERS")
 println("------------------------")
-println("σ_η: \t\t"*string(round.(Params[:σ_η], digits=4)))
-println("χ: \t\t"*string(round.(Params[:χ], digits=4)))
-println("γ: \t\t"*string(round.(Params[:γ], digits=4)))
-println("hbar: \t\t"*string(round.(Params[:hbar], digits=4)))
-println("ε: \t\t"*string(round.(Params[:ε], digits=4)))
-println("ρ: \t\t"*string(round.(Params[:ρ], digits=4)))
-println("σ_ϵ: \t\t"*string(round.(Params[:σ_ϵ], digits=4)))
-println("ι: \t\t"*string(round.(Params[:ι], digits=4)))
+println("σ_η: \t\t"*string(round.(Params[:σ_η], RoundNearestTiesAway, sigdigits=3)))
+println("χ: \t\t"*string(round.(Params[:χ], RoundNearestTiesAway, sigdigits=3)))
+println("γ: \t\t"*string(round.(Params[:γ], RoundNearestTiesAway, sigdigits=3)))
+println("hbar: \t\t"*string(round.(Params[:hbar], RoundNearestTiesAway, sigdigits=3)))
+println("ε: \t\t"*string(round.(Params[:ε], RoundNearestTiesAway, sigdigits=3)))
+println("ρ: \t\t"*string(round.(Params[:ρ], RoundNearestTiesAway, sigdigits=3)))
+println("σ_ϵ: \t\t"*string(round.(Params[:σ_ϵ], RoundNearestTiesAway, sigdigits=3)))
+println("ι: \t\t"*string(round.(Params[:ι], RoundNearestTiesAway, sigdigits=3)))
 
 # Targeted moments
 println("------------------------")
 println("TARGETED MOMENTS")
 println("------------------------")
-println("std_Δlw: \t"*string(round.(std_Δlw, digits=4)))
-println("dlw1_du: \t"*string(round.(dlw1_du, digits=4)))
-println("dlw_dly: \t"*string(round.(dlw_dly, digits=4)))
-println("u_ss: \t\t"*string(round.(u_ss, digits=4)))
+println("std_Δlw: \t"*string(round.(std_Δlw, RoundNearestTiesAway, sigdigits=3)))
+println("dlw1_du: \t"*string(round.(dlw1_du, RoundNearestTiesAway, sigdigits=3)))
+println("dlw_dly: \t"*string(round.(dlw_dly, RoundNearestTiesAway, sigdigits=3)))
+println("u_ss: \t\t"*string(round.(u_ss, RoundNearestTiesAway, sigdigits=3)))
 
 # Untargeted moments
 println("------------------------")
 println("UNTARGETED MOMENTS")
 println("------------------------")
-println("u_ss_2: \t"*string(round.(u_ss_2, digits=4)))
-println("dlu_dly: \t"*string(round.(dlu_dly, digits=4)))
-println("std logu: \t"*string(round.(std_u, digits=4)))
-println("std logz: \t"*string(round.(std_z, digits=4)))
-println("std logy: \t"*string(round.(alp_σ, digits=4)))
+println("u_ss_2: \t"*string(round.(u_ss_2, RoundNearestTiesAway, sigdigits=3)))
+println("dlu_dly: \t"*string(round.(dlu_dly, RoundNearestTiesAway, sigdigits=3)))
+println("std logu: \t"*string(round.(std_u, RoundNearestTiesAway, sigdigits=3)))
+println("std logz: \t"*string(round.(std_z, RoundNearestTiesAway, sigdigits=3)))
+println("std logy: \t"*string(round.(alp_σ, RoundNearestTiesAway, sigdigits=3)))
 
 # Compute some extra moments
 @unpack θ, w_0, Y, az  = sol
 
-println("a(μ_z): \t"*string(round.(az[modd.z_ss_idx], digits=4)))
-println("θ(μ_z): \t"*string(round.(θ, digits=4)))
-println("W (ss): \t"*string(round.(w_0/modd.ψ, digits=4)))
-println("Y (ss): \t"*string(round.(Y, digits=4)))
-println("W/Y (ss): \t"*string(round.(w_0/(modd.ψ*Y), digits=4)))
+println("a(μ_z): \t"*string(round.(az[modd.z_ss_idx], RoundNearestTiesAway, sigdigits=3)))
+println("θ(μ_z): \t"*string(round.(θ, RoundNearestTiesAway, sigdigits=3)))
+println("Y (ss): \t"*string(round.(Y, RoundNearestTiesAway, sigdigits=3)))
+println("W (ss): \t"*string(round.(w_0/modd.ψ, RoundNearestTiesAway, sigdigits=3)))
+println("W/Y (ss): \t"*string(round.(w_0/(modd.ψ*Y), RoundNearestTiesAway, sigdigits=3)))
 
 ## Vary initial productivity z_0 
 
@@ -143,10 +145,11 @@ else
     bonus_chi0 = vary_z1(modd_chi0; fix_a = fix_a)
 end
 
+# Get primitives
 @unpack P_z, zgrid, N_z, ρ, β, s, z_ss_idx, q, ι, κ, χ, μ_z, ψ, hp, logz = modd
 
 # Get Hall aggregates
-hall       = solveHall(modd, bonus.Y, bonus.W)
+hall         = solveHall(modd, bonus.Y, bonus.W)
 
 # Print out some cyclical fluctuations
 dlY_dlz      = slopeFD(log.(max.(eps(), bonus.Y)), logz; diff = "central")
@@ -156,10 +159,10 @@ tt_B         = slopeFD(bonus.θ, zgrid).*zgrid./bonus.θ
 tt_H         = slopeFD(hall.θ, zgrid).*zgrid./hall.θ
 tt_B0        = slopeFD(bonus_chi0.θ, zgrid).*zgrid./bonus_chi0.θ
 
-println("dlY_dlz: \t"*string(round.(dlY_dlz[z_ss_idx], digits=4)))
-println("dlW_dlz: \t"*string(round.(dlW_dlz[z_ss_idx], digits=4)))
-println("dla_dlz: \t"*string(round.(dla0_dlz[z_ss_idx], digits=4)))
-println("dlθ_dlz: \t"*string(round.(tt_B[z_ss_idx], digits=4)))
+println("dla_dlz: \t"*string(round.(dla0_dlz[z_ss_idx], RoundNearestTiesAway, sigdigits=3)))
+println("dlY_dlz: \t"*string(round.(dlY_dlz[z_ss_idx], RoundNearestTiesAway, sigdigits=3)))
+println("dlW_dlz: \t"*string(round.(dlW_dlz[z_ss_idx], RoundNearestTiesAway, sigdigits=3)))
+println("dlθ_dlz: \t"*string(round.(tt_B[z_ss_idx], RoundNearestTiesAway, sigdigits=3)))
 
 # Plot labels
 rigid      = "Rigid Wage: fixed w and a"
@@ -186,14 +189,14 @@ println("------------------------")
 
 ## Share of bargained wage flexibility
 WF_chi0  = slopeFD(bonus_chi0.W, zgrid) # total wage flexibility
-BWF_2    = -(c_term./WF)                # primary IWF measure
+BWF_1    = -(c_term./WF)                # primary IWF measure
 
-println("IWF Share #1: \t\t"*string(round(1 - BWF_2[z_ss_idx], digits = 3)))
-println("IWF Share #2: \t\t"*string(round((IWF./WF)[z_ss_idx], digits = 3)))
-println("WF with χ = 0/WF \t"*string(round((WF_chi0./WF)[z_ss_idx], digits = 3)))
+println("IWF Share #1: \t\t"*string(round(1 - BWF_1[z_ss_idx], RoundNearestTiesAway, sigdigits = 3)))
+println("IWF Share #2: \t\t"*string(round((IWF./WF)[z_ss_idx], RoundNearestTiesAway, sigdigits = 3)))
+println("WF with χ = 0/WF \t"*string(round((WF_chi0./WF)[z_ss_idx], RoundNearestTiesAway, sigdigits = 3)))
 
 ## Print the C term at steady state
-println("C term at μ_z: \t\t"*string(round(c_term[z_ss_idx], digits=3)))
+println("C term at μ_z: \t\t"*string(round(c_term[z_ss_idx], RoundNearestTiesAway, sigdigits=3)))
 
 if fix_a == false
    
@@ -353,7 +356,7 @@ end
 
 # Check convergence 
 indices    = sortperm(est_output[:,1])
-stop       = findlast(x -> x < 0.025, est_output[indices,1])
+stop       = findlast(x -> x < 0.05, est_output[indices,1])
 indices    = reverse(indices[1:stop])
 
 p1 = plot()

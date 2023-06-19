@@ -15,21 +15,21 @@ file  = "pretesting_fix_a_bwf"*replace(string(cyc), "." => "")
 @everywhere begin
 
     # get moment targets and weight matrix
-    drop_mom = Dict(:dlw_dly => false, :std_Δlw => false) # drop micro wage + ALP moments
+    drop_mom = Dict(:dlw_dly => false, :std_Δlw => false) # drop micro wage moments
     @unpack data_mom, mom_key, K, W = moment_targets(dlw1_du = -cyc; drop_mom = drop_mom)
 
     # Define the baseline values
     @unpack ρ, σ_ϵ, ι = model()
     param_vals        = OrderedDict{Symbol, Real}([ 
-                    (:a, 1.0),           # effort 
-                    (:ε,   1.0),         # ε
-                    (:σ_η, 0.0),         # σ_η 
-                    (:χ, 0.0),           # χ
-                    (:γ, 0.4916),        # γ
-                    (:hbar, 1.0),        # hbar
-                    (:ρ, ρ),             # ρ
-                    (:σ_ϵ, σ_ϵ),         # σ_ϵ
-                    (:ι, ι) ])           # ι
+                        (:a, 1.0),           # effort 
+                        (:ε,   1.0),         # ε
+                        (:σ_η, 0.0),         # σ_η 
+                        (:χ, 0.0),           # χ
+                        (:γ, 0.4916),        # γ
+                        (:hbar, 1.0),        # hbar
+                        (:ρ, ρ),             # ρ
+                        (:σ_ϵ, σ_ϵ),         # σ_ϵ
+                        (:ι, ι) ])           # ι
 
     # Specifciations for the shocks in simulation
     @unpack P_z, p_z, z_ss_idx = model(ρ = param_vals[:ρ], σ_ϵ = param_vals[:σ_ϵ])
@@ -72,7 +72,7 @@ end
 @time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W; fix_a = true), 1:I_max) 
 
 # Kill the processes
-#rmprocs(nprocs())
+rmprocs(workers())
 
 # Clean the output 
 

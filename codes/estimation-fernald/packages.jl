@@ -23,6 +23,8 @@ Pkg.add("Binscatters")
 Pkg.add("DataFrames")
 Pkg.add("LaTeXStrings")
 Pkg.add("SparseArrays")
+Pkg.add("IntervalRootFinding")
+Pkg.add("IntervalArithmetic")
 
 
 

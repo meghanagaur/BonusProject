@@ -175,7 +175,7 @@ T_sim_macro             = num periods for agg sequences: 69 years
 burnin                  = length burn-in for agg sequence
 N_sim_macro_est_alp     = num seq to avg across for prod moments (<= N_sim_macro)
 """
-function rand_shocks(P_z, p_z; z0_idx = 0, N_sim_micro = 10^4, T_sim_micro = 1500, N_sim_macro = 10^4, 
+function rand_shocks(P_z, p_z; z0_idx = 0, N_sim_micro = 10^4, T_sim_micro = 2000, N_sim_macro = 10^4, 
     N_sim_macro_workers = 10^3, T_sim_macro = 828, burnin = 1000, N_sim_macro_est_alp = 10^3, set_seed = true, seed = 512)
 
     if set_seed == true
@@ -248,10 +248,11 @@ function simulateWageMoments(η_shocks_micro, s_shocks_micro, jf_shocks_micro, z
 
     @views @inbounds for t = 2:T
 
+        # index by current z_t
         zt    = z_idx_micro[t]
         ft    = f_z[zt]
-        hp_zz = hp_z[zt,:]
-        pt_zz = pt_z[zt,:]
+        hp_zz = hp_z[zt,:]  
+        pt_zz = pt_z[zt,:] 
         
         Threads.@threads for n = 1:N_sim_micro
 
@@ -280,9 +281,9 @@ function simulateWageMoments(η_shocks_micro, s_shocks_micro, jf_shocks_micro, z
     end
 
     # compute micro wage moments using post-burn-in data
-    act_pb = active[:, burnin+1:end]'  # T x N
-    lw_pb  = lw[:, burnin+1:end]'      # T x N 
-    pt_pb  = pt[:, burnin+1:end]'      # T x N
+    act_pb = active[:, burnin+1:end]'  # reshape to T x N
+    lw_pb  = lw[:, burnin+1:end]'      # reshape to T x N 
+    pt_pb  = pt[:, burnin+1:end]'      # reshape T x N
     avg_pt = mean(pt_pb[act_pb.==1.0])
 
     # compute YoY wage changes for 13 month spells
@@ -298,8 +299,8 @@ function simulateWageMoments(η_shocks_micro, s_shocks_micro, jf_shocks_micro, z
         # go through employment spells
         @inbounds for i = 2:lastindex(sep)
             
-            t0    = sep[i-1] + 1
-            t1    = sep[i] - 1
+            t0    = sep[i-1] + 1 # beginning of job spell
+            t1    = sep[i] - 1   # end of job spell
             
             if t1 - t0 >= 12
                 spells = collect(t0:12:t1)

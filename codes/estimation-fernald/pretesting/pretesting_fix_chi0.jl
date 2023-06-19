@@ -6,7 +6,7 @@ addprocs(SlurmManager())
 println(nprocs())
 
 # File location for saving jld output + slurm idx
-file  = "pretesting_fix_chi0"
+file  = "pretesting_fix_chi0_cyc0"
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
@@ -14,8 +14,9 @@ file  = "pretesting_fix_chi0"
 @everywhere begin
 
     # get moment targets and weight matrix
-    @unpack data_mom, mom_key, K, W   = moment_targets()
-    W[mom_key[:u_ss], mom_key[:u_ss]] = 10.0
+    drop_mom = Dict(:dlw1_du => false) # drop micro wage + ALP moments
+    @unpack data_mom, mom_key, K, W = moment_targets(; drop_mom = drop_mom)
+    #W[mom_key[:u_ss], mom_key[:u_ss]] = 10.0
     
     # Define the baseline values
     @unpack ρ, σ_ϵ, ι = model()
@@ -36,7 +37,7 @@ file  = "pretesting_fix_chi0"
 
     # Parameters we will fix (if any) in: ε, σ_η, χ, γ, hbar, ρ, σ_ϵ
     params_fix   = [:χ, :hbar, :ρ, :σ_ϵ] 
-    param_bounds = get_param_bounds()
+    param_bounds = get_param_bounds(ε_ub = 5.0)
     for p in params_fix
         delete!(param_bounds, p)
     end
@@ -72,7 +73,7 @@ I_max =10
 @time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W), 1:I_max) 
 
 # Kill the processes
-rmprocs(nprocs())
+rmprocs(workers())
 
 # Clean the output 
 
