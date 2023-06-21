@@ -27,17 +27,17 @@ include("../../functions/smm_settings.jl")         # SMM inputs, settings, packa
 @unpack P_z, p_z, z_ss_idx = model(ρ = param_vals[:ρ], σ_ϵ = param_vals[:σ_ϵ])
 
 if fix_a == true
-    shocks  = rand_shocks(P_z, p_z; N_sim_macro_workers = 1, N_sim_micro = 1, T_sim_micro = 1, z0_idx = z_ss_idx)
+    shocks  = rand_shocks(P_z, p_z; N_sim_macro_alp_workers = 1, N_sim_micro = 1, T_sim_micro = 1, z0_idx = z_ss_idx)
 else
-    shocks  = rand_shocks(P_z, p_z; N_sim_macro_workers = 1, z0_idx = z_ss_idx)
+    shocks  = rand_shocks(P_z, p_z; N_sim_macro_alp_workers = 1, z0_idx = z_ss_idx)
 end
 
 # Define the NLopt optimization object
 if algo_nlopt == :OPTIM
-    opt_1 = nothing
-    opt_2 = nothing
+    opt_1  = nothing
+    opt_2  = nothing
 else
-    opt_1  = Opt(:LN_BOBYQA, J)  #Opt(:LN_SBPLX, J) # nothing for Optim
+    opt_1  = nothing #Opt(:LN_NELDERMEAD, J)  #Opt(:LN_SBPLX, J) 
     opt_2  = Opt(:LN_BOBYQA, J) 
 
     # Objective function

@@ -165,7 +165,7 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0)
 
         if flag_z[iz] < 1             
             
-            # log wage of new hires
+            # log wage of new hires (wage is constant throughout contract)
             lw1_z[iz]     = log(max(eps(), w_0))
            
             # Tightness and job-finding rate, given z_0 = z
@@ -175,10 +175,10 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0)
 
     end
 
-    # Composite flag; compute simulation for 3 standard deviations of z shock
+    # Composite flag; compute simulation only for 3 standard deviations of z shock
     σ_z  = σ_ϵ/sqrt(1 - ρ^2)
-    idx  = findfirst(x-> x >= -3σ_z, logz) 
-    flag = max(maximum(flag_z), sum(flag_IR_z) == N_z)
+    idx  = findfirst(x-> x > -3σ_z, logz) 
+    flag = max(maximum(flag_z[idx:end]), maximum(flag_IR_z[idx:end]))
 
     # only compute moments if equilibria were found for all z
     if (flag < 1) 

@@ -18,6 +18,6 @@ echo "Executing on the machine:" $(hostname)
 module purge
 module load julia/1.6.1
 
-julia pretesting_fix_hbar_vary_cyc.jl
+julia pretesting_vary_cyc.jl
 
 

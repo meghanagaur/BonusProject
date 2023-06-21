@@ -1,5 +1,5 @@
 
-cd "/Users/meghanagaur/BonusProject/codes/estimate-lm-moments/codes"
+cd "/Users/meghanagaur/BonusProject/codes/lm-moments/codes"
 
 clear all 
 
@@ -70,4 +70,4 @@ pwcorr l*_hp1600_sh
 
 keep  yq *_sh
 
-save  "../../estimate-lm-statistics/data/shimer", replace
+save  "../../lm-moments/data/shimer", replace

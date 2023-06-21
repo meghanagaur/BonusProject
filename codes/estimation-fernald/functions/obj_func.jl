@@ -1,5 +1,5 @@
 """
-Objective function to be minimized during SMM -- WITHOUT BOUNDS.
+Objective function to be minimized during SMM -- WITHOUT MANUAL BOUNDS.
 Variable descriptions below.
 xx           = evaluate objFunction @ these parameters 
 shocks       = shocks for the simulation
@@ -53,7 +53,7 @@ function objFunction(xx, param_vals, param_est, shocks, data_mom, W; fix_a = fal
     d          = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
 
     # Adjust f accordingly
-    f          = d'*W*d + flag*10.0^8 + flag_IR*(1 - flag)*(10.0^6)*IR_err
+    f          = d'*W*d + flag*10.0^8 + flag_IR*(1 - flag)*(10.0^8)*IR_err
 
     # Add extra checks for NaN
     flag       = isnan(f) ? 1 : flag
@@ -63,7 +63,7 @@ function objFunction(xx, param_vals, param_est, shocks, data_mom, W; fix_a = fal
 end
 
 """
-Objective function to be minimized during SMM -- WITH BOUNDS.
+Objective function to be minimized during SMM -- WITH MANUAL BOUNDS.
 Variable descriptions below.
 xx           = evaluate objFunction @ parameters = xx for optimization (before transformation)
 x0           = actual starting point for the local optimization (after transformation)
@@ -119,7 +119,7 @@ function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, dat
     d          = (mod_mom - data_mom)./abs.(data_mom)  #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
 
     # Adjust f accordingly
-    f = d'*W*d + flag*10.0^8 + flag_IR*(1 - flag)*(10.0^6)*IR_err
+    f = d'*W*d + flag*10.0^8 + flag_IR*(1 - flag)*(10.0^8)*IR_err
     
     # Add extra checks for NaN
     flag     = isnan(f) ? 1 : flag

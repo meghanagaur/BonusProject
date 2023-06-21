@@ -14,14 +14,9 @@ Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
 xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
-
 ## Logistics
-files        = ["fix_hbar10"]
-#["fix_hbar10_cyc025" "fix_hbar10_cyc05" "fix_hbar10_cyc075" "fix_hbar10_cyc125" "fix_hbar10_cyc15" "fix_hbar10_cyc10"]
-
-file_idx     = 1 # parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
-big_run      = false        
-file_str     = files[file_idx] #ARGS[1]                              
+big_run      = false #true        
+file_str     = "fix_hbar10" #ARGS[1]                              
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
 file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
 file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
@@ -31,17 +26,16 @@ println("File name: "*file_str)
 
 # Settings for simulation
 if big_run == false
-    vary_z_N                 = 51           # increase number of gridpoints when taking numerical derivatives
-    N_sim_micro              = 10^4         # number of workers for wage simulations
-    N_sim_macro              = 10^4         # number of panels for macro stats exc. ALP
-    est_alp                  = false
+    vary_z_N             = 51          # number of gridpoints for first-order 
+    N_sim_macro          = 10^4        # number of panels for macro stats exc. ALP
+    N_sim_macro_workers  = 1000        # number of workers for ALP simulation
+    N_sim_macro_est_alp  = 1000        # number of panels for ALP simulation
 else
-    vary_z_N                 = 201          # increase number of gridpoints when taking numerical derivatives
-    N_sim_micro              = 5*10^4       # number of workers for wage simulations
-    N_sim_macro              = 10^4         # number of panels for macro stats excluding endogenous ALP
-    N_sim_macro_alp_workers  = 5000         # number of workers for endogneous ALP simulation
-    N_sim_macro_alp          = N_sim_macro  # number of panels for endogneous ALP simulation
-    est_alp                  = true
+    vary_z_N             = 201         # number of gridpoints for first-order 
+    N_sim_micro          = 5*10^4      # number of workers for wage simulations
+    N_sim_macro          = 10^4        # number of panels for macro stats exc. ALP
+    N_sim_macro_workers  = 5000        # number of workers for ALP simulation
+    N_sim_macro_est_alp  = 10^4        # number of panels for ALP simulation
 end
 
 # Load output
@@ -68,14 +62,16 @@ end
 # Get moments (check for multiplicity and verfiy solutions are the same)
 modd       = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
 @unpack P_z, p_z, z_ss_idx = modd
-shocks     = rand_shocks(P_z, p_z; z0_idx = z_ss_idx, N_sim_micro = N_sim_micro, N_sim_macro = N_sim_macro, 
-            N_sim_macro_alp_workers = N_sim_macro_alp_workers, N_sim_macro_alp = N_sim_macro_alp)
+shocks     = rand_shocks(P_z, p_z; N_sim_macro = N_sim_macro, N_sim_macro_workers = N_sim_macro_workers, z0_idx = z_ss_idx)
 
 if fix_a == false
    
+    sol          = solveModel(modd; tol1 = 10^(-13), tol2 = 10^(-13), tol3 =  10^(-13), noisy = false)
+    @time output = simulate(modd, shocks; check_mult = false, est_alp = true)         # skip multiplicity check
+
     # check for multiplicity roots
     println("Checking for multiplicity of roots..")
-    sol   = solveModel(modd; noisy = false)
+    sol   = solveModel(modd; tol1 = 10^(-13), tol2 = 10^(-13), tol3 =  10^(-13), noisy = false)
     a_min = 10^-8
     a_max = 10
 
@@ -85,8 +81,6 @@ if fix_a == false
         println(roots( x -> x - ((z*x/sol.w_0 - (ψ/ε)*(hp(x)*σ_η)^2)/hbar)^(ε/(1+ε)) ,  a_min..a_max))
     end
 
-    @time output = simulate(modd, shocks; check_mult = false, est_alp = est_alp) # get output
-
 else
 
     sol          = solveModelFixedEffort(modd; a = Params[:a], noisy = false);
@@ -95,7 +89,7 @@ else
 end
 
 # Unpack parameters
-@unpack std_Δlw, dlw1_du, dlw_dly, u_ss, alp_ρ, alp_σ, dlu_dly, std_u, flag, flag_IR, IR_err, std_z  = output
+@unpack std_Δlw, dlw1_du, dlw_dly, u_ss, alp_ρ, alp_σ, u_ss_2, dlu_dly, std_u, flag, flag_IR, IR_err, std_z  = output
 
 # CHANGE ROUNDING MODE TO ROUND NEAREST AWAY 
 
@@ -125,6 +119,7 @@ println("u_ss: \t\t"*string(round.(u_ss, RoundNearestTiesAway, digits = 3)))
 println("------------------------")
 println("UNTARGETED MOMENTS")
 println("------------------------")
+println("u_ss_2: \t"*string(round.(u_ss_2, RoundNearestTiesAway, digits = 3)))
 println("dlu_dly: \t"*string(round.(dlu_dly, RoundNearestTiesAway, digits = 3)))
 println("std logu: \t"*string(round.(std_u, RoundNearestTiesAway, digits = 3)))
 println("std logz: \t"*string(round.(std_z, RoundNearestTiesAway, digits = 3)))

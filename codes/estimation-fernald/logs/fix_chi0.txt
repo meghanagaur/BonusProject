@@ -1,42 +1,60 @@
-My SLURM_ARRAY_JOB_ID is .
-My SLURM_ARRAY_TASK_ID is 
-Executing on the machine: della-h12n4
-File name: fix_chi0
+My SLURM_ARRAY_JOB_ID is 46323431.
+Executing on the machine: della-r3c1n3
+File name: fix_chi0_cyc0
+ 47.953767 seconds (53.25 M allocations: 274.290 GiB, 17.56% gc time, 4.22% compilation time)
+Checking for multiplicity of roots..
+Root{Interval{Float64}}[Root([0.708069, 0.70807], :unique), Root([4.44714e-05, 4.44724e-05], :unique)]
+Root{Interval{Float64}}[Root([0.754068, 0.75407], :unique), Root([4.33402e-05, 4.33406e-05], :unique)]
+Root{Interval{Float64}}[Root([0.803031, 0.803032], :unique), Root([4.22305e-05, 4.22656e-05], :unique)]
+Root{Interval{Float64}}[Root([4.11752e-05, 4.11766e-05], :unique), Root([0.855147, 0.855148], :unique)]
+Root{Interval{Float64}}[Root([4.01212e-05, 4.01604e-05], :unique), Root([0.91062, 0.910621], :unique)]
+Root{Interval{Float64}}[Root([3.91351e-05, 3.91352e-05], :unique), Root([0.969664, 0.969665], :unique)]
+Root{Interval{Float64}}[Root([3.81583e-05, 3.81587e-05], :unique), Root([1.03251, 1.03252], :unique)]
+Root{Interval{Float64}}[Root([3.72087e-05, 3.72105e-05], :unique), Root([1.0994, 1.09941], :unique)]
+Root{Interval{Float64}}[Root([3.62816e-05, 3.62933e-05], :unique), Root([1.1706, 1.17061], :unique)]
+Root{Interval{Float64}}[Root([1.24638, 1.24639], :unique), Root([3.53685e-05, 3.54146e-05], :unique)]
+Root{Interval{Float64}}[Root([3.45045e-05, 3.45375e-05], :unique), Root([1.32704, 1.32705], :unique)]
+Root{Interval{Float64}}[Root([1.4129, 1.41291], :unique), Root([3.36734e-05, 3.36737e-05], :unique)]
+Root{Interval{Float64}}[Root([1.50427, 1.50428], :unique), Root([3.31343e-05, 3.32083e-05], :unknown), Root([3.285e-05, 3.28504e-05], :unique)]
 ------------------------
 ESTIMATED PARAMETERS
 ------------------------
-σ_η: 		0.3823
+σ_η: 		0.5383
 χ: 		0.0
-γ: 		0.5383
-hbar: 		3.9587
-ε: 		0.3
-ρ: 		0.9808
-σ_ϵ: 		0.0042
-ι: 		0.8
+γ: 		0.4132
+hbar: 		1.0
+ε: 		4.982
+ρ: 		0.966
+σ_ϵ: 		0.0056
+ι: 		0.9
 ------------------------
 TARGETED MOMENTS
 ------------------------
 std_Δlw: 	0.064
-dlw1_du: 	-0.2603
-dlw_dly: 	0.0354
-u_ss: 		0.0567
-alp_ρ: 		0.8918
-alp_σ: 		0.0173
+dlw1_du: 	-0.688
+dlw_dly: 	0.035
+u_ss: 		0.053
 ------------------------
 UNTARGETED MOMENTS
 ------------------------
-u_ss_2: 	0.0606
-dlu_dlz: 	-6.2525
-std_logu: 	0.1207
-θ(μ_z): 	1.568
-W/Y (ss): 	0.9362
-C term at μ_z: 	-1.0e-5
+u_ss_2: 	0.049
+dlu_dly: 	-1.526
+std logu: 	0.15
+std logz: 	0.016
+std logy: 	0.089
+a(μ_z): 	1.033
+θ(μ_z): 	1.809
+Y (ss): 	30.315
+W (ss): 	28.955
+W/Y (ss): 	0.955
+dla_dlz: 	2.871
+dlY_dlz: 	0.919
+dlW_dlz: 	0.428
+dlθ_dlz: 	18.028
 ------------------------
 WAGE FLEXIBILITY
 ------------------------
-IWF Share: 		1.0
-IWF Share: 		1.31363
-BWF Share #1: 		-0.0
-BWF Share #2: 		-0.31363
-BWF Share #3: 		0.0
+IWF Share #1: 		1.0
+IWF Share #2: 		0.239
 WF with χ = 0/WF 	1.0
+C term at μ_z: 		-0.0

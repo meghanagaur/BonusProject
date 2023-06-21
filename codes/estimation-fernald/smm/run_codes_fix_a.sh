@@ -1,6 +1,6 @@
 #!/bin/bash
 
-files="baseline fix_chi0 fix_cyc025 fix_cyc05 fix_cyc075 fix_cyc125 fix_cyc15"
+files="fix_a_bwf055 fix_a_bwf10"
 
 for file in $files
 do
@@ -14,7 +14,7 @@ do
 
     # remove and create slurm files
     rm -f run-files/estimation_$file.slurm
-    cp estimation.slurm run-files/estimation_$file.slurm
+    cp estimation_fix_a.slurm run-files/estimation_$file.slurm
 
     # replace file name
     sed -i "s/filename/$file/" "run-files/estimation_$file.jl"

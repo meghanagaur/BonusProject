@@ -1,6 +1,6 @@
 clear all
 
-cd "/Users/meghanagaur/BonusProject/codes/estimate-lm-statistics/codes"
+cd "/Users/meghanagaur/BonusProject/codes/lm-moments/codes"
 
 * Download monthly, SA data from FRED (all in thousands, except for urate + ALP)
 freduse UEMPLT5 CE16OV UNEMPLOY JTSJOL UNRATE OPHNFB, clear
@@ -39,10 +39,20 @@ replace st_unemp_adj = st_unemp*1.1 if mdate > ym(1994,1)
 gen frate  		     = 1 - (f.unemp - f.st_unemp_adj)/unemp
 gen srate   		 = f.st_unemp_adj/(emp*(1 - 0.5*frate))
 
+egen avg_frate       = mean(frate)
 *gen u_ss            = avg_srate/(avg_srate + avg_frate)
 gen tightness 		 = vacancies/unemp
 
 summ urate srate frate tightness 
+
+/* 
+Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+       urate |        828    .0576606     .016538       .025       .108
+       srate |        827    .0313995    .0067716    .015902   .0496018
+       frate |        827    .4204166    .0892433   .1817443   .6911365
+	   tightness |    229    .5594207    .2841447   .1528662   1.241864
+*/
 
 export delimited "../data/lm_monthly.csv", replace
 
@@ -58,12 +68,26 @@ foreach var in urate frate srate tightness vacancies unemp alp {
 	tsfilter hp l`var'_hp     = l`var', smooth(100000)
 	tsfilter hp l`var'_hp1600 = l`var', smooth(1600) 
 
-	pwcorr l`var'_hp l.l`var'_hp
-	pwcorr l`var'_hp1600 l.l`var'_hp1600
+	*pwcorr l`var'_hp l.l`var'_hp
+	*pwcorr l`var'_hp1600 l.l`var'_hp1600
 }
 
 
 summ *hp 
+
+/* 
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+   lurate_hp |        276    1.90e-10    .2034675  -.4171211   .4732535
+   lfrate_hp |        276   -1.02e-10     .140245  -.4482797   .2523849
+   lsrate_hp |        276   -1.75e-11    .0714271  -.2197686   .2316698
+ltightness~p |         77    1.26e-09    .3955577  -.9267228   .6405027
+lvacancies~p |         77    1.05e-09    .1818125  -.5046699   .3450061
+-------------+---------------------------------------------------------
+   lunemp_hp |        276    6.12e-10     .202573  -.4170066    .471583
+     lalp_hp |        276    4.92e-12    .0169176  -.0466661   .0426264
+*/
+
 summ *hp1600 
 
 pwcorr lurate_hp lfrate_hp  

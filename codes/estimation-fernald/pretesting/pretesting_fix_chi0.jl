@@ -6,7 +6,7 @@ addprocs(SlurmManager())
 println(nprocs())
 
 # File location for saving jld output + slurm idx
-file  = "pretesting_fix_chi0_cyc0"
+file  = "pretesting_fix_chi0"
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
@@ -19,25 +19,24 @@ file  = "pretesting_fix_chi0_cyc0"
     #W[mom_key[:u_ss], mom_key[:u_ss]] = 10.0
     
     # Define the baseline values
-    @unpack ρ, σ_ϵ, ι = model()
+    @unpack ρ, σ_ϵ, ι, P_z, p_z, z_ss_idx, ε, χ, γ, σ_η, hbar = model()
     param_vals        = OrderedDict{Symbol, Real}([ 
                         (:a, 1.0),           # effort 
-                        (:ε,   0.5),         # ε
-                        (:σ_η, 0.0),         # σ_η 
-                        (:χ, 0.0),           # χ
-                        (:γ, 0.4916),        # γ
-                        (:hbar, 1.0),        # hbar
+                        (:ε,   ε),           # ε
+                        (:σ_η, σ_η),         # σ_η 
+                        (:χ, χ),             # χ
+                        (:γ, γ),             # γ
+                        (:hbar, hbar),       # hbar
                         (:ρ, ρ),             # ρ
                         (:σ_ϵ, σ_ϵ),         # σ_ϵ
                         (:ι, ι) ])           # ι
 
     # Specifciations for the shocks in simulation
-    @unpack P_z, p_z, z_ss_idx = model(ρ = param_vals[:ρ], σ_ϵ = param_vals[:σ_ϵ])
-    shocks  = rand_shocks(P_z, p_z; N_sim_macro_workers = 1, z0_idx = z_ss_idx)
+    shocks  = rand_shocks(P_z, p_z; N_sim_macro_alp_workers = 1, z0_idx = z_ss_idx)
 
-    # Parameters we will fix (if any) in: ε, σ_η, χ, γ, hbar, ρ, σ_ϵ
+    # Parameters we will fix (if any) in: ε, σ_η, χ, γ
     params_fix   = [:χ, :hbar, :ρ, :σ_ϵ] 
-    param_bounds = get_param_bounds(ε_ub = 5.0)
+    param_bounds = get_param_bounds(ε_ub = 6.0)
     for p in params_fix
         delete!(param_bounds, p)
     end

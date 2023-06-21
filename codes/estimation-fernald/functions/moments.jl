@@ -130,7 +130,7 @@ function effort(z::T, w_0::T,  ψ, ε, hp, σ_η, hbar) where T<:AbstractFloat
 end
 
 """
-Compute da/dz_1 and the components of da/dz_1
+Compute da/dz_0 and the components of da/dz_0
 """
 function dadz(z::T, w_0::T, modd) where T<:AbstractFloat 
     
@@ -181,7 +181,7 @@ function decomposition(modd, bonus; fix_a = false)
     end
 
     # total wage flexibility
-    WF              = slopeFD(bonus.W, zgrid)
+    WC              = slopeFD(bonus.W, zgrid)
 
     # compute the residual 
     qq(x)           = -(x^(-1 + ι))*(1 + x^ι)^(-1 - 1/ι) # q'(θ)
@@ -189,12 +189,12 @@ function decomposition(modd, bonus; fix_a = false)
 
     if fix_a == true
         
-        return (JJ_EVT = JJ_EVT, WF = WF, BWF = zeros(N_z), IWF = zeros(N_z), resid = zeros(N_z), total_resid = total_resid) 
+        return (JJ_EVT = JJ_EVT, WF = WF, BWC = zeros(N_z), IWF = zeros(N_z), resid = zeros(N_z), total_resid = total_resid) 
 
     elseif fix_a == false
 
-        # Solve for IWF
-        IWF          = zeros(N_z) 
+        # Solve for IWC
+        IWC          = zeros(N_z) 
         dw0_dz1      = slopeFD(bonus.w_0, zgrid)
         dw0_dz1[1]   = slopeFD(bonus.w_0, zgrid; diff = "forward")[1]
         dw0_dz1[end] = slopeFD(bonus.w_0, zgrid; diff = "backward")[end]
@@ -233,14 +233,14 @@ function decomposition(modd, bonus; fix_a = false)
                 iter +=1
             end
 
-            IWF[iz]      =  da_dz[iz]/zgrid[iz] - da_dw[iz]*dw0_dz1[iz] 
+            IWC[iz]      =  da_dz[iz]/zgrid[iz] - da_dw[iz]*dw0_dz1[iz] 
         end
 
         # Solve for the BWF
-        BWF             = WF - IWF
-        resid           = BWF - JJ_EVT  # partial kappa/q(θ(z_0)) / partial z_0
+        BWC             = WC - IWC
+        resid           = BWC - JJ_EVT  # partial kappa/q(θ(z_0)) / partial z_0
 
-        return (JJ_EVT = JJ_EVT, WF = WF, BWF = BWF, IWF = IWF, resid = resid, total_resid = total_resid) 
+        return (JJ_EVT = JJ_EVT, WC = WC, BWC = BWC, IWC = IWC, resid = resid, total_resid = total_resid) 
     end
 
 end

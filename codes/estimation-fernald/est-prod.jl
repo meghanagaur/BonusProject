@@ -1,15 +1,19 @@
+#= Estimate productivity process parameters to match
+the autocorrelation and standard deviation of the Fernald TFP series.
+=#
 
 include("functions/smm_settings.jl") 
 
 """
-Solve for ρ, σ_ϵ such that we match quarterly ALP
+Solve for ρ, σ_ϵ such that we match the moments form the
+log quarterly TFP process. Noramlize mean such that E[z_t] = 1.
 """
-function calibrateZ(shocks; λ = 10^5, ρ_y = 0.87, σ_y = 0.016, N_z = 13, zbar = 1.0)
+function calibrateZ(shocks; λ = 10^5, ρ_z = 0.87, σ_z = 0.016, N_z = 13, zbar = 1.0)
 
     # Objective function
     @unpack burnin, z_shocks_macro, T_sim_macro, N_sim_macro = shocks
     opt                       = Opt(:LN_BOBYQA, 2) # :LN_BOBYQA :LN_SBPLX :LN_COBYLA :LN_NELDERMEAD
-    obj(x, dummy_gradient!)   = simulateALP(x, z_shocks_macro, T_sim_macro, burnin, N_sim_macro; λ = λ, ρ_y = ρ_y, σ_y = σ_y,  N_z = N_z, zbar = zbar)
+    obj(x, dummy_gradient!)   = simulateTFP(x, z_shocks_macro, T_sim_macro, burnin, N_sim_macro; λ = λ, ρ_z = ρ_z, σ_z = σ_z,  N_z = N_z, zbar = zbar)
     opt.min_objective         = obj
 
     # Bound constraints
@@ -18,8 +22,8 @@ function calibrateZ(shocks; λ = 10^5, ρ_y = 0.87, σ_y = 0.016, N_z = 13, zbar
 
     # tolerance and time settings 
     opt.stopval            = 1e-8
-    opt.ftol_rel           = 1e-7
-    opt.ftol_abs           = 1e-7
+    opt.ftol_rel           = 1e-8
+    opt.ftol_abs           = 1e-8
     opt.xtol_rel           = 0.0  
     opt.maxtime            = 60*5
 
@@ -35,9 +39,9 @@ function calibrateZ(shocks; λ = 10^5, ρ_y = 0.87, σ_y = 0.016, N_z = 13, zbar
 end
 
 """
-Simulate quarterly ALP seris and compare to data moment
+Simulate quarterly TFP series and compare to data moments.
 """
-function simulateALP(x, z_shocks, T_sim, burnin, N_sim;  λ = λ, ρ_y = 0.87, σ_y = 0.016, N_z = 13, zbar = 1)
+function simulateTFP(x, z_shocks, T_sim, burnin, N_sim; λ = 10^5, ρ_z = 0.87, σ_z = 0.016, N_z = 13, zbar = 1)
     
     ρ               = x[1]
     σ_ϵ             = x[2]
@@ -51,21 +55,23 @@ function simulateALP(x, z_shocks, T_sim, burnin, N_sim;  λ = λ, ρ_y = 0.87, �
     zshocks_macro   = zgrid[z_idx_macro]
     T               = T_sim + burnin
     T_q_macro       = Int(T_sim/3)
-    alp_ρ_n         = zeros(N_sim)
-    alp_σ_n         = zeros(N_sim)
+    tfp_ρ_n         = zeros(N_sim)
+    tfp_σ_n         = zeros(N_sim)
 
     Threads.@threads for n = 1:N_sim
         # Compute the quarterly average of output
-        @views ly_q            = log.([mean(zshocks_macro[burnin+1:end, n][(t_q*3 - 2):t_q*3]) for t_q = 1:T_q_macro])
-        @views ly_q_resid, _   = hp_filter(ly_q, λ)  
-        @views alp_ρ_n[n]      = first(autocor(ly_q_resid, [1]))
-        @views alp_σ_n[n]      = std(ly_q_resid)
+        @views lz_q            = log.([mean(zshocks_macro[burnin+1:end, n][(t_q*3 - 2):t_q*3]) for t_q = 1:T_q_macro])
+        @views lz_q_resid, _   = hp_filter(lz_q, λ)  
+        @views tfp_ρ_n[n]      = first(autocor(lz_q_resid, [1]))
+        @views tfp_σ_n[n]      = std(lz_q_resid)
     end
 
-    alp_ρ   = mean(alp_ρ_n)
-    alp_σ   = mean(alp_σ_n)
+    # Take cross-simulation averages
+    tfp_ρ   = mean(tfp_ρ_n)
+    tfp_σ   = mean(tfp_σ_n)
 
-    err     = (alp_ρ - ρ_y)^2 + (alp_σ - σ_y)^2
+    # Compute the error
+    err     = (tfp_ρ - ρ_z)^2 + (tfp_σ - σ_z)^2
 
     return err
 end
