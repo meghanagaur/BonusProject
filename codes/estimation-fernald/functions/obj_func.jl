@@ -142,6 +142,7 @@ x1 = current (actual) position
 p0 = actual initial position
 """
 function transform_params(xx, pb, p0; λ = 1)
+    
     # Rescales ALL of the parameters to lie between -1 and 1 
     xx2 =   logit.(xx; λ = λ) 
 

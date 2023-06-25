@@ -65,6 +65,7 @@ file  = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
     s            = SobolSeq(lb, ub)
     seq          = skip(s, 10000, exact = true)
     sob_seq      = reduce(hcat, next!(seq) for i = 1:I_max)
+    
 end
 
 # Evaluate the objective function for each parameter vector

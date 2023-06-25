@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=fix_chi0      # create a short name for your job
-#SBATCH --output=slurm-%A.out    # stdout file
-#SBATCH --error=slurm-%A.err     # stderr file
+#SBATCH --job-name=iota_125      # create a short name for your job
+#SBATCH --output=slurm-%j.out    # stdout file
+#SBATCH --error=slurm-%j.err     # stderr file
 #SBATCH --nodes=6                # node count
 #SBATCH --ntasks=60              # total number of tasks across all nodes
 #SBATCH --cpus-per-task=1        # cpu-cores per task (>1 if multi-threaded tasks)
@@ -13,4 +13,4 @@
 module purge
 module load julia/1.6.1
 
-julia pretesting_fix_chi0.jl
+julia pretesting_iota125.jl

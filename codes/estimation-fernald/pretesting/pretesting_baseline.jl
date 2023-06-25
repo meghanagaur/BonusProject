@@ -5,8 +5,7 @@ cd(dirname(@__FILE__))
 addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
-#@everywhere hbar_val = 1.0
-file  = "pretesting_baseline" #_fix_hbar"*replace(string(hbar_val), "." => "")
+file  = "pretesting_baseline" 
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
@@ -66,6 +65,7 @@ file  = "pretesting_baseline" #_fix_hbar"*replace(string(hbar_val), "." => "")
     s            = SobolSeq(lb, ub)
     seq          = skip(s, 10000, exact = true)
     sob_seq      = reduce(hcat, next!(seq) for i = 1:I_max)
+    
 end
 
 # Evaluate the objective function for each parameter vector

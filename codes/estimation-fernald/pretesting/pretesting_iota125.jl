@@ -5,22 +5,15 @@ cd(dirname(@__FILE__))
 addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
+file  = "pretesting_iota125" 
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
 
 @everywhere begin
 
-    # Get slurm job array idx
-    ja_idx  = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
-
-    # different values of the cyclicality of new hire wages
-    cyc_vals    = [0.5, 0.75, 1.25, 1.5]
-    cyc         = -cyc_vals[ja_idx]
-    file        = "pretesting_cyc"*replace(string(cyc_vals[ja_idx]), "." => "")  
-
     # get moment targets and weight matrix
-    @unpack data_mom, mom_key, K, W = moment_targets(dlw1_du = cyc)
+    @unpack data_mom, mom_key, K, W = moment_targets()
 
     # Define the baseline values
     
@@ -35,10 +28,10 @@ addprocs(SlurmManager())
                         (:hbar, hbar),       # hbar
                         (:ρ, ρ),             # ρ
                         (:σ_ϵ, σ_ϵ),         # σ_ϵ
-                        (:ι, ι) ])           # ι
+                        (:ι, 1.25) ])        # ι <- PNZ calibration
 
     # Specifciations for the shocks in simulation
-    shocks  = rand_shocks(P_z, p_z; N_sim_macro_alp_workers = 1, z0_idx = z_ss_idx)
+    shocks           = rand_shocks(P_z, p_z; N_sim_macro_alp_workers = 1, z0_idx = z_ss_idx)
 
     # Parameters we will fix (if any) in ε, σ_η, χ, γ 
     params_fix   = [:hbar, :ρ, :σ_ϵ] 
@@ -50,6 +43,7 @@ addprocs(SlurmManager())
     # Parameters that we will estimate
     J           = length(param_bounds)
     
+    # Make sure we are not under-identified 
     @assert(K >= J)
 
     param_est   = OrderedDict{Symbol, Int64}()
@@ -71,6 +65,7 @@ addprocs(SlurmManager())
     s            = SobolSeq(lb, ub)
     seq          = skip(s, 10000, exact = true)
     sob_seq      = reduce(hcat, next!(seq) for i = 1:I_max)
+    
 end
 
 # Evaluate the objective function for each parameter vector

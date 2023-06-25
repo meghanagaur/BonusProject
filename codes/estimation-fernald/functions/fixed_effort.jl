@@ -1,9 +1,9 @@
 """
 Solve the infinite horizon model using a bisection search on θ,
-with fixed effort a and fixed wage throughout the contract.
+with fixed effort a and fixed wage w_0 throughout the contract.
 """
 function solveModelFixedEffort(modd; a = 1.0, z_0 = nothing, max_iter1 = 50, max_iter2 = 1000, max_iter3 = 1000,
-    tol1 = 10^-8, tol2 =  10^-8, tol3 =  10^-8, noisy = true, q_lb_0 =  0.0, q_ub_0 = 1.0)
+    tol1 = 10^-8, tol2 =  10^-10, tol3 =  10^-10, noisy = true, q_lb_0 =  0.0, q_ub_0 = 1.0)
 
     @unpack h, β, s, κ, ι, ω, N_z, q, u, zgrid, P_z, ψ, procyclical, N_z, z_ss_idx = modd  
     
@@ -98,7 +98,7 @@ function solveModelFixedEffort(modd; a = 1.0, z_0 = nothing, max_iter1 = 50, max
         # Bisection
         IR_err = U - ω_0                             # check whether IR constraint holds
         q_1    = (q_lb + q_ub)/2                     # update q
-        #err1  = min(abs(IR_err), abs(q_1 - q_0))   # compute convergence criterion
+        #err1  = min(abs(IR_err), abs(q_1 - q_0))    # compute convergence criterion
         err1   = abs(IR_err)
 
         # Record info on IR constraint
@@ -124,7 +124,7 @@ end
 """
 Simulate the model with fixed effort.
 """
-function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0)
+function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5)
     
     # Initialize moments to export (default = NaN)
     std_Δlw   = 0.0  # st dev of YoY wage growth
@@ -154,9 +154,7 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0)
     Threads.@threads for iz = 1:N_z
 
         # Solve the model for z_0 = zgrid[iz]
-        sol = solveModelFixedEffort(modd; z_0 = zgrid[iz], a = a, noisy = false)
-
-        @unpack conv_flag1, conv_flag2, conv_flag3, wage_flag, IR_err, flag_IR, w_0, θ = sol
+        @unpack conv_flag1, conv_flag2, conv_flag3, wage_flag, IR_err, flag_IR, w_0, θ = solveModelFixedEffort(modd; z_0 = zgrid[iz], a = a, noisy = false)
         
         # Record flags
         flag_z[iz]    = maximum([conv_flag1, conv_flag2, conv_flag3, wage_flag])
@@ -211,21 +209,21 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0)
         Threads.@threads for n = 1:N_sim_macro
 
             @views @inbounds for t = 2:T
-                u_t[t, n] = (1 - f_t[t-1,n])*u_t[t-1,n] + s*(1 - u_t[t-1,n])
+                u_t[t, n] = u_t[t-1,n] + s*(1 - u_t[t-1,n]) - (1-s)*f_t[t-1,n]*u_t[t-1,n]
             end
 
             # Estimate d E[log w_1] / d u (pooled ols)
             @views dlw1_du_n[n]    = cov(lw1_t[burnin+1:end, n], u_t[burnin+1:end, n])/max(eps(), var(u_t[burnin+1:end, n]))
 
-            # Compute the quarterly average of 
+            # Compute the quarterly average of various series
             @views ly_q            = log.(a*[mean(zshocks_macro[burnin+1:end, n][(t_q*3 - 2):t_q*3]) for t_q = 1:T_q_macro])
-            @views ly_q_resid, _   = hp_filter(ly_q, 10^5)  
+            @views ly_q_resid, _   = hp_filter(ly_q, λ)  
             @views alp_ρ_n[n]      = first(autocor(ly_q_resid, [1]))
             @views alp_σ_n[n]      = std(ly_q_resid)
 
             # Compute quarterly average of u_t in post-burn-in period + hp-filter the log
             @views lu_q            = log.(max.([mean(u_t[burnin+1:end, n][(t_q*3 - 2):t_q*3]) for t_q = 1:T_q_macro], eps()))
-            lu_q_resid, _          = hp_filter(lu_q, 10^5)  
+            lu_q_resid, _          = hp_filter(lu_q, λ)  
             std_u_n[n]             = std(lu_q_resid)
             
             # Compute d log u_t+1 / d log y

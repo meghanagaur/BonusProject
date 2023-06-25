@@ -36,7 +36,7 @@ file  = "pretesting_fix_chi0"
 
     # Parameters we will fix (if any) in: ε, σ_η, χ, γ
     params_fix   = [:χ, :hbar, :ρ, :σ_ϵ] 
-    param_bounds = get_param_bounds(ε_ub = 6.0)
+    param_bounds = get_param_bounds() #ε_ub = 6.0)
     for p in params_fix
         delete!(param_bounds, p)
     end

@@ -14,34 +14,33 @@ Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
 xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
-
 ## Logistics
-files        = ["fix_hbar10"]
-#["fix_hbar10_cyc025" "fix_hbar10_cyc05" "fix_hbar10_cyc075" "fix_hbar10_cyc125" "fix_hbar10_cyc15" "fix_hbar10_cyc10"]
-
-file_idx     = 1 # parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
-big_run      = false        
-file_str     = files[file_idx] #ARGS[1]                              
+files        = ["iota125" "fix_a_bwc0447" "cyc05" "cyc075" "cyc125" "cyc15"]
+#files        = ["baseline" "fix_a_bwc10" "fix_chi0"]
+big_run      = true        
+file_idx     = big_run ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
+file_str     = files[file_idx]                              
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
 file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
 file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
 
+# Make directory for figures
 mkpath(file_save)
 println("File name: "*file_str)
 
 # Settings for simulation
 if big_run == false
-    vary_z_N                 = 51           # increase number of gridpoints when taking numerical derivatives
-    N_sim_micro              = 10^4         # number of workers for wage simulations
-    N_sim_macro              = 10^4         # number of panels for macro stats exc. ALP
+    vary_z_N                 = 51           # # of gridpoints when taking numerical derivatives
+    N_sim_micro              = 10^4         # # of workers for wage simulations
+    N_sim_macro              = 10^4         # # of panels for macro stats exc. ALP
     est_alp                  = false
 else
-    vary_z_N                 = 201          # increase number of gridpoints when taking numerical derivatives
-    N_sim_micro              = 5*10^4       # number of workers for wage simulations
-    N_sim_macro              = 10^4         # number of panels for macro stats excluding endogenous ALP
-    N_sim_macro_alp_workers  = 5000         # number of workers for endogneous ALP simulation
-    N_sim_macro_alp          = N_sim_macro  # number of panels for endogneous ALP simulation
-    est_alp                  = true
+    vary_z_N                 = 201          # increase # of gridpoints when taking numerical derivatives
+    N_sim_micro              = 2*10^4       # increase # of workers for wage simulations
+    N_sim_macro              = 10^4         # increase # of panels for macro stats excluding endogenous ALP
+    N_sim_macro_alp_workers  = 10^4         # increase # of workers for endogneous ALP simulation
+    N_sim_macro_alp          = 500          # increase # of panels for endogneous ALP simulation
+    est_alp                  = true         # whether or not to simulate endogenous ALP
 end
 
 # Load output
@@ -201,7 +200,7 @@ BWC_1    = -(c_term./WC)                     # primary BWC measure using direct 
 
 println("BWC Share #1: \t\t"*string(round(BWC_1[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("BWC Share #2: \t\t"*string(round((BWC./WC)[z_ss_idx], RoundNearestTiesAway, digits = 3)))
-#println("WC with χ = 0/WC \t"*string(round((WF_chi0./WF)[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("IWC: \t\t\t"*string(round((1-BWC_1[z_ss_idx])*dlw1_du , RoundNearestTiesAway, digits = 3)))
 
 ## Print the C term at steady state
 println("C term at μ_z: \t\t"*string(round(c_term[z_ss_idx], RoundNearestTiesAway, digits = 3)))
@@ -352,14 +351,6 @@ if fix_a == false
     plot!(logz[range_2],total_resid[range_2], label=L"\frac{d \kappa/q(z_0) }{d z_0}"*" (direct)", linestyle=:dash)
 
     savefig(file_save*"dJ_dz_resids.pdf")
-
-    plot(logz[range_2], (BWF./WF)[range_2], label="BWF #1")
-    plot!(logz[range_2], (BWF_2)[range_2],label="BWF #2", linestyle=:dash)
-    ylabel!("BWF share")
-    xlabel!(L"\log z_0")
-
-    savefig(file_save*"WF_shares.pdf")
-
 end
 
 # Check convergence 
@@ -387,169 +378,13 @@ end
 p5 = plot(p1, p2, p3, p4, layout = (2,2), legend=:topleft)
 savefig(p5, file_save*"params_converge.pdf")
 
-# function values
+# Function values
 p6 = plot(est_output[indices,1], title="function values", legend=:false)
 savefig(p6, file_save*"fvals_converge.pdf")
 
-
-
-
-
-
-
-#=
-# Vary params and compute BWF
-if vary_params
-    
-    function bwf(modd)
-        bonus           = vary_z1(modd)
-        @unpack WF, BWF = decomposition(modd, bonus; fix_a = fix_a)
-        return (BWF./WF)[modd.z_ss_idx], maximum(bonus.IR_flag*1.0)
-    end
-
-    # vary χ
-    N_χ      = 30
-    χ_grid   = LinRange(0.0, 1.0, N_χ)
-    bwf_grid = zeros(2, N_χ)
-
-    Threads.@threads for i = 1:N_χ
-        bwf_grid[:, i] .=  bwf(model(χ = χ_grid[i], γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, 
-                             ι = ι, ρ = ρ, σ_ϵ = σ_ϵ))
-    end
-
-    plot(χ_grid, bwf_grid[1,:], label = "BWF share", legend=:right)
-    xlabel!(L"\chi")
-    ylabel!("BWF share")
-
-    savefig(file_save*"bwf_vary_chi.pdf")
-
-    # vary ε
-    N_ε      = 30
-    ε_grid   = LinRange(0.3, 3.0, N_ε)
-
-    Threads.@threads for i = 1:N_ε
-        bwf_grid[:,i] .=  bwf(model(χ = χ, γ = γ, hbar = hbar, ε = ε_grid[i], σ_η = σ_η, 
-                                            ι = ι, ρ = ρ, σ_ϵ = σ_ϵ))
-    end
-
-    # check IR constraint
-    max_idx = findfirst(isequal(1), bwf_grid[2,:])
-    max_idx = isnothing(max_idx)  ? N_ε : max_idx
-    range   = 1:max_idx
-
-    plot(ε_grid[range], bwf_grid[1,range], label = "BWF share", legend=:right)
-    xlabel!(L"\varepsilon")
-    ylabel!("BWF share")
-
-    savefig(file_save*"bwf_vary_eps.pdf")
-
-    # vary hbar
-    N_h        = 30
-    hbar_grid  = LinRange(1.0, 4.0, N_h)
-
-    Threads.@threads for i = 1:N_h
-        bwf_grid[:,i] .=  bwf(model(χ = χ, γ = γ, hbar = hbar_grid[i], ε = ε, σ_η = σ_η, 
-                             ι = ι, ρ = ρ, σ_ϵ = σ_ϵ))
-    end
-
-    # check IR constraint
-    max_idx = findfirst(isequal(1), bwf_grid[2,:])
-    max_idx = isnothing(max_idx)  ? N_h : max_idx
-    range   = 1:max_idx
-
-    plot(hbar_grid[range], bwf_grid[1,range], label = "BWF share #1", legend=:right)
-    xlabel!(L"\bar{h}")
-    ylabel!("BWF share")
-
-    savefig(file_save*"bwf_vary_hbar.pdf")
-
-    # vary σ_η
-    N_s     = 30
-    σ_grid  = LinRange(0.0, 0.5, N_s)
-
-    Threads.@threads for i = 1:N_s
-        bwf_grid[:,i] .=  bwf(model(χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_grid[i], 
-                                ι = ι, ρ = ρ, σ_ϵ = σ_ϵ))
-    end
-
-    # check IR constraint
-    max_idx = findfirst(isequal(1), bwf_grid[2,:])
-    max_idx = isnothing(max_idx)  ? N_s : max_idx
-    range   = 1:max_idx
-
-    p1 = plot(σ_grid[range], bwf_grid[1,range], ylabel = "BWF share #1")
-    p2 = plot(σ_grid[range], bwf_grid[2,range], ylabel = "BWF share #2")
-    xlabel!(L"\sigma_\eta")
-    plot(p1, p2, layout = (2,1), legend=:false)
-
-    savefig(file_save*"bwf_vary_sigma_eta.pdf")
+# Re-name log file
+if big_run == true
+    mkpath("logs")
+    job_id  = parse(Int64, ENV["SLURM_ARRAY_JOB_ID"])
+    mv("slurm-"*string(job_id)*"."*string(file_idx)*".out", "logs/"*file_str*".txt", force = true)
 end
-=#
-
-#=
-# effort as a function of z, w_0
-a_z(x) = effort(x, bonus.modds[z_ss_idx].w_0,  ψ, ε, hp, σ_η, hbar )
-a_w(w) = effort(zgrid[z_ss_idx], w,  ψ, ε, hp, σ_η, hbar)
-
-dd(z)  = dadz(z, bonus.modds[z_ss_idx].w_0,  ψ, ε, hp, σ_η, hbar)[1]
-dd2(x) = central_fdm(5,1)(a_z, x)
-dd3(x) = central_fdm(5,1)(a_w, x)
-dd4(x) = dadz(zgrid[z_ss_idx], x,  ψ, ε, hp, σ_η, hbar)[2]
-
-# check derivatives 
-plot(dd,0.9,1.1)
-plot!(dd2, 0.9, 1.1)
-
-plot(dd3, 0.9,1.1)
-plot!(dd4, 0.9, 1.1)
-=#
-
-
-#=
-# Solve for dJ/dz in Hall directly
-JJ_H_2   = zeros(N_z) 
-Threads.@threads for iz = 1:N_z
-
-    # Initialize guess of direct effect
-    v0     = zgrid./(1-ρ*β*(1-s))
-    v0_new = zeros(N_z)
-    iter   = 1
-    err    = 10
-    
-    # solve via simple value function iteration
-    @inbounds while err > 10^-10 && iter < 1000
-        v0_new = zgrid + ρ*β*(1-s)*P_z*v0
-        err    = maximum(abs.(v0_new - v0))
-        v0     = copy(v0_new)
-        iter +=1
-    end
-
-    JJ_H_2[iz]   = hall.a*v0[iz]/zgrid[iz]
-
-end
-
-# Solve for dJ/dz in Hall directly
-JJ_H_3   = zeros(N_z) 
-Threads.@threads for iz = 1:N_z
-
-    # Initialize guess of direct effect
-    v0     = zgrid./(1- β*(1-s))
-    v0_new = zeros(N_z)
-    iter   = 1
-    err    = 10
-    
-    # solve via simple value function iteration
-    @inbounds while err > 10^-10 && iter < 1000
-        v0_new = hall.a*zgrid + β*(1-s)*P_z*v0
-        err    = maximum(abs.(v0_new - v0))
-        v0     = copy(v0_new)
-        iter +=1
-    end
-
-    JJ_H_3[iz]   = v0[iz]
-
-end
-
-plot(JJ_H_2)
-plot!(slopeFD(JJ_H_3,zgrid), linestyle=:dash)
-=#

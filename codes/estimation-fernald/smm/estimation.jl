@@ -41,30 +41,36 @@ else
     opt_2  = Opt(:LN_BOBYQA, J) 
 
     # Objective function
+
     # need to add dummy gradient: https://discourse.julialang.org/t/nlopt-forced-stop/47747/3
     obj(x, dummy_gradient!)   = objFunction(x, param_vals, param_est, shocks, data_mom, W; fix_a = fix_a)[1]
-    opt_1.min_objective       = obj 
-    opt_2.min_objective       = obj
 
     # Bound constraints
     lower, upper              = get_bounds(param_est, param_bounds)
-    opt_1.lower_bounds        = lower 
-    opt_1.upper_bounds        = upper
-    opt_2.lower_bounds        = lower 
-    opt_2.upper_bounds        = upper
-    
-    # tolerance and time settings 
-    opt_1.stopval  = 1e-3
-    opt_1.ftol_rel = 1e-4
-    opt_1.ftol_abs = 1e-4
-    opt_1.xtol_rel = 0.0  
-    opt_1.maxtime  = 1.25*(60*60) 
 
-    opt_2.stopval  = 1e-4
-    opt_2.ftol_rel = 1e-6
-    opt_2.ftol_abs = 1e-6
-    opt_2.xtol_rel = 0.0  
-    opt_2.maxtime  = 1.5*(60*60) 
+    if !isnothing(opt_1)
+        opt_1.min_objective       = obj 
+        # tolerance and time settings 
+        opt_1.stopval             = 1e-3
+        opt_1.ftol_rel            = 1e-4
+        opt_1.ftol_abs            = 1e-4
+        opt_1.xtol_rel            = 0.0  
+        opt_1.maxtime             = 1.25*(60*60) 
+        opt_1.lower_bounds        = lower 
+        opt_1.upper_bounds        = upper
+    end
+
+    if !isnothing(opt_2)
+        opt_2.min_objective       = obj
+        # tolerance and time settings 
+        opt_2.stopval             = 1e-4
+        opt_2.ftol_rel            = 1e-6
+        opt_2.ftol_abs            = 1e-6
+        opt_2.xtol_rel            = 0.0  
+        opt_2.maxtime             = 1.5*(60*60) 
+        opt_2.lower_bounds        = lower 
+        opt_2.upper_bounds        = upper
+    end
 end
 
 # Sort and reshape the parameters for distribution across jobs

@@ -23,7 +23,7 @@ Empirical moments that we are targeting;
 Use the identity weight matrix.
 K = number of targeted moments.
 """
-function moment_targets(; std_Δlw = 0.064, dlw1_du = -1.0, dlw_dly = 0.039, u_ss = 0.06, drop_mom = nothing)
+function moment_targets(; std_Δlw = 0.064, dlw1_du = -1.000, dlw_dly = 0.039, u_ss = 0.058, drop_mom = nothing)
     
     # ordering of the moments
     mom_key       = OrderedDict{Symbol, Int64}([   

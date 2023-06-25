@@ -114,7 +114,7 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, est_alp = false, 
 
             # Law of motion for unemployment
             @views @inbounds for t = 2:T
-                u_t[t, n] = (1 - f_t[t-1,n])*u_t[t-1,n] + s*(1 - u_t[t-1,n]) #+ s*f_t[t-1,n]*u_t[t-1,n]
+                u_t[t, n] = u_t[t-1,n] + s*(1 - u_t[t-1,n]) - (1-s)*f_t[t-1,n]*u_t[t-1,n]
             end
 
             # Estimate d E[log w_1] / d u (pooled ols)
@@ -138,7 +138,6 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, est_alp = false, 
         dlw1_du = mean(dlw1_du_n)
         std_u   = mean(std_u_n) 
         std_z   = mean(std_z_n)
-        dlu_dly = mean(dlu_dly_n)
                 
         # Standard deviation and persistence of average labor productivity 
         if est_alp == true
@@ -150,6 +149,7 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, est_alp = false, 
 
             alp_ρ   = mean(alp_ρ_n)
             alp_σ   = mean(alp_σ_n)
+            dlu_dly = mean(dlu_dly_n)
 
         end
 
@@ -178,7 +178,7 @@ T_sim_macro             = num periods for agg sequences: 69 years
 burnin                  = length burn-in for agg sequence
 N_sim_macro_alp         = num seq to avg across for endog ALP moments (<= N_sim_macro)
 """
-function rand_shocks(P_z, p_z; z0_idx = 0, N_sim_micro = 10^4, T_sim_micro = 4000, 
+function rand_shocks(P_z, p_z; z0_idx = 0, N_sim_micro = 2*10^4, T_sim_micro = 1000, 
     N_sim_macro = 10^4,  N_sim_macro_alp_workers = 10^4, T_sim_macro = 828, burnin = 1000,
     N_sim_macro_alp = 10^3, set_seed = true, seed = 512)
 
@@ -245,96 +245,108 @@ Simulate wage moments givenn N x T panel of z_it and η_it
 """
 function simulateWageMoments(η_shocks_micro, s_shocks_micro, jf_shocks_micro, z_idx_micro, N_sim_micro, T_sim_micro, burnin, hp_z, pt_z, f_z, ψ, σ_η, s)
 
-    # Active jobs -- ignore the constant in log wages, since drops out for wage changes
-    T          = T_sim_micro + burnin
-    lw         = zeros(N_sim_micro, T) # N x T panel of log wages
-    pt         = zeros(N_sim_micro, T) # N x T panel of pass-through
-    lw[:,1]   .= ψ*hp_z[z_idx_micro[1], z_idx_micro[1]]*η_shocks_micro[:,1]  .- 0.5*(ψ*hp_z[z_idx_micro[1], z_idx_micro[1]]*σ_η)^2 
-    pt[:,1]   .= pt_z[z_idx_micro[1], z_idx_micro[1]] #.+ ψ*hp_z[z_idx_micro[1], z_idx_micro[1]]*η_shocks_micro[:,1]  
-    active     = ones(N_sim_micro, T)  # default is active
-    unemp      = zeros(N_sim_micro)
-    z_1        = fill(z_idx_micro[1], N_sim_micro)
+    # Information about job/employment spells
+    T            = T_sim_micro + burnin
+    lw           = zeros(N_sim_micro, T)           # N x T panel of log wages
+    pt           = fill(NaN, N_sim_micro, T)       # N x T panel of pass-through
+    tenure       = zeros(N_sim_micro, T)           # N x T panel of tenure
+
+    # Initialize period 1 values -- ignore the constant in log wages, since drops out for wage changes
+    lw[:,1]     .= ψ*hp_z[z_idx_micro[1], z_idx_micro[1]]*η_shocks_micro[:,1]  .- 0.5*(ψ*hp_z[z_idx_micro[1], z_idx_micro[1]]*σ_η)^2 
+    pt[:,1]     .= pt_z[z_idx_micro[1], z_idx_micro[1]] #.+ ψ*hp_z[z_idx_micro[1], z_idx_micro[1]]*η_shocks_micro[:,1]  
+    tenure[:,1] .= 1
+
+    # N x 1 vectors 
+    unemp      = zeros(N_sim_micro)                  # current unemployment status
+    z_1        = fill(z_idx_micro[1], N_sim_micro)   # relevant initial z for contract
 
     @views @inbounds for t = 2:T
 
         # index by current z_t: aggregate variables 
-        zt    = z_idx_micro[t]          # current producivity
+        zt    = z_idx_micro[t]          # current productivity
         ft    = f_z[zt]                 # people find jobs in period t
-        hp_zz = hp_z[zt,:]          
-        pt_zz = pt_z[zt,:] 
-        
+        hp_zz = hp_z[zt,:]              # h'(a) given CURRENT z_t
+        pt_zz = pt_z[zt,:]              # pass-through given CURRENT z_t
+
         Threads.@threads for n = 1:N_sim_micro
 
-            if unemp[n] == false   
-                # separation shock 
-                if s_shocks_micro[n, t] < s           # became unemployed at beginning of period 
-                    unemp[n]     = true
-                    active[n, t] = 0                 
-                else                                  # remain employed
+            if unemp[n] == false  
+               
+                # separation shock at the end of t-1 
+                if s_shocks_micro[n, t-1] < s              
+                    
+                    if  jf_shocks_micro[n, t] < ft          # find a job and produce within the period t
+                        z_1[n]      = zt                    # new initial z for contract
+                        lw[n, t]    = ψ*hp_zz[z_1[n]]*η_shocks_micro[n,t]  - 0.5*(ψ*hp_zz[z_1[n]]*σ_η)^2  
+                        pt[n, t]    = pt_zz[z_1[n]]         # +  ψ*hp_zz[z_1[n]]*η_shocks_micro[n,t] <- ignore 2nd term for large sample
+                        tenure[n,t] = 1
+
+                    else
+                        unemp[n]     = true
+                    end
+
+                else        
+                                                            # remain employed in period t 
                     lw[n, t]    = lw[n,t-1] + ψ*hp_zz[z_1[n]]*η_shocks_micro[n,t]  - 0.5*(ψ*hp_zz[z_1[n]]*σ_η)^2  
-                    pt[n, t]    = pt_zz[z_1[n]]       # +  ψ*hp_zz[z_1[n]]*η_shocks_micro[n,t] <- ignore for large sample
+                    pt[n, t]    = pt_zz[z_1[n]]             # +  ψ*hp_zz[z_1[n]]*η_shocks_micro[n,t] <- ignore for large sample
+                    tenure[n,t] = tenure[n,t-1] + 1
+
                 end
+
             elseif unemp[n] == true
+                
                 # job-finding shock
                 if jf_shocks_micro[n, t] < ft         # find a job at beginning of period 
                     unemp[n]    = false               # become employed
                     z_1[n]      = zt                  # new initial z for contract
                     lw[n, t]    = ψ*hp_zz[zt]*η_shocks_micro[n,t]  - 0.5*(ψ*hp_zz[zt]*σ_η)^2 
                     pt[n, t]    = pt_zz[zt]           # +  ψ*hp_zz[zt]*η_shocks_micro[n,t]  <- ignore for large sample 
-                else                                  # remain unemployed
-                    active[n,t] = 0                 
+                    tenure[n,t] = 1                
                 end 
+
             end
 
         end
     end
 
     # compute micro wage moments using post-burn-in data
-    act_pb = active[:, burnin+1:end]'  # reshape to T x N
-    lw_pb  = lw[:, burnin+1:end]'      # reshape to T x N 
-    pt_pb  = pt[:, burnin+1:end]'      # reshape to T x N
-    avg_pt = mean(pt_pb[act_pb.==1.0])
+    @views ten_pb        = tenure[:, burnin+1:end]'  # reshape to T x N
+    @views lw_pb         = lw[:, burnin+1:end]'      # reshape to T x N 
+    @views pt_pb         = pt[:, burnin+1:end]'      # reshape to T x N
+    @views avg_pt        = mean(pt_pb[isnan.(pt_pb).==0])
 
     # compute YoY wage changes for 13 month spells
-    dlw_dict = OrderedDict{Int, Array{Real,1}}()
-    @views @inbounds for n = 1:N_sim_micro
-        
-        # record separations for given worker
-        sep   = findall(isequal(0), act_pb[:, n])
-        sep   = [0; sep; T_sim_micro + 1]
+    dlw = fill(NaN, size(lw_pb))
+    Threads.@threads for n = 1:N_sim_micro
+
+        # log wages
         lw_n  = lw_pb[:, n]
-        dlw_n = []
+
+        # record new hires for given worker
+        sep   = findall(isequal(1), ten_pb[:,n])
+        sep   = [1; sep; T_sim_micro + 1]
 
         # go through employment spells
         @inbounds for i = 2:lastindex(sep)
             
-            t0    = sep[i-1] + 1 # beginning of job spell
+            t0    = sep[i-1]     # beginning of job spell
             t1    = sep[i] - 1   # end of job spell
             
             if t1 - t0 >= 12
-                spells = collect(t0:12:t1)
-                if spells[end] + 12 > t1
-                    t2 = spells[end-1]
-                else
-                    t2 = spells[end]
-                end
-                dlw_s  = [lw_n[t+12] - lw_n[t] for t = t0:12:t2]
-                dlw_n  = vcat(dlw_n, dlw_s)
+
+                t2                                 = collect(t0:12:t1)[end-1]
+                idx                                = findfirst(isnan, dlw[:, n])
+                dlw_s                              = [lw_n[t+12] - lw_n[t] for t = t0:12:t2]
+                dlw[idx:idx+length(dlw_s)-1, n]   .= dlw_s
             end
 
         end
 
-        dlw_dict[n] = dlw_n
-       
-    end
-  
-    dlw=[]
-    for (k,v) in dlw_dict
-       dlw = vcat(dlw, v)
     end
 
     # Stdev of YoY log wage changes for job-stayers
-    std_Δlw  = isempty(dlw) ? NaN : std(dlw) 
+    @views dlw      = dlw[isnan.(dlw).==0]
+    std_Δlw         = isempty(dlw) ? NaN : std(dlw) 
 
     return (std_Δlw = std_Δlw, dlw_dly = avg_pt)
 end
@@ -343,38 +355,51 @@ end
 Simulate average labor productivity a*z for N_sim x T_sim jobs,
 ignoring η shocks. HP-filter log average output with smoothing parameter λ.
 """
-function simulateALP(z_idx_macro, s_shocks_macro, jf_shocks_macro, 
-                    N_sim_macro_workers, T_sim_macro, burnin, T_q_macro, s, f_z, y_z; λ = 10^5)
-
+function simulateALP(z_idx_macro, s_shocks_macro, jf_shocks_macro, N_sim_macro_alp_workers,
+                     T_sim_macro, burnin, T_q_macro, s, f_z, y_z; λ = 10^5)
     # Active jobs
     T          = T_sim_macro + burnin
-    y_m        = zeros(N_sim_macro_workers, T) # N x T panel of output
-    y_m[:,1]  .= y_z[z_idx_macro[1], z_idx_macro[1]]
-    active     = ones(N_sim_macro_workers, T)
-    unemp      = zeros(N_sim_macro_workers)
-    z_1        = fill(z_idx_macro[1], N_sim_macro_workers)
+    y_m        = zeros(N_sim_macro_alp_workers, T)    # N x T panel of output
+    y_m[:,1]  .= y_z[z_idx_macro[1], z_idx_macro[1]]  # initialize time 1 output
+    active     = ones(N_sim_macro_alp_workers, T)     # active within the period
+    unemp      = zeros(N_sim_macro_alp_workers)       # current unemployment status
+    unemp_beg  = zeros(N_sim_macro_alp_workers, T)    # beginning of period unemployment
+    z_1        = fill(z_idx_macro[1], N_sim_macro_alp_workers)
 
     @inbounds for t = 2:T
 
         zt = z_idx_macro[t]
         ft = f_z[z_idx_macro[t-1]]                 # job find occurs at end of period t-1
 
-         @views @inbounds for n = 1:N_sim_macro_workers
+         @views @inbounds for n = 1:N_sim_macro_alp_workers
 
             if unemp[n] == false   
-                # separation shock 
-                if s_shocks_macro[n, t] < s        # became unemployed
-                    unemp[n]     = true
-                    active[n, t] = 0
+               
+                # separation shock at end of t-1
+                if s_shocks_macro[n, t-1] < s               
+                   
+                    unemp_beg[n,t]       =  1.0              # became unemployed at start of period
+                    
+                    if  jf_shocks_macro[n, t] < ft           # find a job and produce within the period t
+                        z_1[n]       = zt                    # new initial z for contract
+                        y_m[n, t]    = y_z[zt, zt]           # current output      
+                    else
+                        unemp[n]     = true
+                        active[n, t] = 0
+                    end
                 else
-                    y_m[n, t]    = y_z[zt, z_1[n]] # remain employed      
+                    y_m[n, t]    = y_z[zt, z_1[n]]          # remain employed      
                 end
+
             elseif unemp[n] == true
+
+                unemp_beg[n,t]  = 1.0              # unemployed at end of last period 
+
                 # job-finding shock
                 if jf_shocks_macro[n, t] < ft      # found a job
-                    unemp[n]    = false            # became employed
                     z_1[n]      = zt               # new initial z for contract
                     y_m[n, t]   = y_z[zt, zt]      # new output level     
+                    unemp[n]    = false            # became employed
                 else                               # remain unemployed
                     active[n,t] = 0                 
                 end 
@@ -383,16 +408,15 @@ function simulateALP(z_idx_macro, s_shocks_macro, jf_shocks_macro,
         end
     end
 
-    # construct quarterly averages
+    # construct quarterly measures
     ly_q = zeros(T_q_macro)                                       # quarterly log output
-    u_t  = mean(1 .- active[:, burnin+1:end], dims=1)             # monthly unemployment
+    u_t  = mean(unemp_beg[:, burnin+1:end], dims=1)               # monthly unemployment
 
     @views @inbounds for t = 1:T_q_macro
         t_q      = t*3
         output   = vec(y_m[:, burnin+1:end][:, (t_q - 2):t_q])    # output
         emp      = vec(active[:, burnin+1:end][:, (t_q - 2):t_q]) # who is employed
-        ly_q[t]  = log.(max(mean(output[emp.==1]), eps()))        # avg output/worker (quarterly)
-        #lu_q[t] = log.(max(1 - mean(emp), eps()))                # average quarterly unemployment
+        ly_q[t]  = log.(max(mean(output[emp.==1]), eps()))        # avg output/worker (averaged across workers/hours in the quarter)
     end
 
     # Estimate d log u_t+1 / d  log ALP_t (quarterly, pooled OLS)

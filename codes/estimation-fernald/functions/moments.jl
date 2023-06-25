@@ -189,7 +189,7 @@ function decomposition(modd, bonus; fix_a = false)
 
     if fix_a == true
         
-        return (JJ_EVT = JJ_EVT, WF = WF, BWC = zeros(N_z), IWF = zeros(N_z), resid = zeros(N_z), total_resid = total_resid) 
+        return (JJ_EVT = JJ_EVT, WC = WC, BWC = zeros(N_z), IWC = zeros(N_z), resid = zeros(N_z), total_resid = total_resid) 
 
     elseif fix_a == false
 
@@ -236,7 +236,7 @@ function decomposition(modd, bonus; fix_a = false)
             IWC[iz]      =  da_dz[iz]/zgrid[iz] - da_dw[iz]*dw0_dz1[iz] 
         end
 
-        # Solve for the BWF
+        # Solve for the BWC
         BWC             = WC - IWC
         resid           = BWC - JJ_EVT  # partial kappa/q(θ(z_0)) / partial z_0
 
