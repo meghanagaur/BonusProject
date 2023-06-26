@@ -145,11 +145,11 @@ modd       = model(N_z = vary_z_N, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η
 modd_chi0  = model(N_z = vary_z_N, χ = 0.0, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
 
 if fix_a == true
-    bonus      = vary_z1(modd; fix_a = fix_a, a = Params[:a])
-    bonus_chi0 = vary_z1(modd_chi0; fix_a = fix_a, a = Params[:a])
+    bonus      = vary_z0(modd; fix_a = fix_a, a = Params[:a])
+    bonus_chi0 = vary_z0(modd_chi0; fix_a = fix_a, a = Params[:a])
 else 
-    bonus      = vary_z1(modd; fix_a = fix_a)
-    bonus_chi0 = vary_z1(modd_chi0; fix_a = fix_a)
+    bonus      = vary_z0(modd; fix_a = fix_a)
+    bonus_chi0 = vary_z0(modd_chi0; fix_a = fix_a)
 end
 
 # Get primitives
@@ -181,13 +181,12 @@ maxz_idx   = isnothing(maxz_idx) ? vary_z_N : maxz_idx
 range_1    = minz_idx:maxz_idx
 
 # Get decomposition components
-@unpack JJ_EVT, WC, BWC, IWC, resid, total_resid = decomposition(modd, bonus; fix_a = fix_a)
+@unpack JJ_EVT, WC, BWC, IWC, resid, total_resid, BWC_share, c_term = decomposition(modd, bonus; fix_a = fix_a)
 
 ## Compute C term and dJ/dz in Bonus, Hall
 JJ_B      = slopeFD(bonus.J, zgrid; diff = "central")
 JJ_H      = slopeFD(hall.J, zgrid; diff = "central")
 JJ_B0     = slopeFD(bonus_chi0.J, zgrid; diff = "central")
-c_term    = JJ_B - JJ_EVT
 
 ## Share of Incentive Wage Flexibility
 println("------------------------")
@@ -195,10 +194,8 @@ println("WAGE CYCLICALITY")
 println("------------------------")
 
 ## Share of bargained wage flexibility
-WC_chi0  = slopeFD(bonus_chi0.W, zgrid)      # total wage flexibility
-BWC_1    = -(c_term./WC)                     # primary BWC measure using direct effect of productivity on profits
 
-println("BWC Share #1: \t\t"*string(round(BWC_1[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("BWC Share #1: \t\t"*string(round(BWC_share[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("BWC Share #2: \t\t"*string(round((BWC./WC)[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("IWC: \t\t\t"*string(round((1-BWC_1[z_ss_idx])*dlw1_du , RoundNearestTiesAway, digits = 3)))
 

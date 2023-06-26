@@ -1,0 +1,60 @@
+My SLURM_ARRAY_JOB_ID is 48794567.
+My SLURM_ARRAY_TASK_ID is 4
+Executing on the machine: della-h12n11
+File name: cyc125
+Checking for multiplicity of roots..
+Root{Interval{Float64}}[Root([1.03259e-06, 1.06657e-06], :unique), Root([1.12876e-06, 1.19097e-06], :unknown), Root([0.789532, 0.789533], :unique), Root([9.41153e-07, 1.00533e-06], :unknown)]
+Root{Interval{Float64}}[Root([1.00532e-06, 1.06657e-06], :unknown), Root([9.7299e-07, 1.00533e-06], :unknown), Root([1e-08, 7.02867e-08], :unknown), Root([0.824834, 0.824835], :unique), Root([8.77973e-07, 9.41154e-07], :unknown)]
+Root{Interval{Float64}}[Root([1.00532e-06, 1.06657e-06], :unknown), Root([9.41153e-07, 1.00533e-06], :unknown), Root([0.861706, 0.861707], :unique), Root([1e-08, 7.02867e-08], :unknown)]
+Root{Interval{Float64}}[Root([1.00532e-06, 1.06657e-06], :unknown), Root([9.41153e-07, 9.64225e-07], :unique), Root([8.14793e-07, 8.77974e-07], :unknown), Root([1e-08, 7.02867e-08], :unknown), Root([0.900217, 0.900218], :unique)]
+Root{Interval{Float64}}[Root([1.00532e-06, 1.06657e-06], :unknown), Root([9.14091e-07, 9.41154e-07], :unique), Root([8.14793e-07, 8.77974e-07], :unknown), Root([1e-08, 7.02867e-08], :unknown), Root([0.940439, 0.94044], :unique)]
+Root{Interval{Float64}}[Root([1.00532e-06, 1.06657e-06], :unknown), Root([8.77973e-07, 9.29504e-07], :unique), Root([0.98245, 0.982451], :unique), Root([1e-08, 7.02867e-08], :unknown)]
+Root{Interval{Float64}}[Root([1e-08, 7.02867e-08], :unknown), Root([1.02632, 1.02633], :unique), Root([8.60368e-07, 8.77974e-07], :unique)]
+Root{Interval{Float64}}[Root([8.02779e-07, 8.77974e-07], :unique), Root([6.89413e-07, 7.52594e-07], :unknown), Root([1.07215, 1.07216], :unique), Root([1e-08, 7.02867e-08], :unknown)]
+Root{Interval{Float64}}[Root([8.77973e-07, 9.41154e-07], :unknown), Root([1.12002, 1.12003], :unique), Root([6.89413e-07, 7.52594e-07], :unknown), Root([1e-08, 7.02867e-08], :unknown), Root([8.14793e-07, 8.23274e-07], :unique)]
+Root{Interval{Float64}}[Root([8.77973e-07, 9.41154e-07], :unknown), Root([1.17001, 1.17002], :unique), Root([6.89413e-07, 7.52594e-07], :unknown), Root([1e-08, 7.02867e-08], :unknown), Root([7.7918e-07, 8.14794e-07], :unique)]
+Root{Interval{Float64}}[Root([2.01633e-06, 2.05342e-06], :unknown), Root([1.00532e-06, 1.00956e-06], :unknown), Root([7.52593e-07, 8.24251e-07], :unique), Root([1e-08, 7.02867e-08], :unknown), Root([1.22222, 1.22223], :unique)]
+Root{Interval{Float64}}[Root([1.27676, 1.27677], :unique), Root([1e-08, 7.02867e-08], :unknown), Root([7.22144e-07, 7.52594e-07], :unique)]
+Root{Interval{Float64}}[Root([1.33371, 1.33372], :unique), Root(∅, :unique), Root([1e-08, 7.02867e-08], :unknown)]
+ 49.988960 seconds (45.59 M allocations: 280.069 GiB, 20.57% gc time, 5.84% compilation time)
+------------------------
+ESTIMATED PARAMETERS
+------------------------
+σ_η: 		0.521
+χ: 		0.479
+γ: 		0.44
+hbar: 		1.0
+ε: 		3.471
+ρ: 		0.966
+σ_ϵ: 		0.006
+ι: 		0.9
+------------------------
+TARGETED MOMENTS
+------------------------
+std_Δlw: 	0.064
+dlw1_du: 	-1.25
+dlw_dly: 	0.036
+u_ss: 		0.058
+------------------------
+UNTARGETED MOMENTS
+------------------------
+dlu_dly: 	-1.353
+std logu: 	0.089
+std logz: 	0.016
+std logy: 	0.066
+a(μ_z): 	1.026
+θ(μ_z): 	1.38
+Y (ss): 	30.059
+W (ss): 	28.904
+W/Y (ss): 	0.962
+dla_dlz: 	1.912
+dlY_dlz: 	0.71
+dlW_dlz: 	0.453
+dlθ_dlz: 	12.5
+------------------------
+WAGE CYCLICALITY
+------------------------
+BWC Share #1: 		0.54
+BWC Share #2: 		0.54
+IWC: 		-0.574
+C term at μ_z: 		-7.074

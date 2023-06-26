@@ -1,60 +1,60 @@
-My SLURM_ARRAY_JOB_ID is 46323431.
-Executing on the machine: della-r3c1n3
-File name: fix_chi0_cyc0
- 47.953767 seconds (53.25 M allocations: 274.290 GiB, 17.56% gc time, 4.22% compilation time)
+My SLURM_ARRAY_JOB_ID is 48773694.
+My SLURM_ARRAY_TASK_ID is 3
+Executing on the machine: della-r2c4n10
+File name: fix_chi0
 Checking for multiplicity of roots..
-Root{Interval{Float64}}[Root([0.708069, 0.70807], :unique), Root([4.44714e-05, 4.44724e-05], :unique)]
-Root{Interval{Float64}}[Root([0.754068, 0.75407], :unique), Root([4.33402e-05, 4.33406e-05], :unique)]
-Root{Interval{Float64}}[Root([0.803031, 0.803032], :unique), Root([4.22305e-05, 4.22656e-05], :unique)]
-Root{Interval{Float64}}[Root([4.11752e-05, 4.11766e-05], :unique), Root([0.855147, 0.855148], :unique)]
-Root{Interval{Float64}}[Root([4.01212e-05, 4.01604e-05], :unique), Root([0.91062, 0.910621], :unique)]
-Root{Interval{Float64}}[Root([3.91351e-05, 3.91352e-05], :unique), Root([0.969664, 0.969665], :unique)]
-Root{Interval{Float64}}[Root([3.81583e-05, 3.81587e-05], :unique), Root([1.03251, 1.03252], :unique)]
-Root{Interval{Float64}}[Root([3.72087e-05, 3.72105e-05], :unique), Root([1.0994, 1.09941], :unique)]
-Root{Interval{Float64}}[Root([3.62816e-05, 3.62933e-05], :unique), Root([1.1706, 1.17061], :unique)]
-Root{Interval{Float64}}[Root([1.24638, 1.24639], :unique), Root([3.53685e-05, 3.54146e-05], :unique)]
-Root{Interval{Float64}}[Root([3.45045e-05, 3.45375e-05], :unique), Root([1.32704, 1.32705], :unique)]
-Root{Interval{Float64}}[Root([1.4129, 1.41291], :unique), Root([3.36734e-05, 3.36737e-05], :unique)]
-Root{Interval{Float64}}[Root([1.50427, 1.50428], :unique), Root([3.31343e-05, 3.32083e-05], :unknown), Root([3.285e-05, 3.28504e-05], :unique)]
+Root{Interval{Float64}}[Root([0.764479, 0.764481], :unique), Root([6.55259e-06, 6.55612e-06], :unique)]
+Root{Interval{Float64}}[Root([0.803774, 0.803775], :unique), Root([6.36025e-06, 6.40843e-06], :unique)]
+Root{Interval{Float64}}[Root([0.845075, 0.845076], :unique), Root([6.18261e-06, 6.24641e-06], :unique)]
+Root{Interval{Float64}}[Root([0.888484, 0.888485], :unique), Root([6.03144e-06, 6.04419e-06], :unique)]
+Root{Interval{Float64}}[Root([5.86608e-06, 5.88364e-06], :unique), Root([0.93411, 0.934111], :unique)]
+Root{Interval{Float64}}[Root([0.982066, 0.982067], :unique), Root([5.68359e-06, 5.7286e-06], :unique)]
+Root{Interval{Float64}}[Root([5.56343e-06, 5.57542e-06], :unique), Root([1.03246, 1.03247], :unique)]
+Root{Interval{Float64}}[Root([5.41618e-06, 5.41979e-06], :unique), Root([1.08544, 1.08545], :unique)]
+Root{Interval{Float64}}[Root([5.26387e-06, 5.30562e-06], :unique), Root([1.14112, 1.14113], :unique)]
+Root{Interval{Float64}}[Root([5.13209e-06, 5.13395e-06], :unique), Root([1.19964, 1.19965], :unique)]
+Root{Interval{Float64}}[Root([1.26115, 1.26116], :unique), Root([4.99542e-06, 4.997e-06], :unique)]
+Root{Interval{Float64}}[Root([1.3258, 1.32581], :unique), Root([4.85354e-06, 4.86657e-06], :unique)]
+Root{Interval{Float64}}[Root([1.39375, 1.39376], :unique), Root([4.72756e-06, 4.73771e-06], :unique)]
+233.936134 seconds (49.61 M allocations: 280.344 GiB, 70.14% gc time, 1.08% compilation time)
 ------------------------
 ESTIMATED PARAMETERS
 ------------------------
-σ_η: 		0.5383
+σ_η: 		0.524
 χ: 		0.0
-γ: 		0.4132
+γ: 		0.427
 hbar: 		1.0
-ε: 		4.982
+ε: 		3.974
 ρ: 		0.966
-σ_ϵ: 		0.0056
+σ_ϵ: 		0.006
 ι: 		0.9
 ------------------------
 TARGETED MOMENTS
 ------------------------
 std_Δlw: 	0.064
-dlw1_du: 	-0.688
-dlw_dly: 	0.035
-u_ss: 		0.053
+dlw1_du: 	-0.645
+dlw_dly: 	0.037
+u_ss: 		0.055
 ------------------------
 UNTARGETED MOMENTS
 ------------------------
-u_ss_2: 	0.049
-dlu_dly: 	-1.526
+dlu_dly: 	-1.796
 std logu: 	0.15
 std logz: 	0.016
-std logy: 	0.089
-a(μ_z): 	1.033
-θ(μ_z): 	1.809
-Y (ss): 	30.315
-W (ss): 	28.955
+std logy: 	0.074
+a(μ_z): 	1.032
+θ(μ_z): 	1.818
+Y (ss): 	30.262
+W (ss): 	28.898
 W/Y (ss): 	0.955
-dla_dlz: 	2.871
-dlY_dlz: 	0.919
-dlW_dlz: 	0.428
-dlθ_dlz: 	18.028
+dla_dlz: 	2.354
+dlY_dlz: 	0.903
+dlW_dlz: 	0.412
+dlθ_dlz: 	17.919
 ------------------------
-WAGE FLEXIBILITY
+WAGE CYCLICALITY
 ------------------------
-IWF Share #1: 		1.0
-IWF Share #2: 		0.239
-WF with χ = 0/WF 	1.0
+BWC Share #1: 		0.0
+BWC Share #2: 		-0.0
+IWC: 		-0.645
 C term at μ_z: 		-0.0

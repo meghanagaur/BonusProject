@@ -9,7 +9,7 @@ using Pkg; Pkg.add(url="https://github.com/meghanagaur/DynamicModel")
 
 ## Requred pacakges
 using DynamicModel, BenchmarkTools, DataStructures, Distributions, Optim, Sobol, SparseArrays,
-ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2, NLopt
+ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2, NLopt, Combinatorics
 
 ## Required functions
 include("utils.jl")                     # basic utility functions  

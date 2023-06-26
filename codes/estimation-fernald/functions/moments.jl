@@ -1,8 +1,8 @@
 """
-Vary z_1, and compute relevant aggregates.
-B denotes Bonus model.
+Vary z_0, and compute relevant aggregates.
+_B denotes Bonus model.
 """
-function vary_z1(modd; check_mult = false, fix_a = false, a = 1.0)
+function vary_z0(modd; check_mult = false, fix_a = false, a = 1.0)
 
     @unpack ψ, zgrid, z_ss_idx, N_z = modd
 
@@ -44,7 +44,7 @@ function vary_z1(modd; check_mult = false, fix_a = false, a = 1.0)
 end
 
 """
-Produce Hall economy aggregates, matching SS Y_B and W_B from Bonus economy.
+Produce Hall economy aggregates, matching SS Y and W from Bonus economy.
 """
 function solveHall(modd, Y_B, W_B)
 
@@ -63,7 +63,6 @@ function solveHall(modd, Y_B, W_B)
         v0     = copy(v0_new)
         iter +=1
     end
-    
 
     a       = Y_B[z_ss_idx]./v0[z_ss_idx]        # exactly match SS PV of output in the 2 models
     W       = W_B[z_ss_idx]                      # match SS PV of wages (E_0[w_t] = w_0 from martingale property)
@@ -76,26 +75,9 @@ function solveHall(modd, Y_B, W_B)
 end
 
 """
-Return d log theta/d log z at the steady state μ_z.
-"""
-function dlogtheta(modd; N_z = 21)
-
-    # vary initial z1
-    modd2 = model(N_z = N_z, σ_η = modd.σ_η, χ = modd.χ, γ = modd.γ, hbar = modd.hbar, ε = modd.ε,
-                    ρ = modd.ρ, σ_ϵ = modd.σ_ϵ, ι = modd.ι)
-
-    @unpack θ, zgrid = vary_z1(modd2)
-
-    # compute d log theta/d log z
-    dlogθ  = slopeFD(θ, zgrid; diff = "forward").*zgrid[1:end-1]./θ[1:end-1]
-
-    return  dlogθ[modd2.z_ss_idx]
-end
-
-"""
 Simulate employment, given θ(z_t) path
 """
-function simulate_employment(modd, T_sim, burnin, θ; minz_idx = 1, u0 = 0.069, seed = 512)
+function simulate_employment(modd, T_sim, burnin, θ; minz_idx = 1, u0 = 0.06, seed = 512)
 
     @unpack s, f, zgrid, P_z = modd
 
@@ -180,24 +162,29 @@ function decomposition(modd, bonus; fix_a = false)
         JJ_EVT[iz]   = v0[iz]/zgrid[iz]
     end
 
-    # total wage flexibility
+    # total wage cyclicality
     WC              = slopeFD(bonus.W, zgrid)
 
-    # compute the residual 
+    # primary measure of bargained wage cyclicality (BWC) share using direct effect of productivity on profits
+    JJ              = slopeFD(bonus.J, zgrid)
+    c_term          = JJ - JJ_EVT
+    BWC_share       = -(c_term./WC)                  
+
+    # Compute the residual <- used for alternative construction of BWC
     qq(x)           = -(x^(-1 + ι))*(1 + x^ι)^(-1 - 1/ι) # q'(θ)
     total_resid     = -(κ./(q.(bonus.θ)).^2).*qq.(bonus.θ).*slopeFD(bonus.θ, zgrid) # d kappa/q(θ(z_0)) / d z_0
 
     if fix_a == true
         
-        return (JJ_EVT = JJ_EVT, WC = WC, BWC = zeros(N_z), IWC = zeros(N_z), resid = zeros(N_z), total_resid = total_resid) 
+        return (JJ_EVT = JJ_EVT, WC = WC, BWC = zeros(N_z), IWC = zeros(N_z), resid = zeros(N_z), total_resid = total_resid, BWC_share = BWC_share, c_term = c_term)
 
     elseif fix_a == false
 
-        # Solve for IWC
+        # Solve for IWC (more complicated wy)
         IWC          = zeros(N_z) 
-        dw0_dz1      = slopeFD(bonus.w_0, zgrid)
-        dw0_dz1[1]   = slopeFD(bonus.w_0, zgrid; diff = "forward")[1]
-        dw0_dz1[end] = slopeFD(bonus.w_0, zgrid; diff = "backward")[end]
+        dw0_dz0      = slopeFD(bonus.w_0, zgrid)
+        dw0_dz0[1]   = slopeFD(bonus.w_0, zgrid; diff = "forward")[1]
+        dw0_dz0[end] = slopeFD(bonus.w_0, zgrid; diff = "backward")[end]
 
         Threads.@threads for iz = 1:N_z
 
@@ -233,28 +220,51 @@ function decomposition(modd, bonus; fix_a = false)
                 iter +=1
             end
 
-            IWC[iz]      =  da_dz[iz]/zgrid[iz] - da_dw[iz]*dw0_dz1[iz] 
+            IWC[iz]      =  da_dz[iz]/zgrid[iz] - da_dw[iz]*dw0_dz0[iz] 
         end
 
-        # Solve for the BWC
+        # Solve for the BWC share (residual definition)
         BWC             = WC - IWC
         resid           = BWC - JJ_EVT  # partial kappa/q(θ(z_0)) / partial z_0
 
-        return (JJ_EVT = JJ_EVT, WC = WC, BWC = BWC, IWC = IWC, resid = resid, total_resid = total_resid) 
+        return (JJ_EVT = JJ_EVT, WC = WC, BWC = BWC, IWC = IWC, resid = resid, total_resid = total_resid, BWC_share = BWC_share, c_term = c_term)
     end
 
 end
 
 """
-Simulate moments for heatmaps
+Simulate moments for identification heatmaps
 """
-function heatmap_moments(; σ_η = 0.406231, χ = 0.578895, γ = 0.562862, hbar = 1.0, ε = 0.3)
+function heatmap_moments(xx, combo, param_vals, shocks; N_z = 51)
 
-    baseline     = model(σ_η = σ_η, hbar = hbar, ε = ε, γ = γ,  χ = χ) 
-    out          = simulate(baseline, shocks)
-    dlogθ_dlogz  = dlogtheta(baseline)
+    Params =  OrderedDict{Symbol, Float64}()
+    for (k, v) in param_vals
+        p_idx      = findfirst(isequal(k), combo)
+        if !isnothing(p_idx)
+            Params[k]  = xx[p_idx]
+        else
+            Params[k]  = v
+        end
+    end
+    
+    @unpack σ_η, χ, γ, ε = Params
 
-    mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss, dlogθ_dlogz]  
+    # Simulate the model
+    modd             = model(σ_η = σ_η, χ = χ, γ = γ, ε = ε, N_z = N_z) 
+    out              = simulate(modd, shocks; check_mult = false, est_alp = false) 
+
+    # Solve model for each initial z_0
+    bonus            = vary_z0(modd; fix_a = false)
+
+    # Compute d log theta/d log z
+    @unpack θ, zgrid = bonus
+    dlogθ_dlogz      = slopeFD(θ, zgrid; diff = "forward").*zgrid[1:end-1]./θ[1:end-1]
+
+    # primary BWC measure using direct effect of productivity on profits
+    @unpack JJ_EVT, WC, BWC, IWC, resid, total_resid, BWC_share = decomposition(modd, bonus; fix_a = false)
+
+    # Collect moments
+    mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss, out.std_u,  dlogθ_dlogz[modd.z_ss_idx], BWC_share[modd.z_ss_idx]]  
     
     # Flags
     flag     = out.flag

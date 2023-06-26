@@ -1,0 +1,46 @@
+My SLURM_ARRAY_JOB_ID is 48773694.
+My SLURM_ARRAY_TASK_ID is 2
+Executing on the machine: della-r2c4n7
+File name: fix_a_bwc10
+  9.372520 seconds (17.94 M allocations: 7.103 GiB, 8.11% gc time, 8.20% compilation time)
+------------------------
+ESTIMATED PARAMETERS
+------------------------
+σ_η: 		0.5
+χ: 		0.574
+γ: 		0.689
+hbar: 		1.0
+ε: 		0.5
+ρ: 		0.966
+σ_ϵ: 		0.006
+ι: 		0.9
+------------------------
+TARGETED MOMENTS
+------------------------
+std_Δlw: 	0.0
+dlw1_du: 	-0.996
+dlw_dly: 	0.0
+u_ss: 		0.058
+------------------------
+UNTARGETED MOMENTS
+------------------------
+dlu_dly: 	-4.44
+std logu: 	0.074
+std logz: 	0.016
+std logy: 	0.016
+a(μ_z): 	1.0
+θ(μ_z): 	1.336
+Y (ss): 	29.203
+W (ss): 	28.068
+W/Y (ss): 	0.961
+dla_dlz: 	0.0
+dlY_dlz: 	0.51
+dlW_dlz: 	0.293
+dlθ_dlz: 	10.442
+------------------------
+WAGE CYCLICALITY
+------------------------
+BWC Share #1: 		1.0
+BWC Share #2: 		0.0
+IWC: 		0.0
+C term at μ_z: 		-8.219
