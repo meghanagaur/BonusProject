@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=baseline      # create a short name for your job
+#SBATCH --job-name=low_eps       # create a short name for your job
 #SBATCH --output=slurm-%j.out    # stdout file
 #SBATCH --error=slurm-%j.err     # stderr file
 #SBATCH --nodes=6                # node count

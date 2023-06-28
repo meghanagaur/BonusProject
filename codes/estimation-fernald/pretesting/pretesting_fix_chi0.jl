@@ -68,7 +68,6 @@ file  = "pretesting_fix_chi0"
 end
 
 # Evaluate the objective function for each parameter vector
-I_max =10
 @time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W), 1:I_max) 
 
 # Kill the processes

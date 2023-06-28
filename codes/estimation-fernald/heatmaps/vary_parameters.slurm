@@ -2,8 +2,8 @@
 #SBATCH --job-name=vary_params   # create a short name for your job
 #SBATCH --output=slurm-%A.%a.out # stdout file
 #SBATCH --error=slurm-%A.%a.err  # stderr file
-#SBATCH --nodes=5                # node count
-#SBATCH --ntasks=50              # total number of tasks across all nodes
+#SBATCH --nodes=6                # node count
+#SBATCH --ntasks=60              # total number of tasks across all nodes
 #SBATCH --cpus-per-task=1        # cpu-cores per task (>1 if multi-threaded tasks)
 #SBATCH --mem-per-cpu=10G        # memory per cpu-core (4G is default)
 #SBATCH --time=04:00:00          # total run time limit (HH:MM:SS)

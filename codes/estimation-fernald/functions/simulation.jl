@@ -1,5 +1,5 @@
 """
-Simulate EGSS, given parameters defined in tuple m.
+Simulate EGSS, given parameters defined in modd.
 Solve the model with infinite horizon contract. Solve 
 for θ and Y on every point in the productivity grid.
 Then, compute the effort optimal effort a and wage w,
@@ -23,7 +23,7 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, est_alp = false, 
     # Get all of the relevant parameters, functions for the model
     @unpack hp, zgrid, logz, N_z, P_z, p_z, ψ, f, s, σ_η, χ, γ, hbar, ε, z_ss_idx, ρ, σ_ϵ = modd 
 
-    # Generate model data for every point on zgrid:
+    # Generate model objects for every point on zgrid:
 
     # Build vectors     
     θ_z       = zeros(N_z)               # θ(z_1)
@@ -62,19 +62,21 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, est_alp = false, 
             θ_z[iz]       = θ      
             f_z[iz]       = f(θ)       
 
-            # Compute passthrough: elasticity of w_it wrt y_it 
+            # Compute expected passthrough: elasticity of w_it wrt y_it 
             pt_z[:,iz]    = ψ*hbar*az.^(1 + 1/ε)
         end
 
     end
 
-    # Composite flag; compute simulation only for 3 standard deviations of z shock
-    σ_z  = σ_ϵ/sqrt(1 - ρ^2)
-    idx  = findfirst(x-> x > -3σ_z, logz) 
-    flag = max(maximum(flag_z[idx:end]), maximum(flag_IR_z[idx:end]))
+    # Composite flag; truncate simulation and only penalize IR flags for log z values within 3 standard deviations of μ_z 
+    σ_z     = σ_ϵ/sqrt(1 - ρ^2)
+    idx_1   = findfirst(x-> x > -3σ_z, logz) 
+    idx_2   = findlast(x-> x <= 3σ_z, logz) 
+    flag    = maximum(flag_z[idx_1:idx_2])
+    flag_IR = maximum(flag_IR_z[idx_1:idx_2])
 
-    # only compute moments if equilibria were found for all z
-    if (flag < 1) 
+    # only compute moments if equilibria were found for all log z values within 3 standard deviations of μ_z 
+    if  max(flag_IR , flag) < 1 
 
         # Unpack the relevant shocks
         @unpack N_sim_micro, T_sim_micro, N_sim_macro, T_sim_macro, z_idx_macro, N_sim_macro_alp, N_sim_macro_alp_workers, 
@@ -82,13 +84,13 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, est_alp = false, 
 
         # scale normal shocks by σ_η
         η_shocks_micro = η_shocks_micro*σ_η 
-        z_idx_micro    = max.(z_idx_micro, idx)
+        z_idx_micro    = min.(max.(z_idx_micro, idx_1), idx_2)
 
         # Simulate annual wage changes + passthrough
         @unpack std_Δlw, dlw_dly = simulateWageMoments(η_shocks_micro, s_shocks_micro, jf_shocks_micro, z_idx_micro, N_sim_micro, T_sim_micro, burnin, hp_z, pt_z, f_z, ψ, σ_η, s)        
 
         # Macro moments 
-        z_idx_macro    = max.(z_idx_macro, idx)
+        z_idx_macro    = min.(max.(z_idx_macro, idx_1), idx_2)  
         @views lw1_t   = lw1_z[z_idx_macro]     # E[log w_1 | z_t] series
         @views θ_t     = θ_z[z_idx_macro]       # θ(z_t) series
         @views f_t     = f_z[z_idx_macro]       # f(θ(z_t)) series
@@ -161,11 +163,11 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, est_alp = false, 
     end
     
     # determine an IR error for all initial z within 3 uncond. standard deviations
-    IR_err = sum(abs.(err_IR_z[idx:end]))
+    IR_err = sum(abs.(err_IR_z[idx_1:idx_2]))
 
     # Export the simulation results
     return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, u_ss_2 = u_ss_2, alp_ρ = alp_ρ, 
-    alp_σ = alp_σ, dlu_dly = dlu_dly, std_u = std_u, std_z = std_z, flag = flag, flag_IR = maximum(flag_IR_z[idx:end]), IR_err = IR_err)
+    alp_σ = alp_σ, dlu_dly = dlu_dly, std_u = std_u, std_z = std_z, flag = flag, flag_IR = flag_IR, IR_err = IR_err)
 end
 
 """
@@ -178,7 +180,7 @@ T_sim_macro             = num periods for agg sequences: 69 years
 burnin                  = length burn-in for agg sequence
 N_sim_macro_alp         = num seq to avg across for endog ALP moments (<= N_sim_macro)
 """
-function rand_shocks(P_z, p_z; z0_idx = 0, N_sim_micro = 2*10^4, T_sim_micro = 1000, 
+function rand_shocks(P_z, p_z; z0_idx = 0, N_sim_micro = 3*10^4, T_sim_micro = 1000, 
     N_sim_macro = 10^4,  N_sim_macro_alp_workers = 10^4, T_sim_macro = 828, burnin = 1000,
     N_sim_macro_alp = 10^3, set_seed = true, seed = 512)
 
@@ -251,7 +253,7 @@ function simulateWageMoments(η_shocks_micro, s_shocks_micro, jf_shocks_micro, z
     pt           = fill(NaN, N_sim_micro, T)       # N x T panel of pass-through
     tenure       = zeros(N_sim_micro, T)           # N x T panel of tenure
 
-    # Initialize period 1 values -- ignore the constant in log wages, since drops out for wage changes
+    # Initialize period 1 values (production) -- ignore the constant w-1 in log wages, since drops out for wage changes
     lw[:,1]     .= ψ*hp_z[z_idx_micro[1], z_idx_micro[1]]*η_shocks_micro[:,1]  .- 0.5*(ψ*hp_z[z_idx_micro[1], z_idx_micro[1]]*σ_η)^2 
     pt[:,1]     .= pt_z[z_idx_micro[1], z_idx_micro[1]] #.+ ψ*hp_z[z_idx_micro[1], z_idx_micro[1]]*η_shocks_micro[:,1]  
     tenure[:,1] .= 1
@@ -285,6 +287,7 @@ function simulateWageMoments(η_shocks_micro, s_shocks_micro, jf_shocks_micro, z
                         unemp[n]     = true
                     end
 
+                # no separation shock, remain employed    
                 else        
                                                             # remain employed in period t 
                     lw[n, t]    = lw[n,t-1] + ψ*hp_zz[z_1[n]]*η_shocks_micro[n,t]  - 0.5*(ψ*hp_zz[z_1[n]]*σ_η)^2  
@@ -329,11 +332,10 @@ function simulateWageMoments(η_shocks_micro, s_shocks_micro, jf_shocks_micro, z
         # go through employment spells
         @inbounds for i = 2:lastindex(sep)
             
-            t0    = sep[i-1]     # beginning of job spell
-            t1    = sep[i] - 1   # end of job spell
+            t0    = sep[i-1]     # beginning of job spell 
+            t1    = sep[i] - 1   # end of job spell (right before new job spell)
             
             if t1 - t0 >= 12
-
                 t2                                 = collect(t0:12:t1)[end-1]
                 idx                                = findfirst(isnan, dlw[:, n])
                 dlw_s                              = [lw_n[t+12] - lw_n[t] for t = t0:12:t2]

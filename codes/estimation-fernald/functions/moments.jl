@@ -237,6 +237,7 @@ Simulate moments for identification heatmaps
 """
 function heatmap_moments(xx, combo, param_vals, shocks; N_z = 51)
 
+    # Set the parameters
     Params =  OrderedDict{Symbol, Float64}()
     for (k, v) in param_vals
         p_idx      = findfirst(isequal(k), combo)
@@ -250,21 +251,22 @@ function heatmap_moments(xx, combo, param_vals, shocks; N_z = 51)
     @unpack σ_η, χ, γ, ε = Params
 
     # Simulate the model
-    modd             = model(σ_η = σ_η, χ = χ, γ = γ, ε = ε, N_z = N_z) 
+    modd             = model(σ_η = σ_η, χ = χ, γ = γ, ε = ε) 
     out              = simulate(modd, shocks; check_mult = false, est_alp = false) 
 
     # Solve model for each initial z_0
-    bonus            = vary_z0(modd; fix_a = false)
+    modd_big         = model(σ_η = σ_η, χ = χ, γ = γ, ε = ε, N_z = N_z) 
+    bonus            = vary_z0(modd_big; fix_a = false)
 
     # Compute d log theta/d log z
     @unpack θ, zgrid = bonus
     dlogθ_dlogz      = slopeFD(θ, zgrid; diff = "forward").*zgrid[1:end-1]./θ[1:end-1]
 
     # primary BWC measure using direct effect of productivity on profits
-    @unpack JJ_EVT, WC, BWC, IWC, resid, total_resid, BWC_share = decomposition(modd, bonus; fix_a = false)
+    @unpack JJ_EVT, WC, BWC, IWC, resid, total_resid, BWC_share = decomposition(modd_big, bonus; fix_a = false)
 
     # Collect moments
-    mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss, out.std_u,  dlogθ_dlogz[modd.z_ss_idx], BWC_share[modd.z_ss_idx]]  
+    mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss, out.std_u, dlogθ_dlogz[modd_big.z_ss_idx], BWC_share[modd_big.z_ss_idx]]  
     
     # Flags
     flag     = out.flag

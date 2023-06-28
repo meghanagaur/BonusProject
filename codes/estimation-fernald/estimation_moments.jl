@@ -15,14 +15,14 @@ xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
 ## Logistics
-files        = ["iota125" "fix_a_bwc0447" "cyc05" "cyc075" "cyc125" "cyc15"]
-#files        = ["baseline" "fix_a_bwc10" "fix_chi0"]
+#files        = ["iota125" "fix_a_bwc0447" "cyc05" "cyc075" "cyc125" "cyc15"]
+#files        = ["fix_chi0"] # "fix_a_bwc10" "fix_chi0"]
 big_run      = true        
 file_idx     = big_run ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]                              
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
 file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
-file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
+file_save    = "figs/vary-z0/"*file_str*"/"             # file to-save 
 
 # Make directory for figures
 mkpath(file_save)
@@ -30,14 +30,14 @@ println("File name: "*file_str)
 
 # Settings for simulation
 if big_run == false
-    vary_z_N                 = 51           # # of gridpoints when taking numerical derivatives
-    N_sim_micro              = 10^4         # # of workers for wage simulations
-    N_sim_macro              = 10^4         # # of panels for macro stats exc. ALP
+    vary_z_N                 = 51           # lower # of gridpoints when taking numerical derivatives
+    #N_sim_micro              = 10^4        # lower # of workers for wage simulations
+    #N_sim_macro              = 10^4        # lower # of panels for macro stats exc. ALP
     est_alp                  = false
 else
     vary_z_N                 = 201          # increase # of gridpoints when taking numerical derivatives
-    N_sim_micro              = 2*10^4       # increase # of workers for wage simulations
-    N_sim_macro              = 10^4         # increase # of panels for macro stats excluding endogenous ALP
+    #N_sim_micro             = 2*10^4       # increase # of workers for wage simulations
+    #N_sim_macro             = 10^4         # increase # of panels for macro stats excluding endogenous ALP
     N_sim_macro_alp_workers  = 10^4         # increase # of workers for endogneous ALP simulation
     N_sim_macro_alp          = 500          # increase # of panels for endogneous ALP simulation
     est_alp                  = true         # whether or not to simulate endogenous ALP
@@ -67,7 +67,7 @@ end
 # Get moments (check for multiplicity and verfiy solutions are the same)
 modd       = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
 @unpack P_z, p_z, z_ss_idx = modd
-shocks     = rand_shocks(P_z, p_z; z0_idx = z_ss_idx, N_sim_micro = N_sim_micro, N_sim_macro = N_sim_macro, 
+shocks     = rand_shocks(P_z, p_z; z0_idx = z_ss_idx, #N_sim_micro = N_sim_micro, N_sim_macro = N_sim_macro, 
             N_sim_macro_alp_workers = N_sim_macro_alp_workers, N_sim_macro_alp = N_sim_macro_alp)
 
 if fix_a == false
@@ -97,6 +97,8 @@ end
 @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, alp_ρ, alp_σ, dlu_dly, std_u, flag, flag_IR, IR_err, std_z  = output
 
 # CHANGE ROUNDING MODE TO ROUND NEAREST AWAY 
+
+println("Min fval: \t"*string(round(minimum(est_output[:,1]), RoundNearestTiesAway, digits = 10 )) )
 
 # Estimated parameters
 println("------------------------")
@@ -195,12 +197,12 @@ println("------------------------")
 
 ## Share of bargained wage flexibility
 
-println("BWC Share #1: \t\t"*string(round(BWC_share[z_ss_idx], RoundNearestTiesAway, digits = 3)))
-println("BWC Share #2: \t\t"*string(round((BWC./WC)[z_ss_idx], RoundNearestTiesAway, digits = 3)))
-println("IWC: \t\t\t"*string(round((1-BWC_1[z_ss_idx])*dlw1_du , RoundNearestTiesAway, digits = 3)))
+println("BWC Share #1: \t"*string(round(BWC_share[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("BWC Share #2: \t"*string(round((BWC./WC)[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("IWC: \t\t"*string(round((1-BWC_share[z_ss_idx])*dlw1_du , RoundNearestTiesAway, digits = 3)))
 
 ## Print the C term at steady state
-println("C term at μ_z: \t\t"*string(round(c_term[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("C term at SS: \t"*string(round(c_term[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 
 if fix_a == false
    

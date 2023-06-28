@@ -43,14 +43,16 @@ t = 1
     end
 end
 
-# Save the output
-N_z          = 51
-@unpack P_z, p_z, z_ss_idx = model(N_z = N_z)
+# Solve the model for all parameter combinations 
+@unpack P_z, p_z, z_ss_idx = model()
 shocks       = rand_shocks(P_z, p_z; N_sim_macro_alp_workers = 1, z0_idx = z_ss_idx)
-@time output = pmap(i -> heatmap_moments(par_mat[:,i], combo, param_vals, shocks; N_z = N_z), 1:size(par_mat, 2))
+@time output = pmap(i -> heatmap_moments(par_mat[:,i], combo, param_vals, shocks), 1:size(par_mat, 2))
 
+rmprocs(workers())
+
+# Save the output
 save("jld/"*"heatmap_vary_"*string(combo[1])*"_"*string(combo[2])* ".jld2", 
                                     Dict("output" => output, "par_mat" => par_mat, 
-                                         "baseline_params" =>  param_vals, "combo" => combo))
+                                        "baseline_params" =>  param_vals, "combo" => combo))
 
 

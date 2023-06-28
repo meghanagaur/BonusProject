@@ -18,7 +18,7 @@ idx = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
 println("JLD FILE = ", file_str)
 
 # Load helper functions
-include("../../functions/smm_settings.jl")         # SMM inputs, settings, packages, etc.
+include("../../functions/smm_settings.jl")                # SMM inputs, settings, packages, etc.
 
 # Load the pretesting ouput. Use the "best" Sobol points for our starting points.
 @unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W, fix_a = load(file_load) 
@@ -52,8 +52,8 @@ else
         opt_1.min_objective       = obj 
         # tolerance and time settings 
         opt_1.stopval             = 1e-3
-        opt_1.ftol_rel            = 1e-4
-        opt_1.ftol_abs            = 1e-4
+        opt_1.ftol_rel            = 1e-5
+        opt_1.ftol_abs            = 1e-5
         opt_1.xtol_rel            = 0.0  
         opt_1.maxtime             = 1.25*(60*60) 
         opt_1.lower_bounds        = lower 
@@ -63,9 +63,9 @@ else
     if !isnothing(opt_2)
         opt_2.min_objective       = obj
         # tolerance and time settings 
-        opt_2.stopval             = 1e-4
-        opt_2.ftol_rel            = 1e-6
-        opt_2.ftol_abs            = 1e-6
+        opt_2.stopval             = 1e-5
+        opt_2.ftol_rel            = 1e-7
+        opt_2.ftol_abs            = 1e-7
         opt_2.xtol_rel            = 0.0  
         opt_2.maxtime             = 1.5*(60*60) 
         opt_2.lower_bounds        = lower 
