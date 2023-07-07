@@ -1,7 +1,7 @@
 # Produce preliminary heatmaps of calibration of σ_η and ε.
 using LaTeXStrings, DataFrames, Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
-xguidefontsize =13, yguidefontsize=13, xtickfontsize=8, ytickfontsize=8, titlefontsize =12,
-linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 12*Plots.px, legendfontsize = 9)
+xguidefontsize =15, yguidefontsize=15, xtickfontsize=10, ytickfontsize=10, titlefontsize =12,
+linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 15*Plots.px, legendfontsize = 9)
 
 cd(dirname(@__FILE__))
 
@@ -14,7 +14,7 @@ combos       = collect(combinations(parameters, 2))
 
 # Labeling of the parameters for plots
 param_labels  = Dict{Symbol, LaTeXString}([   
-    (:ε, L"\varepsilon"),
+    (:ε, L"\epsilon"),
     (:σ_η, L"\sigma_{\eta}"),
     (:γ, L"\gamma"),
     (:χ, L"\chi") ]) 
@@ -31,7 +31,7 @@ for combo in combos
     par2     = combo[2]
     file     = string(par1)*"_"*string(par2)
 
-    @unpack output, par_mat = load("jld/heatmap_vary_"*file*".jld2") 
+    @unpack output, par_mat, baseline_params = load("jld/heatmap_vary_"*file*".jld2") 
 
     # Import data to make heatmaps
     N            = length(output)
@@ -73,64 +73,73 @@ for combo in combos
 
     # Plot var(dlw)
     var_dlw[ir_flag.==1] .= NaN
-    p1 = heatmap(par1_grid, par2_grid, var_dlw, title="\n"*L"\textrm{Std. Dev.:} \Delta \log w_{t+12}")
+    p1 = heatmap(par1_grid, par2_grid, var_dlw) #, title="\n"*L"\textrm{Std. Dev.:} \Delta \log w_{t+12}")
     xlabel!(par1_str)
     ylabel!(par2_str)
-    savefig(p1, dir*"var_dlw_"*file*".pdf")
+    annotate!([baseline_params[par1]], [baseline_params[par2]], "X", annotationcolor=:green)
+    savefig(p1, dir*"std_dlw_"*file*".pdf")
 
     # Plot dlw1/du
     dlw1_du[ir_flag.==1] .= NaN
-    p2 = heatmap(par1_grid, par2_grid, dlw1_du, title=L"\frac{ \partial E[ \log w_1 | z_t ]}{ \partial u_t}")
+    p2 = heatmap(par1_grid, par2_grid, dlw1_du) #, title=L"\frac{ \partial E[ \log w_1 | z_t ]}{ \partial u_t}")
     xlabel!(par1_str)
     ylabel!(par2_str)
+    annotate!([baseline_params[par1]], [baseline_params[par2]], "X", annotationcolor=:green)
     savefig(p2, dir*"dlw1_du_"*file*".pdf")
 
     # Plot dlw/dly
     dlw_dly[ir_flag.==1] .= NaN
-    p3 = heatmap(par1_grid, par2_grid, dlw_dly,title=L"\mathbb{E}\left[\frac{\partial \log w_{it} }{ \partial \log y_{it} }\right]")
+    p3 = heatmap(par1_grid, par2_grid, dlw_dly) #,title=L"\mathbb{E}\left[\frac{\partial \log w_{it} }{ \partial \log y_{it} }\right]")
     xlabel!(par1_str)
     ylabel!(par2_str)
+    annotate!([baseline_params[par1]], [baseline_params[par2]], "X", annotationcolor=:green)
     savefig(p3, dir*"dlw_dly_"*file*".pdf")
 
     # Plot \bar{u_t}
     u_ss[ir_flag.==1] .= NaN
-    p4 = heatmap(par1_grid, par2_grid, u_ss, title="\n"*L"\bar{u}_t")
+    p4 = heatmap(par1_grid, par2_grid, u_ss) #, title="\n"*L"\bar{u}_t")
     xlabel!(par1_str)
     ylabel!(par2_str)
+    annotate!([baseline_params[par1]], [baseline_params[par2]], "X", annotationcolor=:green)
     savefig(dir*"u_ss_"*file*".pdf")
 
     # Plot BWC share at steady state
     std_u[ir_flag.==1] .= NaN
-    p5 = heatmap(par1_grid, par2_grid, std_u, title="\n"*L"\textrm{Std. Dev.:} \log u_t")
+    p5 = heatmap(par1_grid, par2_grid, std_u) #, title="\n"*L"\textrm{Std. Dev.:} \log u_t")
     xlabel!(par1_str)
     ylabel!(par2_str)
+    annotate!([baseline_params[par1]], [baseline_params[par2]], "X", annotationcolor=:green)
     savefig(p5, dir*"std_u_"*file*".pdf")
 
     # Plot dlogθ/dlogz at steady state
     dlogθ_dlogz[ir_flag.==1] .= NaN
-    p6 = heatmap(par1_grid, par2_grid, dlogθ_dlogz, title=L"\frac{d \log \theta }{ \partial \log z }")
+    p6 = heatmap(par1_grid, par2_grid, dlogθ_dlogz) #, title=L"\frac{d \log \theta }{ \partial \log z }")
     xlabel!(par1_str)
     ylabel!(par2_str)
+    annotate!([baseline_params[par1]], [baseline_params[par2]], "X", annotationcolor=:green)
     savefig(p6, dir*"dlogtheta_dlogz_"*file*".pdf")
 
     # Plot BWC share at steady state
     bwc_share[ir_flag.==1] .= NaN
-    p7 = heatmap(par1_grid, par2_grid, bwc_share, title = "\n"*L"\textrm{BWC\ Share}")
+    p7 = heatmap(par1_grid, par2_grid, bwc_share) #, title = "\n"*L"\textrm{BWC\ Share}")
     xlabel!(par1_str)
     ylabel!(par2_str)
+    annotate!([baseline_params[par1]], [baseline_params[par2]], "X", annotationcolor=:green)
     savefig(p7, dir*"bwc_share_"*file*".pdf")
 
     # Plot IR_err
-    p8 = heatmap(par1_grid, par2_grid, ir_err, title=L"\textrm{TIOLI/IR\ Error}")
+    p8 = heatmap(par1_grid, par2_grid, ir_err) #, title="\n"*L"\textrm{TIOLI/PC\ Error}"*"\n")
     xlabel!(par1_str)
     ylabel!(par2_str)
+    annotate!([baseline_params[par1]], [baseline_params[par2]], "X", annotationcolor=:green)
 
     # Plot IR flag
-    p9 = heatmap(par1_grid, par2_grid, ir_flag, title=L"\textrm{TIOLI/IR\ Flag}")
+    p9 = heatmap(par1_grid, par2_grid, ir_flag) #, title="\n"*L"\textrm{TIOLI/PC\ Flag}"*"\n")
     xlabel!(par1_str)
     ylabel!(par2_str)
+    annotate!([baseline_params[par1]], [baseline_params[par2]], "X", annotationcolor=:green)
 
-    plot(p8, p9, layout = (1,2),  size = (600,200))
+    plot(p8, p9, layout = (1,2),  size = (1000,400))
     savefig(dir*"ir_error_flag_"*file*".pdf")
 end
 

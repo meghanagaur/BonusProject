@@ -53,7 +53,7 @@ file  = "pretesting_baseline"
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 5*10^4
+    I_max        = Int64(5*10^4)
     lb           = zeros(J)
     ub           = zeros(J)
 

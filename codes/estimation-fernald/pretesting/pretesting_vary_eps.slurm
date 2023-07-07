@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=vary_cyc      # create a short name for your job
+#SBATCH --job-name=vary_eps      # create a short name for your job
 #SBATCH --output=slurm-%A.%a.out # stdout file
 #SBATCH --error=slurm-%A.%a.err  # stderr file
 #SBATCH --nodes=5                # node count

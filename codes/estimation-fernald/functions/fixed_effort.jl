@@ -87,26 +87,26 @@ function solveModelFixedEffort(modd; a = 1.0, z_0 = nothing, max_iter1 = 50, max
         
         # Check the IR constraint (must bind)
         U      = (1/ψ)*log(max(eps(), w_0)) - (1/ψ)*h(a) + W_0[z_0_idx] # nudge w_0 to avoid runtime error
-        
-        # Upate θ accordingly: note U is decreasing in θ (=> increasing in q)
-        if U < ω_0              # increase q (decrease θ)
+        IR_err = U - ω_0                                                # check whether IR constraint holds
+
+        # Update θ accordingly: U decreasing in θ (increasing in q)
+        if IR_err < 0             # increase q (decrease θ)
             q_lb  = copy(q_0)
-        elseif U > ω_0          # decrease q (increase θ)
+        elseif IR_err > 0         # decrease q (increase θ)
             q_ub  = copy(q_0)
         end
 
         # Bisection
-        IR_err = U - ω_0                             # check whether IR constraint holds
-        q_1    = (q_lb + q_ub)/2                     # update q
-        #err1  = min(abs(IR_err), abs(q_1 - q_0))    # compute convergence criterion
+        q_1    = (q_lb + q_ub)/2   # update q
         err1   = abs(IR_err)
 
         # Record info on IR constraint
-        flag_IR = (IR_err < 0)*(abs(IR_err) > tol1)
+        flag_IR = (err1 > tol1)
 
         # Export the accurate iter and current q
         if err1 > tol1
-            if min(abs(q_1 - q_ub_0), abs(q_1 - q_lb_0))  < 10^(-10) 
+            # stuck in a corner (0 or 1), so break
+            if min(abs(q_1 - q_ub_0), abs(q_1 - q_lb_0))  < tol1
                 break
             else
                 q_0     = α*q_0 + (1 - α)*q_1
@@ -116,7 +116,7 @@ function solveModelFixedEffort(modd; a = 1.0, z_0 = nothing, max_iter1 = 50, max
 
     end
 
-    return (θ = (q_0^(-ι) - 1)^(1/ι), Y = Y_0[z_0_idx], U = U, ω = ω_0, w_0 = w_0, mod = modd, IR_err = IR_err*flag_IR, flag_IR = flag_IR,
+    return (θ = (q_0^(-ι) - 1)^(1/ι), Y = Y_0[z_0_idx], U = U, ω = ω_0, w_0 = w_0, mod = modd, IR_err = err1*flag_IR, flag_IR = flag_IR,
             az = az, yz = yz, err1 = err1, err2 = err2, err3 = err3, iter1 = iter1, iter2 = iter2, iter3 = iter3, wage_flag = (w_0 <= 0),
             effort_flag = false, conv_flag1 = (iter1 > max_iter1), conv_flag2 = (iter2 > max_iter2), conv_flag3 = (iter3 > max_iter3))
 end
@@ -173,21 +173,23 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5)
 
     end
 
-    # Composite flag; compute simulation only for 3 standard deviations of z shock
-    σ_z  = σ_ϵ/sqrt(1 - ρ^2)
-    idx  = findfirst(x-> x > -3σ_z, logz) 
-    flag = max(maximum(flag_z[idx:end]), maximum(flag_IR_z[idx:end]))
+    # Composite flag; truncate simulation and only penalize IR flags for log z values within 3 standard deviations of μ_z 
+    σ_z     = σ_ϵ/sqrt(1 - ρ^2)
+    idx_1   = findfirst(x-> x > -3σ_z, logz) 
+    idx_2   = findlast(x-> x <= 3σ_z, logz) 
+    flag    = maximum(flag_z[idx_1:idx_2])
+    flag_IR = maximum(flag_IR_z[idx_1:idx_2])
 
     # only compute moments if equilibria were found for all z
-    if (flag < 1) 
+    if  max(flag_IR, flag) < 1 
 
         # Unpack the relevant shocks
-        @unpack burnin, z_idx_macro, T_sim_macro, N_sim_macro = shocks
+        @unpack burnin_macro, z_idx_macro, T_sim_macro, N_sim_macro = shocks
 
         # Compute model data for long z_t series (trim to post-burn-in when computing moment)
 
         # Macro moments 
-        z_idx_macro    = max.(z_idx_macro, idx)
+        z_idx_macro    = min.(max.(z_idx_macro, idx_1), idx_2)  
         @views lw1_t   = lw1_z[z_idx_macro]     # E[log w_1 | z_t] series
         @views θ_t     = θ_z[z_idx_macro]       # θ(z_t) series
         @views f_t     = f_z[z_idx_macro]       # f(θ(z_t)) series
@@ -201,7 +203,7 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5)
         dlu_dly_n      = zeros(N_sim_macro)
 
         # Compute evolution of unemployment for the z_t path
-        T              = T_sim_macro + burnin
+        T              = T_sim_macro + burnin_macro
         T_q_macro      = Int(T_sim_macro/3)
         u_t            = zeros(T, N_sim_macro)
         u_t[1,:]      .= u0
@@ -213,16 +215,16 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5)
             end
 
             # Estimate d E[log w_1] / d u (pooled ols)
-            @views dlw1_du_n[n]    = cov(lw1_t[burnin+1:end, n], u_t[burnin+1:end, n])/max(eps(), var(u_t[burnin+1:end, n]))
+            @views dlw1_du_n[n]    = cov(lw1_t[burnin_macro+1:end, n], u_t[burnin_macro+1:end, n])/max(eps(), var(u_t[burnin_macro+1:end, n]))
 
             # Compute the quarterly average of various series
-            @views ly_q            = log.(a*[mean(zshocks_macro[burnin+1:end, n][(t_q*3 - 2):t_q*3]) for t_q = 1:T_q_macro])
+            @views ly_q            = log.(a*[mean(zshocks_macro[burnin_macro+1:end, n][(t_q*3 - 2):t_q*3]) for t_q = 1:T_q_macro])
             @views ly_q_resid, _   = hp_filter(ly_q, λ)  
             @views alp_ρ_n[n]      = first(autocor(ly_q_resid, [1]))
             @views alp_σ_n[n]      = std(ly_q_resid)
 
             # Compute quarterly average of u_t in post-burn-in period + hp-filter the log
-            @views lu_q            = log.(max.([mean(u_t[burnin+1:end, n][(t_q*3 - 2):t_q*3]) for t_q = 1:T_q_macro], eps()))
+            @views lu_q            = log.(max.([mean(u_t[burnin_macro+1:end, n][(t_q*3 - 2):t_q*3]) for t_q = 1:T_q_macro], eps()))
             lu_q_resid, _          = hp_filter(lu_q, λ)  
             std_u_n[n]             = std(lu_q_resid)
             
@@ -239,16 +241,16 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5)
         dlu_dly = mean(dlu_dly_n)
 
         # Compute stochastic mean of unemployment: E[u_t | t > burnin]
-        u_ss    = mean(vec(mean(u_t[burnin+1:end,:], dims = 1)))
+        u_ss    = mean(vec(mean(u_t[burnin_macro+1:end,:], dims = 1)))
 
         # Compute nonstochastic SS unemployment: define u_ss = s/(s + f(θ(z_ss)), at log z_ss = μ_z
-        u_ss_2  = s/(s  + f(θ_z[z_ss_idx]))
+        #u_ss_2  = s/(s  + f(θ_z[z_ss_idx]))
     end
     
     # determine an IR error for all initial z within 3 uncond. standard deviations
-    IR_err = sum(abs.(err_IR_z[idx:end]))
+    IR_err = sqrt(sum((err_IR_z[idx_1:idx_2]).^2))
 
     # Export the simulation results
     return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, u_ss_2 = u_ss_2, alp_ρ = alp_ρ, 
-    alp_σ = alp_σ, dlu_dly = dlu_dly, std_u = std_u, std_z = std_z, flag = flag, flag_IR = maximum(flag_IR_z[idx:end]), IR_err = IR_err)
+    alp_σ = alp_σ, dlu_dly = dlu_dly, std_u = std_u, std_z = std_z, flag = flag, flag_IR = flag_IR, IR_err = IR_err)
 end

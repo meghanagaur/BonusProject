@@ -27,7 +27,7 @@ include("../../functions/smm_settings.jl")                # SMM inputs, settings
 @unpack P_z, p_z, z_ss_idx = model(ρ = param_vals[:ρ], σ_ϵ = param_vals[:σ_ϵ])
 
 if fix_a == true
-    shocks  = rand_shocks(P_z, p_z; N_sim_macro_alp_workers = 1, N_sim_micro = 1, T_sim_micro = 1, z0_idx = z_ss_idx)
+    shocks  = rand_shocks(P_z, p_z; N_sim_macro_alp_workers = 1, N_sim_micro = 1, T_sim_micro = 1, burnin_micro = 1, z0_idx = z_ss_idx)
 else
     shocks  = rand_shocks(P_z, p_z; N_sim_macro_alp_workers = 1, z0_idx = z_ss_idx)
 end
@@ -51,11 +51,11 @@ else
     if !isnothing(opt_1)
         opt_1.min_objective       = obj 
         # tolerance and time settings 
-        opt_1.stopval             = 1e-3
-        opt_1.ftol_rel            = 1e-5
-        opt_1.ftol_abs            = 1e-5
+        opt_1.stopval             = 1e-2
+        opt_1.ftol_rel            = 1e-4
+        opt_1.ftol_abs            = 1e-4
         opt_1.xtol_rel            = 0.0  
-        opt_1.maxtime             = 1.25*(60*60) 
+        opt_1.maxtime             = (60*60) 
         opt_1.lower_bounds        = lower 
         opt_1.upper_bounds        = upper
     end
@@ -63,11 +63,11 @@ else
     if !isnothing(opt_2)
         opt_2.min_objective       = obj
         # tolerance and time settings 
-        opt_2.stopval             = 1e-5
-        opt_2.ftol_rel            = 1e-7
-        opt_2.ftol_abs            = 1e-7
+        opt_2.stopval             = 1e-4
+        opt_2.ftol_rel            = 1e-8
+        opt_2.ftol_abs            = 1e-8
         opt_2.xtol_rel            = 0.0  
-        opt_2.maxtime             = 1.5*(60*60) 
+        opt_2.maxtime             = (60*60) 
         opt_2.lower_bounds        = lower 
         opt_2.upper_bounds        = upper
     end
@@ -75,7 +75,8 @@ end
 
 # Sort and reshape the parameters for distribution across jobs
 Nend           = N_procs*N_string                  # number of initial points
-sorted_indices = reverse(sortperm(fvals)[1:Nend])  # sort by function values in descending order
+#sorted_indices = reverse(sortperm(fvals)[1:Nend]) # sort by function values in DESCENDING order
+sorted_indices = sortperm(fvals)[1:Nend]           # sort by function values in ASCENDING order
 sobol_sort     = pars[sorted_indices,:]            # get parameter values: N_TASKS*NSTRING x J
 
 # reshape parameter vector 

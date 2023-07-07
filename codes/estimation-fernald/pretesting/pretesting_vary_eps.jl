@@ -5,12 +5,19 @@ cd(dirname(@__FILE__))
 addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
-file  = "pretesting_low_eps" 
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
 
 @everywhere begin
+
+    # Get slurm job array idx
+    ja_idx  = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
+
+    # different values of the epsilon 
+    eps_vals    = 0.3:0.3:3.0
+    eps         = eps_vals[ja_idx]
+    file        = "pretesting_fix_eps"*replace(string(eps), "." => "")  
 
     # get moment targets and weight matrix
     @unpack data_mom, mom_key, K, W = moment_targets()
@@ -18,10 +25,10 @@ file  = "pretesting_low_eps"
     # Define the baseline values
     
     # Define the baseline values
-    @unpack ρ, σ_ϵ, ι, P_z, p_z, z_ss_idx, ε, χ, γ, σ_η, hbar = model()
+    @unpack ρ, σ_ϵ, ι, P_z, p_z, z_ss_idx, χ, γ, σ_η, hbar = model()
     param_vals        = OrderedDict{Symbol, Real}([ 
                         (:a, 1.0),           # effort 
-                        (:ε,   ε),           # ε
+                        (:ε, eps),           # ε
                         (:σ_η, σ_η),         # σ_η 
                         (:χ, χ),             # χ
                         (:γ, γ),             # γ
@@ -31,11 +38,11 @@ file  = "pretesting_low_eps"
                         (:ι, ι) ])           # ι
 
     # Specifciations for the shocks in simulation
-    shocks           = rand_shocks(P_z, p_z; N_sim_macro_alp_workers = 1, z0_idx = z_ss_idx)
+    shocks  = rand_shocks(P_z, p_z; N_sim_macro_alp_workers = 1, z0_idx = z_ss_idx)
 
     # Parameters we will fix (if any) in ε, σ_η, χ, γ 
-    params_fix   = [:hbar, :ρ, :σ_ϵ] 
-    param_bounds = get_param_bounds(; ε_ub = 3.0)
+    params_fix   = [:ε, :hbar, :ρ, :σ_ϵ] 
+    param_bounds = get_param_bounds()
     for p in params_fix
         delete!(param_bounds, p)
     end
@@ -43,7 +50,6 @@ file  = "pretesting_low_eps"
     # Parameters that we will estimate
     J           = length(param_bounds)
     
-    # Make sure we are not under-identified 
     @assert(K >= J)
 
     param_est   = OrderedDict{Symbol, Int64}()
@@ -53,7 +59,7 @@ file  = "pretesting_low_eps"
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 5*10^4
+    I_max        = 3*10^4
     lb           = zeros(J)
     ub           = zeros(J)
 
@@ -65,7 +71,6 @@ file  = "pretesting_low_eps"
     s            = SobolSeq(lb, ub)
     seq          = skip(s, 10000, exact = true)
     sob_seq      = reduce(hcat, next!(seq) for i = 1:I_max)
-    
 end
 
 # Evaluate the objective function for each parameter vector

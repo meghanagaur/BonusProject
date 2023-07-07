@@ -171,12 +171,12 @@ function decomposition(modd, bonus; fix_a = false)
     BWC_share       = -(c_term./WC)                  
 
     # Compute the residual <- used for alternative construction of BWC
-    qq(x)           = -(x^(-1 + ι))*(1 + x^ι)^(-1 - 1/ι) # q'(θ)
-    total_resid     = -(κ./(q.(bonus.θ)).^2).*qq.(bonus.θ).*slopeFD(bonus.θ, zgrid) # d kappa/q(θ(z_0)) / d z_0
+    #qq(x)           = -(x^(-1 + ι))*(1 + x^ι)^(-1 - 1/ι) # q'(θ)
+    #total_resid     = -(κ./(q.(bonus.θ)).^2).*qq.(bonus.θ).*slopeFD(bonus.θ, zgrid) # d kappa/q(θ(z_0)) / d z_0
 
     if fix_a == true
         
-        return (JJ_EVT = JJ_EVT, WC = WC, BWC = zeros(N_z), IWC = zeros(N_z), resid = zeros(N_z), total_resid = total_resid, BWC_share = BWC_share, c_term = c_term)
+        return (JJ_EVT = JJ_EVT, WC = WC, BWC_resid = WC, IWC_resid = zeros(N_z), BWC_share = BWC_share, c_term = c_term)
 
     elseif fix_a == false
 
@@ -225,9 +225,9 @@ function decomposition(modd, bonus; fix_a = false)
 
         # Solve for the BWC share (residual definition)
         BWC             = WC - IWC
-        resid           = BWC - JJ_EVT  # partial kappa/q(θ(z_0)) / partial z_0
+        #resid          = BWC - JJ_EVT  # partial kappa/q(θ(z_0)) / partial z_0
 
-        return (JJ_EVT = JJ_EVT, WC = WC, BWC = BWC, IWC = IWC, resid = resid, total_resid = total_resid, BWC_share = BWC_share, c_term = c_term)
+        return (JJ_EVT = JJ_EVT, WC = WC, BWC_resid = BWC, IWC_resid = IWC, BWC_share = BWC_share, c_term = c_term)
     end
 
 end
@@ -235,7 +235,7 @@ end
 """
 Simulate moments for identification heatmaps
 """
-function heatmap_moments(xx, combo, param_vals, shocks; N_z = 51)
+function heatmap_moments(xx, combo, param_vals, shocks; N_z = 51, λ = 0^5)
 
     # Set the parameters
     Params =  OrderedDict{Symbol, Float64}()
@@ -251,19 +251,19 @@ function heatmap_moments(xx, combo, param_vals, shocks; N_z = 51)
     @unpack σ_η, χ, γ, ε = Params
 
     # Simulate the model
-    modd             = model(σ_η = σ_η, χ = χ, γ = γ, ε = ε) 
-    out              = simulate(modd, shocks; check_mult = false, est_alp = false) 
+    modd              = model(σ_η = σ_η, χ = χ, γ = γ, ε = ε) 
+    out               = simulate(modd, shocks; check_mult = false, est_alp = false, λ =10^5) 
 
     # Solve model for each initial z_0
-    modd_big         = model(σ_η = σ_η, χ = χ, γ = γ, ε = ε, N_z = N_z) 
-    bonus            = vary_z0(modd_big; fix_a = false)
+    modd_big          = model(σ_η = σ_η, χ = χ, γ = γ, ε = ε, N_z = N_z) 
+    bonus             = vary_z0(modd_big; fix_a = false)
 
     # Compute d log theta/d log z
-    @unpack θ, zgrid = bonus
-    dlogθ_dlogz      = slopeFD(θ, zgrid; diff = "forward").*zgrid[1:end-1]./θ[1:end-1]
+    @unpack θ, zgrid  = bonus
+    dlogθ_dlogz       = slopeFD(θ, zgrid; diff = "forward").*zgrid[1:end-1]./θ[1:end-1]
 
     # primary BWC measure using direct effect of productivity on profits
-    @unpack JJ_EVT, WC, BWC, IWC, resid, total_resid, BWC_share = decomposition(modd_big, bonus; fix_a = false)
+    @unpack BWC_share = decomposition(modd_big, bonus; fix_a = false)
 
     # Collect moments
     mod_mom  = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss, out.std_u, dlogθ_dlogz[modd_big.z_ss_idx], BWC_share[modd_big.z_ss_idx]]  

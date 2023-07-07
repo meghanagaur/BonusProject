@@ -1,0 +1,60 @@
+My SLURM_ARRAY_JOB_ID is 48806909.
+My SLURM_ARRAY_TASK_ID is 1
+Executing on the machine: della-h12n4
+File name: baseline
+Checking for multiplicity of roots..
+Root{Interval{Float64}}[Root([0.76138, 0.761381], :unique), Root([6.29693e-06, 6.322e-06], :unique)]
+Root{Interval{Float64}}[Root([0.800384, 0.800385], :unique), Root([6.13329e-06, 6.14197e-06], :unique)]
+Root{Interval{Float64}}[Root([0.841373, 0.841374], :unique), Root([5.96801e-06, 5.97465e-06], :unique)]
+Root{Interval{Float64}}[Root([8.1622e-06, 8.1684e-06], :unknown), Root([0.884448, 0.884449], :unique), Root([5.79064e-06, 5.82001e-06], :unique)]
+Root{Interval{Float64}}[Root([0.929715, 0.929716], :unique), Root([5.63532e-06, 5.66075e-06], :unique)]
+Root{Interval{Float64}}[Root([0.977285, 0.977286], :unique), Root([5.48523e-06, 5.54553e-06], :unique)]
+Root{Interval{Float64}}[Root([5.33364e-06, 5.41157e-06], :unique), Root([1.02727, 1.02728], :unique)]
+Root{Interval{Float64}}[Root([5.20772e-06, 5.23201e-06], :unique), Root([1.07981, 1.07982], :unique)]
+Root{Interval{Float64}}[Root([5.06526e-06, 5.08182e-06], :unique), Root([1.13501, 1.13502], :unique)]
+Root{Interval{Float64}}[Root([4.9328e-06, 4.93919e-06], :unique), Root([1.19303, 1.19304], :unique)]
+Root{Interval{Float64}}[Root([1.25399, 1.254], :unique), Root([4.79533e-06, 4.80956e-06], :unique)]
+Root{Interval{Float64}}[Root([1.31806, 1.31807], :unique), Root([4.67283e-06, 4.68036e-06], :unique)]
+Root{Interval{Float64}}[Root([1.38539, 1.3854], :unique), Root([4.54956e-06, 4.55924e-06], :unique)]
+ 51.784537 seconds (46.74 M allocations: 280.136 GiB, 23.39% gc time, 4.46% compilation time)
+------------------------
+ESTIMATED PARAMETERS
+------------------------
+σ_η: 		0.523
+χ: 		0.378
+γ: 		0.43
+hbar: 		1.0
+ε: 		3.961
+ρ: 		0.966
+σ_ϵ: 		0.006
+ι: 		0.9
+------------------------
+TARGETED MOMENTS
+------------------------
+std_Δlw: 	0.064
+dlw1_du: 	-1.0
+dlw_dly: 	0.037
+u_ss: 		0.058
+------------------------
+UNTARGETED MOMENTS
+------------------------
+dlu_dly: 	-1.433
+std logu: 	0.107
+std logz: 	0.016
+std logy: 	0.074
+a(μ_z): 	1.027
+θ(μ_z): 	1.422
+Y (ss): 	30.109
+W (ss): 	28.933
+W/Y (ss): 	0.961
+dla_dlz: 	2.2
+dlY_dlz: 	0.755
+dlW_dlz: 	0.448
+dlθ_dlz: 	14.361
+------------------------
+WAGE CYCLICALITY
+------------------------
+BWC Share #1: 	0.431
+BWC Share #2: 	0.431
+IWC: 		-0.569
+C term at SS: 	-5.589

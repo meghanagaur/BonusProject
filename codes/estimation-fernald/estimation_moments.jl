@@ -17,12 +17,14 @@ linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, le
 ## Logistics
 #files        = ["iota125" "fix_a_bwc0447" "cyc05" "cyc075" "cyc125" "cyc15"]
 #files        = ["fix_chi0"] # "fix_a_bwc10" "fix_chi0"]
-big_run      = true        
+files        = ["baseline"] # "high_eps"]
+big_run      = false #true        
 file_idx     = big_run ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]                              
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
 file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
 file_save    = "figs/vary-z0/"*file_str*"/"             # file to-save 
+λ            = 1600
 
 # Make directory for figures
 mkpath(file_save)
@@ -33,6 +35,8 @@ if big_run == false
     vary_z_N                 = 51           # lower # of gridpoints when taking numerical derivatives
     #N_sim_micro              = 10^4        # lower # of workers for wage simulations
     #N_sim_macro              = 10^4        # lower # of panels for macro stats exc. ALP
+    N_sim_macro_alp_workers  = 1
+    N_sim_macro_alp          = 1
     est_alp                  = false
 else
     vary_z_N                 = 201          # increase # of gridpoints when taking numerical derivatives
@@ -79,12 +83,20 @@ if fix_a == false
     a_max = 10
 
     @unpack ψ, ε, q, κ, hp, σ_η, hbar = modd
+    a_gap(x, z) = x - ((z*x/sol.w_0 - (ψ/ε)*(hp(x)*σ_η)^2)/hbar)^(ε/(1+ε))
 
+    p1 = plot()
+    p2 = plot()
     for (iz,z) in enumerate(modd.zgrid)
-        println(roots( x -> x - ((z*x/sol.w_0 - (ψ/ε)*(hp(x)*σ_η)^2)/hbar)^(ε/(1+ε)) ,  a_min..a_max))
+        println(roots( x -> a_gap(x, z)  ,  a_min..a_max))
+        plot!(p1, x -> a_gap(x, z) , 0, 10^-3)
+        plot!(p2, x -> a_gap(x, z), a_min, 2.0)
     end
 
-    @time output = simulate(modd, shocks; check_mult = false, est_alp = est_alp) # get output
+    plot(p1, p2, layout = (1,2),  size = (800,400),title="Implicit Effort Gap", legend=:false)
+    savefig(file_save*"effort_error.pdf")
+
+    @time output = simulate(modd, shocks; check_mult = false, est_alp = est_alp, λ = λ) # get output
 
 else
 
@@ -118,7 +130,7 @@ println("------------------------")
 println("TARGETED MOMENTS")
 println("------------------------")
 println("std_Δlw: \t"*string(round.(std_Δlw, RoundNearestTiesAway, digits = 3)))
-println("dlw1_du: \t"*string(round.(dlw1_du, RoundNearestTiesAway, digits = 3)))
+println("dlw0_du: \t"*string(round.(dlw1_du, RoundNearestTiesAway, digits = 3)))
 println("dlw_dly: \t"*string(round.(dlw_dly, RoundNearestTiesAway, digits = 3)))
 println("u_ss: \t\t"*string(round.(u_ss, RoundNearestTiesAway, digits = 3)))
 
@@ -183,7 +195,7 @@ maxz_idx   = isnothing(maxz_idx) ? vary_z_N : maxz_idx
 range_1    = minz_idx:maxz_idx
 
 # Get decomposition components
-@unpack JJ_EVT, WC, BWC, IWC, resid, total_resid, BWC_share, c_term = decomposition(modd, bonus; fix_a = fix_a)
+@unpack JJ_EVT, WC, BWC_resid, IWC_resid, BWC_share, c_term = decomposition(modd, bonus; fix_a = fix_a)
 
 ## Compute C term and dJ/dz in Bonus, Hall
 JJ_B      = slopeFD(bonus.J, zgrid; diff = "central")
@@ -198,7 +210,7 @@ println("------------------------")
 ## Share of bargained wage flexibility
 
 println("BWC Share #1: \t"*string(round(BWC_share[z_ss_idx], RoundNearestTiesAway, digits = 3)))
-println("BWC Share #2: \t"*string(round((BWC./WC)[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("BWC Share #2: \t"*string(round((BWC_resid./WC)[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("IWC: \t\t"*string(round((1-BWC_share[z_ss_idx])*dlw1_du , RoundNearestTiesAway, digits = 3)))
 
 ## Print the C term at steady state
@@ -304,11 +316,7 @@ if fix_a == false
 
     savefig(file_save*"cterm_multiplier.pdf")
 
-    lm = c_term[range_1]./dIR[range_1]
-    #plot(logz[range_1], slopeFD(bonus.w_0[range_1], zgrid[range_1]))
-    #plot!(logz[range_1], slopeFD(lm, zgrid[range_1]),linestyle=:dash)
-
-    ## Scatter plot of log employment
+    #= Scatter plot of log employment
     T_sim     = 5000
     burnin    = 10000
     minz_idx  = max(findfirst(x -> x > 10^-6, hall.θ), findfirst(x -> x > 10^-6, bonus.θ))
@@ -343,13 +351,7 @@ if fix_a == false
     xlabel!(L"\log z_t")
 
     savefig(file_save*"binscatter_logn.pdf")
-
-    # plot the comparison of partial, total derivative of the residual + dJ/dz in Bonus model
-    plot(logz[range_2], JJ_B[range_2], label=L"\frac{d J(z_0) }{d z_0}", legend=:bottomright)
-    plot!(logz[range_2], -resid[range_2], label=L"\frac{\partial \kappa/q(z_0) }{\partial z_0}"*" (method 1 )", linestyle=:dashdot)
-    plot!(logz[range_2],total_resid[range_2], label=L"\frac{d \kappa/q(z_0) }{d z_0}"*" (direct)", linestyle=:dash)
-
-    savefig(file_save*"dJ_dz_resids.pdf")
+    =#
 end
 
 # Check convergence 
@@ -363,22 +365,22 @@ p3 = plot()
 p4 = plot()
 
 for (k,v) in param_est
-    if k == :σ_ϵ
-        plot!(p1, est_output[indices,v+1], label = string(k))
-    elseif k == :ε || k == :hbar
-        plot!(p2, est_output[indices,v+1], label = string(k))
+    if k == :σ_η
+        plot!(p1, est_output[indices, v+1], label = L"\sigma_\eta")
+    elseif k == :ε
+        plot!(p2, est_output[indices, v+1], label = L"\epsilon")
     elseif k == :χ
-        plot!(p3, est_output[indices,v+1], label = string(k))
-    else
-        plot!(p4, est_output[indices,v+1], label = string(k))
+        plot!(p3, est_output[indices, v+1], label = L"\chi")
+    elseif k == :γ
+        plot!(p4, est_output[indices, v+1], label = L"\gamma")
     end
 end
 
-p5 = plot(p1, p2, p3, p4, layout = (2,2), legend=:topleft)
+p5 = plot(p1, p2, p3, p4, layout = (2,2), legend=:topleft, ytitle= "Parameter values", xtitle = "Sorted iterations")
 savefig(p5, file_save*"params_converge.pdf")
 
 # Function values
-p6 = plot(est_output[indices,1], title="function values", legend=:false)
+p6 = plot(est_output[indices,1], title = "Function values", legend=:false, xlabel = "Sorted iterations")
 savefig(p6, file_save*"fvals_converge.pdf")
 
 # Re-name log file

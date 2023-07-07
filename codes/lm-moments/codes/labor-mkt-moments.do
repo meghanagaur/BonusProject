@@ -2,9 +2,18 @@ clear all
 
 cd "/Users/meghanagaur/BonusProject/codes/lm-moments/codes"
 
-* Download monthly, SA data from FRED (all in thousands, except for urate + ALP)
-freduse UEMPLT5 CE16OV UNEMPLOY JTSJOL UNRATE OPHNFB, clear
- 
+global download = 0
+
+if $download == 1 {
+
+	* Download monthly, SA data from FRED (all in thousands, except for urate + ALP)
+	freduse UEMPLT5 CE16OV UNEMPLOY JTSJOL UNRATE OPHNFB, clear
+	save "../data/freddata", replace 
+}
+
+
+use "../data/freddata", clear
+
 * Sample period
 global start_year = 1951
 global end_year   = 2019
@@ -52,7 +61,12 @@ Variable |        Obs        Mean    Std. dev.       Min        Max
        srate |        827    .0313995    .0067716    .015902   .0496018
        frate |        827    .4204166    .0892433   .1817443   .6911365
 	   tightness |    229    .5594207    .2841447   .1528662   1.241864
-*/
+*/ 
+
+gen lurate              = log(urate)
+tsfilter hp lurate_hp   = lurate, smooth(129600)
+
+summ lurate_hp
 
 export delimited "../data/lm_monthly.csv", replace
 
