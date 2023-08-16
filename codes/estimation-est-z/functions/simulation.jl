@@ -65,17 +65,16 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, λ = 10^5)
             # Compute expected passthrough: elasticity of w_it wrt y_it 
             pt_z[:,iz]    = ψ*hbar*az.^(1 + 1/ε)
         end
-
     end
 
-    # Composite flag; truncate simulation and only penalize IR flags for log z values within 3 standard deviations of μ_z 
+    # Composite flag; truncate simulation and only penalize IR flags for log z values within XX standard deviations of μ_z 
     σ_z     = σ_ϵ/sqrt(1 - ρ^2)
     idx_1   = findfirst(x-> x > -5σ_z, logz) 
     idx_2   = findlast(x-> x <= 5σ_z, logz) 
     flag    = maximum(flag_z[idx_1:idx_2])
     flag_IR = maximum(flag_IR_z[idx_1:idx_2])
 
-    # only compute moments if equilibria were found for all log z values within 3 standard deviations of μ_z 
+    # only compute moments if equilibria were found for all z
     if  max(flag_IR, flag) < 1 
 
         # Unpack the relevant shocks

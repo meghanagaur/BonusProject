@@ -67,7 +67,7 @@ else
         opt_2.ftol_rel            = 1e-8
         opt_2.ftol_abs            = 1e-8
         opt_2.xtol_rel            = 0.0  
-        opt_2.maxtime             = (60*60) 
+        opt_2.maxtime             = (60*60)*1.5
         opt_2.lower_bounds        = lower 
         opt_2.upper_bounds        = upper
     end

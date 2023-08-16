@@ -17,18 +17,20 @@ linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, le
 ## Logistics
 files        = [ "baseline" "fix_a_bwc10" "fix_a_bwc0543"]
 labels       = ["Incentives + Bargaining" "Bargaining" "User Guide"]
-big_run      = true        
 
-# Settings for IRFs
-N    = big_run ? 200 : 10
-dlz  = 0.01
-z_ss = 1.0
-dθ   = zeros(N, length(files))
+# Settings for IRFs (in years)
+T        = 20   # horizon of contract
+N        = 30   # length of IRF
+N_plot   = 5    # number of years to plot
+dlz      = 0.01 # size of shock 
+z_ss     = 1.0  # steady state z
 
-# Initilize the Plots 
-p1 = plot()
-p2 = plot()
-p3 = plot()
+# initialize series
+θ_t      = zeros(N*12, length(files))
+u_t      = zeros(N*12, length(files))
+lz_t     = zeros(N*12, length(files))
+u_ss     = zeros(length(files))
+θ_ss     = zeros(length(files))
 
 # Make directory for figures
 file_save = "figs/irfs/"      
@@ -38,8 +40,8 @@ mkpath(file_save)
 for file_idx = 1:length(files)
 
     file_str     = files[file_idx]                              
-    file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
-    file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
+    file_pre     = "smm/jld-original/pretesting_"*file_str*".jld2"   # pretesting data location
+    file_est     = "smm/jld-original/estimation_"*file_str*".txt"    # estimation output location
     println("File name: "*file_str)
 
     # Load output
@@ -66,31 +68,65 @@ for file_idx = 1:length(files)
 
     ## Vary initial productivity z_0 
     if fix_a == false
-        ss  = IRFs(; ρ = ρ, T = 12*20, N = N, lz1 = log(z_ss), u1 = 0.06, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = false)
-        @assert(abs(ss.u_t[end]- ss.u_ss)<eps())
-        irf = IRFs(; ρ = ρ, T = 12*20, N = N, lz1 = lz1, u1 = ss.u_ss, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = false)
+        ss  = IRFs(; ρ = ρ, T = 12*T, N = N*12, lz1 = log(z_ss), u1 = 0.06, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = false)
+        @assert(abs(ss.u_t[end]- ss.u_ss) < eps())
+        irf = IRFs(; ρ = ρ, T = 12*T, N = N*12, lz1 = lz1, u1 = ss.u_ss, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = false)
     elseif fix_a == true
-        ss  = IRFs(; ρ = ρ, T = 12*20, N = N, lz1 = log(z_ss), u1 = 0.06, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = true)
-        @assert(abs(ss.u_t[end]-ss.u_ss)<eps())
-        irf = IRFs(; ρ = ρ, T = 12*20, N = N, lz1 = lz1, u1 = ss.u_ss, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = true)
+        ss  = IRFs(; ρ = ρ, T = 12*T, N = N*12, lz1 = log(z_ss), u1 = 0.06, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = true)
+        @assert(abs(ss.u_t[end]-ss.u_ss) < eps())
+        irf = IRFs(; ρ = ρ, T = 12*T, N = N*12, lz1 = lz1, u1 = ss.u_ss, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = true)
     end
     
     # Plot series in % deviations from SS 
-    dθ_t  = (irf.θ_t - ss.θ_t)./(ss.θ_t)       # % deviations 
-    du_t  = (irf.u_t .- ss.u_ss)               # percentage point 
-    dlz_t = (irf.lz_t .- log(z_ss))            # log deviations 
-
-    # re-index to start at 0
-    plot!(p1, 0:N-1, 100*dθ_t, label = labels[file_idx], ylabel = L"\theta", xlabel = L"t")
-    plot!(p2, 0:N, 100*du_t, label = labels[file_idx], ylabel = L"u", xlabel = L"t", legend=:bottomright)
-    plot!(p3, 0:N-1, 100*dlz_t[1:N], label = labels[file_idx], ylabel = L"z", xlabel = L"t")
-    dθ[:, file_idx] = (log.(irf.θ_t) - log.(ss.θ_t))./dlz_t[1:N]
+    θ_t[:, file_idx]  = irf.θ_t
+    u_t[:, file_idx]  = irf.u_t
+    lz_t[:, file_idx] = irf.lz_t[1:N*12]
+    θ_ss[file_idx]    = first(unique(ss.θ_t))
+    u_ss[file_idx]    = ss.u_ss
 end
 
-savefig(p1, file_save*"θ.pdf")
-savefig(p2, file_save*"u.pdf")
-savefig(p3, file_save*"z.pdf")
+# Plot nonlinear IRFs
 
-dampening = dθ[:,2]./dθ[:,1]
-plot(0:100, dampening[1:101], legend=:false, xlabel = L"t")
-savefig(file_save*"gap.pdf")
+dlθ_t = [(θ_t[:,i]  .- θ_ss[i])./θ_ss[i] for i = 1:length(files)]  # % deviations 
+dθ_t  = [(θ_t[:,i]  .- θ_ss[i])  for i = 1:length(files)]          # deviations 
+du_t  = [(u_t[:,i]  .- u_ss[i]) for i = 1:length(files)]           # deviations 
+dlz_t = [(lz_t[:,i] .- log(z_ss)) for i = 1:length(files)]         # % deviations  
+
+# Deviations from SS 
+p1 = plot()
+for i = 1:length(files)
+    plot!(p1, 0:NN-1, 100*dlθ_t[i][1:NN], label = labels[i], ylabel = L"\theta", xlabel = L"t")
+end
+
+p2 = plot()
+for i = 1:length(files)
+    plot!(p2, 0:NN-1, 100*du_t[i][1:NN], label = labels[i], ylabel = L"u", xlabel = L"t", legend=:bottomright)
+end
+
+p3 = plot()
+for i = 1:length(files)
+    plot!(p3, 0:NN-1, 100*dlz_t[i][1:NN], label = labels[i], ylabel = L"z", xlabel = L"t", legend=:false)
+end
+
+p4 = plot()
+for i = 1:length(files)
+    plot!(p4, 0:NN-1, dθ_t[i][1:NN], label = labels[i], ylabel = L"θ", xlabel = L"t", legend=:false)
+end
+
+# Plot dampening due to bargaining 
+θ_correct = θ_ss[2]/θ_ss[1]
+p5        = plot(0:NN-1, (θ_t[1:NN,2]./θ_t[1:NN,1])./θ_correct,  legend=:false, ylabel=L"\theta")
+
+u_correct = u_ss[2]/u_ss[1]
+p6        = plot(0:NN-1, (u_t[1:NN,2]./u_t[1:NN,1])./u_correct, legend=:false, ylabel=L"u")
+
+p7        = plot!(0:NN-1, dlθ_t[2][1:NN]./dlθ_t[1][1:NN], legend=:false, ylabel=L"u")
+
+savefig(p1, file_save*"dlθ.pdf")
+savefig(p2, file_save*"du.pdf")
+savefig(p3, file_save*"dlz.pdf")
+savefig(p4, file_save*"dθ.pdf")
+savefig(p5, file_save*"udamp.pdf")
+savefig(p6, file_save*"θdamp.pdf")
+
+

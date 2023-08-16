@@ -26,7 +26,7 @@ include("../../functions/smm_settings.jl")                # SMM inputs, settings
 if fix_a == true
     shocks  = rand_shocks(; N_sim_micro = 1, T_sim_micro = 1)
 else
-    shocks           = rand_shocks()
+    shocks  = rand_shocks()
 end
 
 # Define the NLopt optimization object
@@ -61,8 +61,8 @@ else
         opt_2.min_objective       = obj
         # tolerance and time settings 
         opt_2.stopval             = 1e-5
-        opt_2.ftol_rel            = 1e-7
-        opt_2.ftol_abs            = 1e-7
+        opt_2.ftol_rel            = 1e-8
+        opt_2.ftol_abs            = 1e-8
         opt_2.xtol_rel            = 0.0  
         opt_2.maxtime             = (60*60)*1.5 
         opt_2.lower_bounds        = lower 

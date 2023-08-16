@@ -1,6 +1,6 @@
 #!/bin/bash
 
-files="baseline fix_chi0 fix_cyc025 fix_cyc05 fix_cyc075 fix_cyc125 fix_cyc15"
+files="baseline"
 
 for file in $files
 do

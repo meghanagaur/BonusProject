@@ -319,7 +319,7 @@ function IRFs(; ρ = 0.966, T = 12*20, N = 200, lz1 = 0.0, u1 = 0.06, ι = 0.9,
     TT      = N + T                      # length of full z_t path
     lz_t    = [lz1*ρ^(t-1) for t = 1:TT] # lz_t path
     θ_t     = zeros(N)          
-    u_t     = zeros(N+1)
+    u_t     = zeros(N)
     u_t[1]  = u1 
     modd    = model_FH(; ρ =  0.966, ε = ε, σ_η = σ_η, χ = χ, γ = γ, T = T, ι = ι) 
 
@@ -334,7 +334,7 @@ function IRFs(; ρ = 0.966, T = 12*20, N = 200, lz1 = 0.0, u1 = 0.06, ι = 0.9,
 
     # now iterate forwards to solve for u_t
     @unpack s, f = modd 
-    @inbounds for n = 1:N 
+    @inbounds for n = 1:N-1
         u_t[n+1] = u_t[n] + s*(1 - u_t[n]) - f(θ_t[n])*u_t[n]*(1 - s)
     end
 

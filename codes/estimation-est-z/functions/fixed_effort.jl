@@ -243,7 +243,7 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5)
 
     end
 
-    # Composite flag; truncate simulation and only penalize IR flags for log z values within 3 standard deviations of μ_z 
+    # Composite flag; truncate simulation and only penalize IR flags for log z values within XX standard deviations of μ_z 
     σ_z     = σ_ϵ/sqrt(1 - ρ^2)
     idx_1   = findfirst(x-> x > -5σ_z, logz) 
     idx_2   = findlast(x-> x <= 5σ_z, logz) 

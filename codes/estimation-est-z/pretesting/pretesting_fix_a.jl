@@ -20,10 +20,7 @@ file  = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
 
     # Get productivity parameters 
     shocks      = rand_shocks(; N_sim_micro = 1, T_sim_micro = 1)
-    
-    ρ, σ_ϵ     = calibrateZ(shocks; ρ_y =  data_mom[mom_key[:alp_ρ]], σ_y = data_mom[mom_key[:alp_σ]])
-    #ρ           = 0.9852231261640975
-    #σ_ϵ         = 0.002428522112613342
+    ρ, σ_ϵ      = calibrateZ(shocks; ρ_y =  data_mom[mom_key[:alp_ρ]], σ_y = data_mom[mom_key[:alp_σ]])
     
     # Define the baseline values
     param_vals  = OrderedDict{Symbol, Real}([
