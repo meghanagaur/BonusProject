@@ -9,20 +9,21 @@ using Pkg; Pkg.add(url="https://github.com/meghanagaur/DynamicModel")
 
 ## Requred pacakges
 using DynamicModel, BenchmarkTools, DataStructures, Distributions, Optim, Sobol, SparseArrays,
-ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2, NLopt
+ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase, JLD2, NLopt, Combinatorics
 
 ## Required functions
 include("utils.jl")                     # basic utility functions  
 include("obj_func.jl")                  # objective functions
 include("simulation.jl")                # simulation functions
-include("fixed_effort_new.jl")              # solve the model with fixed effort
+include("fixed_effort.jl")              # solve the model with fixed effort
 include("tik-tak.jl")                   # tik-tak code 
 
 """
 Empirical moments that we are targeting;
-We use the identity matrix.
+Use the identity weight matrix.
+K = number of targeted moments.
 """
-function moment_targets(; std_Δlw = 0.064, dlw1_du = -1.0, dlw_dly = 0.039, u_ss = 0.069, alp_ρ = 0.89, alp_σ = 0.017, drop_mom = nothing)
+function moment_targets(; std_Δlw = 0.064, dlw1_du = -1.000, dlw_dly = 0.039, u_ss = 0.06, alp_ρ = 0.89, alp_σ = 0.017, drop_mom = nothing)
     
     # ordering of the moments
     mom_key       = OrderedDict{Symbol, Int64}([   
@@ -53,16 +54,15 @@ end
 """
 Bounds on parameters to be estimated
 """
-function get_param_bounds()
+function get_param_bounds(; ε_lb = 0.3, ε_ub = 3.0)
 
     # parameter bounds
     return OrderedDict{Symbol, Array{Real,1}}([ 
-                        (:ε,  [0.3,   3.0]),        # ε
+                        (:ε,  [ε_lb, ε_ub]),        # ε
                         (:σ_η, [0.2, 0.6]),         # σ_η 
                         (:χ, [0.0, 1.0]),           # χ
-                        (:γ, [0.3, 0.9]),           # γ
-                        (:hbar, [0.1, 5.0]),        # hbar
-                        (:ρ, [0.93, 0.999]),        # ρ
+                        (:γ, [0.2, 0.8]),           # γ
+                        (:ρ, [0.93, 0.995]),        # ρ
                         (:σ_ϵ, [0.0005, 0.01]) ])   # σ_ϵ
 end
 

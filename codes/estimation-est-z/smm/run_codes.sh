@@ -1,7 +1,6 @@
 #!/bin/bash
 
-files="fix_hbar10_pt004 fix_hbar10_pt006 fix_hbar10_pt008 fix_hbar10_pt01"
-#files="fix_hbar10_cyc05 fix_hbar10_cyc15 fix_hbar10_cyc20 fix_hbar10_cyc25 fix_hbar10_cyc30"
+files="baseline fix_chi0 fix_cyc025 fix_cyc05 fix_cyc075 fix_cyc125 fix_cyc15"
 
 for file in $files
 do

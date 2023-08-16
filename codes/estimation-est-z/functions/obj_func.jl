@@ -1,5 +1,5 @@
 """
-Objective function to be minimized during SMM -- WITHOUT BOUNDS.
+Objective function to be minimized during SMM -- WITHOUT MANUAL BOUNDS.
 Variable descriptions below.
 xx           = evaluate objFunction @ these parameters 
 shocks       = shocks for the simulation
@@ -12,9 +12,8 @@ W            = weight matrix for SMM
 σ_η          = 2nd param
 χ            = 3rd param
 γ            = 4th param
-hbar         = 5th param
-ρ            = 6th param
-σ_ϵ          = 7th param
+ρ            = 5th param
+σ_ϵ          = 6th param
     ORDERING OF MOMENTS
 std_Δlw      = 1st moment (st dev of wage growth)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
@@ -36,13 +35,13 @@ function objFunction(xx, param_vals, param_est, shocks, data_mom, W; fix_a = fal
     end
 
     @unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ, ι = Params
-    baseline   = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
+    modd = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
 
     # Simulate the model and compute moments
     if fix_a == true 
-        out        = simulateFixedEffort(baseline, shocks; a = Params[:a])
+        out        = simulateFixedEffort(modd, shocks; a = Params[:a])
     elseif fix_a == false
-        out        = simulate(baseline, shocks)
+        out        = simulate(modd, shocks)
     end
 
     # Record flags and update objective function
@@ -53,7 +52,7 @@ function objFunction(xx, param_vals, param_est, shocks, data_mom, W; fix_a = fal
     d          = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
 
     # Adjust f accordingly
-    f          = d'*W*d + flag*10.0^8 + flag_IR*(1 - flag)*(10.0^6)*IR_err
+    f          = (d'*W*d)*(1-flag)*(1-flag_IR) + (1-flag_IR)*flag*10.0^8 + flag_IR*(100.0 + IR_err)
 
     # Add extra checks for NaN
     flag       = isnan(f) ? 1 : flag
@@ -63,7 +62,7 @@ function objFunction(xx, param_vals, param_est, shocks, data_mom, W; fix_a = fal
 end
 
 """
-Objective function to be minimized during SMM -- WITH BOUNDS.
+Objective function to be minimized during SMM -- WITH MANUAL BOUNDS.
 Variable descriptions below.
 xx           = evaluate objFunction @ parameters = xx for optimization (before transformation)
 x0           = actual starting point for the local optimization (after transformation)
@@ -78,9 +77,8 @@ W            = weight matrix for SMM
 σ_η          = 2nd param
 χ            = 3rd param
 γ            = 4th param
-hbar         = 5th param
-ρ            = 6th param
-σ_ϵ          = 7th param
+ρ            = 5th param
+σ_ϵ          = 6th param
     ORDERING OF MOMENTS
 std_Δlw      = 1st moment (st dev of wage growth)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
@@ -102,13 +100,13 @@ function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, dat
     end
 
     @unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ, ι = Params
-    baseline   = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
+    modd   = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
 
     # Simulate the model and compute moments
     if fix_a == true 
-        out        = simulateFixedEffort(baseline, shocks; a = Params[:a])
+        out        = simulateFixedEffort(modd, shocks; a = Params[:a])
     elseif fix_a == false
-        out        = simulate(baseline, shocks)
+        out        = simulate(modd, shocks)
     end
 
     # Record flags and update objective function
@@ -119,11 +117,11 @@ function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, dat
     d          = (mod_mom - data_mom)./abs.(data_mom)  #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
 
     # Adjust f accordingly
-    f = d'*W*d + flag*10.0^8 + flag_IR*(1 - flag)*(10.0^6)*IR_err
+    f          = (d'*W*d)*(1-flag)*(1-flag_IR) + (1-flag_IR)*flag*10.0^8 + flag_IR*(100.0 + IR_err)
     
     # Add extra checks for NaN
-    flag     = isnan(f) ? 1 : flag
-    f        = isnan(f) ? 10.0^8 : f
+    flag       = isnan(f) ? 1 : flag
+    f          = isnan(f) ? 10.0^8 : f
 
     return [f, mod_mom, flag, flag_IR, IR_err]
 end
@@ -142,6 +140,7 @@ x1 = current (actual) position
 p0 = actual initial position
 """
 function transform_params(xx, pb, p0; λ = 1)
+    
     # Rescales ALL of the parameters to lie between -1 and 1 
     xx2 =   logit.(xx; λ = λ) 
 

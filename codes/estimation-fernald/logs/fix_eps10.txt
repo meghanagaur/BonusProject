@@ -1,0 +1,61 @@
+My SLURM_ARRAY_JOB_ID is 49267361.
+My SLURM_ARRAY_TASK_ID is 2
+Executing on the machine: della-r1c3n6
+File name: fix_eps10
+Checking for multiplicity of roots..
+Root{Interval{Float64}}[Root([0.940739, 0.94074], :unique)]
+Root{Interval{Float64}}[Root([0.952577, 0.952578], :unique)]
+Root{Interval{Float64}}[Root([0.964564, 0.964565], :unique)]
+Root{Interval{Float64}}[Root([0.976702, 0.976703], :unique)]
+Root{Interval{Float64}}[Root([0.988992, 0.988993], :unique)]
+Root{Interval{Float64}}[Root([1.00143, 1.00144], :unique)]
+Root{Interval{Float64}}[Root([1.01404, 1.01405], :unique)]
+Root{Interval{Float64}}[Root([1.0268, 1.02681], :unique)]
+Root{Interval{Float64}}[Root([1.03972, 1.03973], :unique)]
+Root{Interval{Float64}}[Root([1.0528, 1.05281], :unique)]
+Root{Interval{Float64}}[Root([1.06605, 1.06606], :unique)]
+Root{Interval{Float64}}[Root([1.07946, 1.07947], :unique)]
+Root{Interval{Float64}}[Root([1.09305, 1.09306], :unique)]
+353.155213 seconds (40.89 M allocations: 279.398 GiB, 68.07% gc time, 1.07% compilation time)
+Min fval: 	0.0085109856
+------------------------
+ESTIMATED PARAMETERS
+------------------------
+σ_η: 		0.529
+χ: 		0.516
+γ: 		0.581
+hbar: 		1.0
+ε: 		1.0
+ρ: 		0.966
+σ_ϵ: 		0.006
+ι: 		0.9
+------------------------
+TARGETED MOMENTS
+------------------------
+std_Δlw: 	0.064
+dlw0_du: 	-1.0
+dlw_dly: 	0.035
+u_ss: 		0.06
+------------------------
+UNTARGETED MOMENTS
+------------------------
+dlu_dly: 	-3.08
+std logu: 	0.092
+std logz: 	0.016
+std logy: 	0.031
+a(μ_z): 	1.014
+θ(μ_z): 	1.277
+Y (ss): 	29.626
+W (ss): 	28.52
+W/Y (ss): 	0.963
+dla_dlz: 	0.611
+dlY_dlz: 	0.631
+dlW_dlz: 	0.389
+dlθ_dlz: 	12.398
+------------------------
+WAGE CYCLICALITY
+------------------------
+BWC Share #1: 	0.677
+BWC Share #2: 	0.677
+IWC: 		-0.323
+C term at SS: 	-7.516

@@ -9,32 +9,27 @@ ENV["GKSwstype"] = "nul"
 include("functions/smm_settings.jl")                    # SMM inputs, settings, packages, etc.
 include("functions/moments.jl")                         # vary z1 functions
 
-using DataFrames, Binscatters, DelimitedFiles, LaTeXStrings, Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
+using DataFrames, Binscatters, DelimitedFiles, LaTeXStrings, IntervalArithmetic, IntervalRootFinding,
+Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
 xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
 ## Logistics
-big_run      = false #true        
-file_str     ="fix_a_bwf2" #ARGS[1]                              
+files        = ["baseline"]
+big_run      = true        
+file_idx     = big_run ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
+file_str     = files[file_idx]                              
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
 file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
-file_save    = "figs/vary-z1/"*file_str*"/"             # file to-save 
+file_save    = "figs/vary-z0/"*file_str*"/"             # file to-save 
+λ            = 10^5
 
+# Make directory for figures
 mkpath(file_save)
 println("File name: "*file_str)
 
-# Settings for simulation
-if big_run == false
-    vary_z_N             = 51          # number of gridpoints for first-order 
-    N_sim_macro          = 10^4        # number of panels for macro stats exc. ALP
-    N_sim_macro_workers  = 1000        # number of workers for ALP simulation
-    N_sim_macro_est_alp  = 1000        # number of panels for ALP simulation
-else
-    vary_z_N             = 201         # number of gridpoints for first-order 
-    N_sim_macro          = 10^4        # number of panels for macro stats exc. ALP
-    N_sim_macro_workers  = 5*10^3      # number of workers for ALP simulation
-    N_sim_macro_est_alp  = 10^4        # number of panels for ALP simulation
-end
+# Set # of gridpoints when taking numerical derivatives
+vary_z_N = big_run ? 201 : 51
 
 # Load output
 est_output = readdlm(file_est, ',', Float64)   # estimation output       
@@ -59,76 +54,82 @@ end
 
 # Get moments (check for multiplicity and verfiy solutions are the same)
 modd       = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
-shocks     = rand_shocks(; N_sim_macro = N_sim_macro, N_sim_macro_workers = N_sim_macro_workers, N_sim_macro_est_alp = N_sim_macro_est_alp)
+shocks     = rand_shocks()
 
 if fix_a == false
+    # check for multiplicity roots
+    println("Checking for multiplicity of roots..")
+    sol   = solveModel(modd; noisy = false)
+    a_min = 10^-8
+    a_max = 10
 
-    @time output     = simulate(modd, shocks; check_mult = false)         # skip multiplicity check
-    @time output2    = simulate(modd, shocks; check_mult = true)          # check multiplicity of roots (slow)
+    @unpack ψ, ε, q, κ, hp, σ_η, hbar = modd
+    a_gap(x, z) = x - ((z*x/sol.w_0 - (ψ/ε)*(hp(x)*σ_η)^2)/hbar)^(ε/(1+ε))
 
-    if (output2.flag == 0)
-        @assert(isapprox(output.std_Δlw, output2.std_Δlw), 10^-8)   # check on multiplicity of effort 
-        @assert(isapprox(output.dlw1_du, output2.dlw1_du), 10^-8)   # check on multiplicity of effort
-        @assert(isapprox(output.u_ss, output2.u_ss), 10^-8)         # check on multiplicity of effort
-        @assert(isapprox(output.dlw_dly, output2.dlw_dly), 10^-8)   # check on multiplicity of effort 
-        @assert(isapprox(output.alp_ρ, output2.alp_ρ), 10^-8)       # check on multiplicity of effort 
-        @assert(isapprox(output.alp_σ, output2.alp_σ), 10^-8)       # check on multiplicity of effort 
-        println("effort multiplicity check passed")
-    else
-        println("effort multiplicity check violated")
+    p1 = plot()
+    p2 = plot()
+    for (iz,z) in enumerate(modd.zgrid)
+        println(roots( x -> a_gap(x, z)  ,  a_min..a_max))
+        plot!(p1, x -> a_gap(x, z) , 0, 10^-3)
+        plot!(p2, x -> a_gap(x, z), a_min, 2.0)
     end
-else 
-    @time output = simulateFixedEffort(modd, shocks; a = Params[:a])    
+
+    plot(p1, p2, layout = (1,2),  size = (800,400), title="Implicit Effort Gap", legend=:false)
+    savefig(file_save*"effort_error.pdf")
+
+    @time output = simulate(modd, shocks; check_mult = false, λ = λ) # get output
+else
+    sol          = solveModelFixedEffort(modd; a = Params[:a], noisy = false);
+    @time output = simulateFixedEffort(modd, shocks; a = Params[:a])  
 end
 
 # Unpack parameters
-@unpack std_Δlw, dlw1_du, dlw_dly, u_ss, alp_ρ, alp_σ, u_ss_2, dlu_dly, std_u, flag, flag_IR, IR_err, std_z  = output
+@unpack std_Δlw, dlw1_du, dlw_dly, u_ss, alp_ρ, alp_σ, dlu_dly, std_u, flag, flag_IR, IR_err, std_z  = output
+
+# CHANGE ROUNDING MODE TO ROUND NEAREST AWAY 
+
+println("Min fval: \t"*string(round(minimum(est_output[:,1]), RoundNearestTiesAway, digits = 10 )) )
 
 # Estimated parameters
 println("------------------------")
 println("ESTIMATED PARAMETERS")
 println("------------------------")
-println("σ_η: \t\t"*string(round.(Params[:σ_η], digits=4)))
-println("χ: \t\t"*string(round.(Params[:χ], digits=4)))
-println("γ: \t\t"*string(round.(Params[:γ], digits=4)))
-println("hbar: \t\t"*string(round.(Params[:hbar], digits=4)))
-println("ε: \t\t"*string(round.(Params[:ε], digits=4)))
-println("ρ: \t\t"*string(round.(Params[:ρ], digits=4)))
-println("σ_ϵ: \t\t"*string(round.(Params[:σ_ϵ], digits=4)))
-println("ι: \t\t"*string(round.(Params[:ι], digits=4)))
+println("σ_η: \t\t"*string(round.(Params[:σ_η], RoundNearestTiesAway, digits = 3)))
+println("χ: \t\t"*string(round.(Params[:χ], RoundNearestTiesAway, digits = 3)))
+println("γ: \t\t"*string(round.(Params[:γ], RoundNearestTiesAway, digits = 3)))
+println("hbar: \t\t"*string(round.(Params[:hbar], RoundNearestTiesAway, digits = 3)))
+println("ε: \t\t"*string(round.(Params[:ε], RoundNearestTiesAway, digits = 3)))
+println("ρ: \t\t"*string(round.(Params[:ρ], RoundNearestTiesAway, digits = 3)))
+println("σ_ϵ: \t\t"*string(round.(Params[:σ_ϵ], RoundNearestTiesAway, digits = 3)))
+println("ι: \t\t"*string(round.(Params[:ι], RoundNearestTiesAway, digits = 3)))
 
 # Targeted moments
 println("------------------------")
 println("TARGETED MOMENTS")
 println("------------------------")
-println("std_Δlw: \t"*string(round.(std_Δlw, digits=4)))
-println("dlw1_du: \t"*string(round.(dlw1_du, digits=4)))
-println("dlw_dly: \t"*string(round.(dlw_dly, digits=4)))
-println("u_ss: \t\t"*string(round.(u_ss, digits=4)))
-println("alp_ρ: \t\t"*string(round.(alp_ρ, digits=4)))
-println("alp_σ: \t\t"*string(round.(alp_σ, digits=4)))
+println("std_Δlw: \t"*string(round.(std_Δlw, RoundNearestTiesAway, digits = 3)))
+println("dlw0_du: \t"*string(round.(dlw1_du, RoundNearestTiesAway, digits = 3)))
+println("dlw_dly: \t"*string(round.(dlw_dly, RoundNearestTiesAway, digits = 3)))
+println("u_ss: \t\t"*string(round.(u_ss, RoundNearestTiesAway, digits = 3)))
+println("alp_ρ: \t\t"*string(round.(alp_ρ, RoundNearestTiesAway, digits = 3)))
+println("alp_σ: \t\t"*string(round.(alp_σ, RoundNearestTiesAway, digits = 3)))
 
 # Untargeted moments
 println("------------------------")
 println("UNTARGETED MOMENTS")
 println("------------------------")
-println("u_ss_2: \t"*string(round.(u_ss_2, digits=4)))
-println("dlu_dly: \t"*string(round.(dlu_dly, digits=4)))
-println("std_logu: \t"*string(round.(std_u, digits=4)))
-println("std_logz: \t"*string(round.(std_z, digits=4)))
+println("dlu_dly: \t"*string(round.(dlu_dly, RoundNearestTiesAway, digits = 3)))
+println("std logu: \t"*string(round.(std_u, RoundNearestTiesAway, digits = 3)))
+println("std logz: \t"*string(round.(std_z, RoundNearestTiesAway, digits = 3)))
 
 # Compute some extra moments
-if fix_a == false
-    @unpack θ, w_0, Y, az = solveModel(modd; noisy = false);
-else 
-    @unpack θ, w_0, Y, az = solveModelFixedEffort(modd; a = Params[:a], noisy = false);
-end
+@unpack θ, w_0, Y, az  = sol
 
-println("a(μ_z): \t"*string(round.(az[modd.z_ss_idx], digits=4)))
-println("θ(μ_z): \t"*string(round.(θ, digits=4)))
-println("W (ss): \t"*string(round.(w_0/modd.ψ, digits=4)))
-println("Y (ss): \t"*string(round.(Y, digits=4)))
-println("W/Y (ss): \t"*string(round.(w_0/(modd.ψ*Y), digits=4)))
+println("a(μ_z): \t"*string(round.(az[modd.z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("θ(μ_z): \t"*string(round.(θ, RoundNearestTiesAway, digits = 3)))
+println("Y (ss): \t"*string(round.(Y, RoundNearestTiesAway, digits = 3)))
+println("W (ss): \t"*string(round.(w_0/modd.ψ, RoundNearestTiesAway, digits = 3)))
+println("W/Y (ss): \t"*string(round.(w_0/(modd.ψ*Y), RoundNearestTiesAway, digits = 3)))
 
 ## Vary initial productivity z_0 
 
@@ -137,17 +138,18 @@ modd       = model(N_z = vary_z_N, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η
 modd_chi0  = model(N_z = vary_z_N, χ = 0.0, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
 
 if fix_a == true
-    bonus      = vary_z1(modd; fix_a = fix_a, a = Params[:a])
-    bonus_chi0 = vary_z1(modd_chi0; fix_a = fix_a, a = Params[:a])
+    bonus      = vary_z0(modd; fix_a = fix_a, a = Params[:a])
+    bonus_chi0 = vary_z0(modd_chi0; fix_a = fix_a, a = Params[:a])
 else 
-    bonus      = vary_z1(modd; fix_a = fix_a)
-    bonus_chi0 = vary_z1(modd_chi0; fix_a = fix_a)
+    bonus      = vary_z0(modd; fix_a = fix_a)
+    bonus_chi0 = vary_z0(modd_chi0; fix_a = fix_a)
 end
 
+# Get primitives
 @unpack P_z, zgrid, N_z, ρ, β, s, z_ss_idx, q, ι, κ, χ, μ_z, ψ, hp, logz = modd
 
 # Get Hall aggregates
-hall       = solveHall(modd, bonus.Y, bonus.W)
+hall         = solveHall(modd, bonus.Y, bonus.W)
 
 # Print out some cyclical fluctuations
 dlY_dlz      = slopeFD(log.(max.(eps(), bonus.Y)), logz; diff = "central")
@@ -157,10 +159,10 @@ tt_B         = slopeFD(bonus.θ, zgrid).*zgrid./bonus.θ
 tt_H         = slopeFD(hall.θ, zgrid).*zgrid./hall.θ
 tt_B0        = slopeFD(bonus_chi0.θ, zgrid).*zgrid./bonus_chi0.θ
 
-println("dlY_dlz: \t"*string(round.(dlY_dlz[z_ss_idx], digits=4)))
-println("dlW_dlz: \t"*string(round.(dlW_dlz[z_ss_idx], digits=4)))
-println("dla_dlz: \t"*string(round.(dla0_dlz[z_ss_idx], digits=4)))
-println("dlθ_dlz: \t"*string(round.(tt_B[z_ss_idx], digits=4)))
+println("dla_dlz: \t"*string(round.(dla0_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dlY_dlz: \t"*string(round.(dlY_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dlW_dlz: \t"*string(round.(dlW_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dlθ_dlz: \t"*string(round.(tt_B[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 
 # Plot labels
 rigid      = "Rigid Wage: fixed w and a"
@@ -172,29 +174,26 @@ maxz_idx   = isnothing(maxz_idx) ? vary_z_N : maxz_idx
 range_1    = minz_idx:maxz_idx
 
 # Get decomposition components
-@unpack JJ_EVT, WF, BWF, IWF, resid, total_resid = decomposition(modd, bonus; fix_a = fix_a)
+@unpack JJ_EVT, WC, BWC_resid, IWC_resid, BWC_share, c_term = decomposition(modd, bonus; fix_a = fix_a)
 
 ## Compute C term and dJ/dz in Bonus, Hall
 JJ_B      = slopeFD(bonus.J, zgrid; diff = "central")
 JJ_H      = slopeFD(hall.J, zgrid; diff = "central")
 JJ_B0     = slopeFD(bonus_chi0.J, zgrid; diff = "central")
-c_term    = JJ_B - JJ_EVT
 
 ## Share of Incentive Wage Flexibility
 println("------------------------")
-println("WAGE FLEXIBILITY")
+println("WAGE CYCLICALITY")
 println("------------------------")
 
 ## Share of bargained wage flexibility
-WF_chi0  = slopeFD(bonus_chi0.W, zgrid) # total wage flexibility
-BWF_2    = -(c_term./WF)                # primary IWF measure
 
-println("IWF Share #1: \t\t"*string(round(1 - BWF_2[z_ss_idx], digits = 3)))
-println("IWF Share #2: \t\t"*string(round((IWF./WF)[z_ss_idx], digits = 3)))
-println("WF with χ = 0/WF \t"*string(round((WF_chi0./WF)[z_ss_idx], digits = 3)))
+println("BWC Share #1: \t"*string(round(BWC_share[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("BWC Share #2: \t"*string(round((BWC_resid./WC)[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("IWC: \t\t"*string(round((1-BWC_share[z_ss_idx])*dlw1_du , RoundNearestTiesAway, digits = 3)))
 
 ## Print the C term at steady state
-println("C term at μ_z: \t"*string(round(c_term[z_ss_idx], digits=3)))
+println("C term at SS: \t"*string(round(c_term[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 
 if fix_a == false
    
@@ -296,11 +295,7 @@ if fix_a == false
 
     savefig(file_save*"cterm_multiplier.pdf")
 
-    lm = c_term[range_1]./dIR[range_1]
-    #plot(logz[range_1], slopeFD(bonus.w_0[range_1], zgrid[range_1]))
-    #plot!(logz[range_1], slopeFD(lm, zgrid[range_1]),linestyle=:dash)
-
-    ## Scatter plot of log employment
+    #= Scatter plot of log employment
     T_sim     = 5000
     burnin    = 10000
     minz_idx  = max(findfirst(x -> x > 10^-6, hall.θ), findfirst(x -> x > 10^-6, bonus.θ))
@@ -335,205 +330,50 @@ if fix_a == false
     xlabel!(L"\log z_t")
 
     savefig(file_save*"binscatter_logn.pdf")
-
-    # plot the comparison of partial, total derivative of the residual + dJ/dz in Bonus model
-    plot(logz[range_2], JJ_B[range_2], label=L"\frac{d J(z_0) }{d z_0}", legend=:bottomright)
-    plot!(logz[range_2], -resid[range_2], label=L"\frac{\partial \kappa/q(z_0) }{\partial z_0}"*" (method 1 )", linestyle=:dashdot)
-    plot!(logz[range_2],total_resid[range_2], label=L"\frac{d \kappa/q(z_0) }{d z_0}"*" (direct)", linestyle=:dash)
-
-    savefig(file_save*"dJ_dz_resids.pdf")
-
-    plot(logz[range_2], (BWF./WF)[range_2], label="BWF #1")
-    plot!(logz[range_2], (BWF_2)[range_2],label="BWF #2", linestyle=:dash)
-    ylabel!("BWF share")
-    xlabel!(L"\log z_0")
-
-    savefig(file_save*"WF_shares.pdf")
-
+    =#
 end
 
 # Check convergence 
 indices    = sortperm(est_output[:,1])
-stop       = findlast(x -> x < 1, est_output[indices,1])
+stop       = findlast(x -> x < 0.05, est_output[indices,1])
 indices    = reverse(indices[1:stop])
 
 p1 = plot()
 p2 = plot()
 p3 = plot()
 p4 = plot()
+p5 = plot()
+p6 = plot()
 
 for (k,v) in param_est
-    if k == :σ_ϵ
-        plot!(p1, est_output[indices,v+1], label = string(k))
-    elseif k == :ε || k == :hbar
-        plot!(p2, est_output[indices,v+1], label = string(k))
+    if k == :σ_η
+        plot!(p1, est_output[indices, v+1], label = L"\sigma_\eta")
+    elseif k == :ε
+        plot!(p2, est_output[indices, v+1], label = L"\epsilon")
     elseif k == :χ
-        plot!(p3, est_output[indices,v+1], label = string(k))
-    else
-        plot!(p4, est_output[indices,v+1], label = string(k))
+        plot!(p3, est_output[indices, v+1], label = L"\chi")
+    elseif k == :γ
+        plot!(p4, est_output[indices, v+1], label = L"\gamma")
+    elseif k == :ρ
+        plot!(p5, est_output[indices, v+1], label = L"\rho")
+    elseif k == :σ_ϵ
+        plot!(p6, est_output[indices, v+1], label = L"\sigma_\epsilon")
     end
 end
 
-p5 = plot(p1, p2, p3, p4, layout = (2,2), legend=:topleft)
-savefig(p5, file_save*"params_converge.pdf")
+pp_1 = plot(p1, p2, p3, p4, layout = (2,2), legend=:topleft, ytitle= "Parameter values", xtitle = "Sorted iterations")
+savefig(pp_1, file_save*"params_converge.pdf")
 
-# function values
-p6 = plot(est_output[indices,1], title="function values", legend=:false)
-savefig(p6, file_save*"fvals_converge.pdf")
+pp_2 = plot(p5, p6, layout = (2,2), legend=:topleft, ytitle= "Parameter values", xtitle = "Sorted iterations")
+savefig(pp_2, file_save*"alp_params_converge.pdf")
 
-#=
-# Vary params and compute BWF
-if vary_params
-    
-    function bwf(modd)
-        bonus           = vary_z1(modd)
-        @unpack WF, BWF = decomposition(modd, bonus; fix_a = fix_a)
-        return (BWF./WF)[modd.z_ss_idx], maximum(bonus.IR_flag*1.0)
-    end
+# Function values
+p7 = plot(est_output[indices,1], title = "Function values", legend=:false, xlabel = "Sorted iterations")
+savefig(p7, file_save*"fvals_converge.pdf")
 
-    # vary χ
-    N_χ      = 30
-    χ_grid   = LinRange(0.0, 1.0, N_χ)
-    bwf_grid = zeros(2, N_χ)
-
-    Threads.@threads for i = 1:N_χ
-        bwf_grid[:, i] .=  bwf(model(χ = χ_grid[i], γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, 
-                             ι = ι, ρ = ρ, σ_ϵ = σ_ϵ))
-    end
-
-    plot(χ_grid, bwf_grid[1,:], label = "BWF share", legend=:right)
-    xlabel!(L"\chi")
-    ylabel!("BWF share")
-
-    savefig(file_save*"bwf_vary_chi.pdf")
-
-    # vary ε
-    N_ε      = 30
-    ε_grid   = LinRange(0.3, 3.0, N_ε)
-
-    Threads.@threads for i = 1:N_ε
-        bwf_grid[:,i] .=  bwf(model(χ = χ, γ = γ, hbar = hbar, ε = ε_grid[i], σ_η = σ_η, 
-                                            ι = ι, ρ = ρ, σ_ϵ = σ_ϵ))
-    end
-
-    # check IR constraint
-    max_idx = findfirst(isequal(1), bwf_grid[2,:])
-    max_idx = isnothing(max_idx)  ? N_ε : max_idx
-    range   = 1:max_idx
-
-    plot(ε_grid[range], bwf_grid[1,range], label = "BWF share", legend=:right)
-    xlabel!(L"\varepsilon")
-    ylabel!("BWF share")
-
-    savefig(file_save*"bwf_vary_eps.pdf")
-
-    # vary hbar
-    N_h        = 30
-    hbar_grid  = LinRange(1.0, 4.0, N_h)
-
-    Threads.@threads for i = 1:N_h
-        bwf_grid[:,i] .=  bwf(model(χ = χ, γ = γ, hbar = hbar_grid[i], ε = ε, σ_η = σ_η, 
-                             ι = ι, ρ = ρ, σ_ϵ = σ_ϵ))
-    end
-
-    # check IR constraint
-    max_idx = findfirst(isequal(1), bwf_grid[2,:])
-    max_idx = isnothing(max_idx)  ? N_h : max_idx
-    range   = 1:max_idx
-
-    plot(hbar_grid[range], bwf_grid[1,range], label = "BWF share #1", legend=:right)
-    xlabel!(L"\bar{h}")
-    ylabel!("BWF share")
-
-    savefig(file_save*"bwf_vary_hbar.pdf")
-
-    # vary σ_η
-    N_s     = 30
-    σ_grid  = LinRange(0.0, 0.5, N_s)
-
-    Threads.@threads for i = 1:N_s
-        bwf_grid[:,i] .=  bwf(model(χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_grid[i], 
-                                ι = ι, ρ = ρ, σ_ϵ = σ_ϵ))
-    end
-
-    # check IR constraint
-    max_idx = findfirst(isequal(1), bwf_grid[2,:])
-    max_idx = isnothing(max_idx)  ? N_s : max_idx
-    range   = 1:max_idx
-
-    p1 = plot(σ_grid[range], bwf_grid[1,range], ylabel = "BWF share #1")
-    p2 = plot(σ_grid[range], bwf_grid[2,range], ylabel = "BWF share #2")
-    xlabel!(L"\sigma_\eta")
-    plot(p1, p2, layout = (2,1), legend=:false)
-
-    savefig(file_save*"bwf_vary_sigma_eta.pdf")
+# Re-name log file
+if big_run == true
+    mkpath("logs")
+    job_id  = parse(Int64, ENV["SLURM_ARRAY_JOB_ID"])
+    mv("slurm-"*string(job_id)*"."*string(file_idx)*".out", "logs/"*file_str*".txt", force = true)
 end
-=#
-
-#=
-# effort as a function of z, w_0
-a_z(x) = effort(x, bonus.modds[z_ss_idx].w_0,  ψ, ε, hp, σ_η, hbar )
-a_w(w) = effort(zgrid[z_ss_idx], w,  ψ, ε, hp, σ_η, hbar)
-
-dd(z)  = dadz(z, bonus.modds[z_ss_idx].w_0,  ψ, ε, hp, σ_η, hbar)[1]
-dd2(x) = central_fdm(5,1)(a_z, x)
-dd3(x) = central_fdm(5,1)(a_w, x)
-dd4(x) = dadz(zgrid[z_ss_idx], x,  ψ, ε, hp, σ_η, hbar)[2]
-
-# check derivatives 
-plot(dd,0.9,1.1)
-plot!(dd2, 0.9, 1.1)
-
-plot(dd3, 0.9,1.1)
-plot!(dd4, 0.9, 1.1)
-=#
-
-
-#=
-# Solve for dJ/dz in Hall directly
-JJ_H_2   = zeros(N_z) 
-Threads.@threads for iz = 1:N_z
-
-    # Initialize guess of direct effect
-    v0     = zgrid./(1-ρ*β*(1-s))
-    v0_new = zeros(N_z)
-    iter   = 1
-    err    = 10
-    
-    # solve via simple value function iteration
-    @inbounds while err > 10^-10 && iter < 1000
-        v0_new = zgrid + ρ*β*(1-s)*P_z*v0
-        err    = maximum(abs.(v0_new - v0))
-        v0     = copy(v0_new)
-        iter +=1
-    end
-
-    JJ_H_2[iz]   = hall.a*v0[iz]/zgrid[iz]
-
-end
-
-# Solve for dJ/dz in Hall directly
-JJ_H_3   = zeros(N_z) 
-Threads.@threads for iz = 1:N_z
-
-    # Initialize guess of direct effect
-    v0     = zgrid./(1- β*(1-s))
-    v0_new = zeros(N_z)
-    iter   = 1
-    err    = 10
-    
-    # solve via simple value function iteration
-    @inbounds while err > 10^-10 && iter < 1000
-        v0_new = hall.a*zgrid + β*(1-s)*P_z*v0
-        err    = maximum(abs.(v0_new - v0))
-        v0     = copy(v0_new)
-        iter +=1
-    end
-
-    JJ_H_3[iz]   = v0[iz]
-
-end
-
-plot(JJ_H_2)
-plot!(slopeFD(JJ_H_3,zgrid), linestyle=:dash)
-=#

@@ -15,16 +15,14 @@ xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
 ## Logistics
-#files        = ["iota125" "fix_a_bwc0447" "cyc05" "cyc075" "cyc125" "cyc15"]
-#files        = ["fix_chi0"] # "fix_a_bwc10" "fix_chi0"]
-files        = ["baseline"] # "high_eps"]
+files        = ["baseline"]
 big_run      = false #true        
 file_idx     = big_run ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]                              
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
 file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
 file_save    = "figs/vary-z0/"*file_str*"/"             # file to-save 
-λ            = 1600
+λ            = 10^5
 
 # Make directory for figures
 mkpath(file_save)
@@ -39,21 +37,21 @@ if big_run == false
     N_sim_macro_alp          = 1
     est_alp                  = false
 else
-    vary_z_N                 = 201          # increase # of gridpoints when taking numerical derivatives
-    #N_sim_micro             = 2*10^4       # increase # of workers for wage simulations
-    #N_sim_macro             = 10^4         # increase # of panels for macro stats excluding endogenous ALP
-    N_sim_macro_alp_workers  = 10^4         # increase # of workers for endogneous ALP simulation
-    N_sim_macro_alp          = 500          # increase # of panels for endogneous ALP simulation
-    est_alp                  = true         # whether or not to simulate endogenous ALP
+    vary_z_N                 = 201           # increase # of gridpoints when taking numerical derivatives
+    #N_sim_micro             = 2*10^4        # increase # of workers for wage simulations
+    #N_sim_macro             = 10^4          # increase # of panels for macro stats excluding endogenous ALP
+    N_sim_macro_alp_workers  = 10^4          # increase # of workers for endogneous ALP simulation
+    N_sim_macro_alp          = 500           # increase # of panels for endogneous ALP simulation
+    est_alp                  = true          # whether or not to simulate endogenous ALP
 end
 
 # Load output
-est_output = readdlm(file_est, ',', Float64)   # estimation output       
+est_output = readdlm(file_est, ',', Float64) # estimation output       
 @unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, W, fix_a = load(file_pre) # pretesting output
 
 # Get the final minimum 
-idx        = argmin(est_output[:,1])                    # check for the lowest function value across processes 
-pstar      = est_output[idx, 2:(2+J-1)]                 # get parameters 
+idx        = argmin(est_output[:,1])         # check for the lowest function value across processes 
+pstar      = est_output[idx, 2:(2+J-1)]      # get parameters 
 
 # Get the relevant parameters
 Params =  OrderedDict{Symbol, Float64}()
@@ -295,13 +293,12 @@ if fix_a == false
     plot!(zgrid[range_2], JJ_B0[range_2], linecolor=:blue, label = "chi0 ", linestyle=:dash)
     plot!(zgrid[range_2], JJ_H[range_2] , linecolor=:green, label = "hall", linestyle=:dashdot)
 
-    JJ_EVT[z_ss_idx] - JJ_B[z_ss_idx]     # c term
-    JJ_EVT[z_ss_idx] - JJ_H[z_ss_idx]     # c term
+    JJ_EVT[z_ss_idx] - JJ_B[z_ss_idx]     # C term
+    JJ_EVT[z_ss_idx] - JJ_H[z_ss_idx]     # C term
     JJ_EVT[z_ss_idx] - JJ_B0[z_ss_idx]    # should be close to 0
 
     ## C term graphs
     p1 = plot(logz[range_2], JJ_EVT[range_2], linecolor=:black, label = "Incentive Pay: No C term", legend =:bottomright)
-    #plot!(logz[range_2], JJ_B[range_2], linecolor=:red,  label = fip)
     plot!(logz[range_2], JJ_H[range_2], linecolor=:blue, label = rigid)
     plot!(logz[range_2], JJ_B0[range_2], linecolor=:yellow, label = ip, legend =:bottom)
     xaxis!(L"z_0")
@@ -315,43 +312,6 @@ if fix_a == false
     xaxis!(L"\log z_0")
 
     savefig(file_save*"cterm_multiplier.pdf")
-
-    #= Scatter plot of log employment
-    T_sim     = 5000
-    burnin    = 10000
-    minz_idx  = max(findfirst(x -> x > 10^-6, hall.θ), findfirst(x -> x > 10^-6, bonus.θ))
-    bonus_sim = simulate_employment(modd, T_sim, burnin, bonus.θ; minz_idx = minz_idx)
-    hall_sim  = simulate_employment(modd, T_sim, burnin, hall.θ; minz_idx = minz_idx)
-
-    # n_t and z_t 
-    N_B       = bonus_sim.nt
-    N_H       = hall_sim.nt
-    zt_B      = zgrid[bonus_sim.zt_idx]
-    zt_H      = zgrid[hall_sim.zt_idx]
-
-    @assert(zt_B == zt_H)
-
-    # raw scatter plot
-    p1 = plot(log.(zt_B), log.(N_B), seriestype=:scatter, label=fip, legend=:bottomright, ms=:3, mc=:red)
-    plot!(log.(zt_B), log.(N_H), seriestype=:scatter, label=rigid, ms=:3, mc=:blue)
-    xlabel!(L"\log z_t")
-    ylabel!(L"\log n_t")
-
-    savefig(p1, file_save*"scatter_logn.pdf")
-
-    ## Produce binscatter of log employment against log z
-    nbins  = 100
-    df     = DataFrame(n = log.(N_B), z = log.(zt_B), model = "bonus")  # bonus
-    df_H   = DataFrame(n = log.(N_H), z = log.(zt_B), model = "hall" )  # hall
-    append!(df, df_H)
-
-    p2 = binscatter(groupby(df, :model), @formula(n ~ z), nbins; markersize = 4, seriestype = :linearfit, 
-            labels=[fip rigid], markercolor= [:red :blue], linecolor = [:red :blue], legend=:false)
-    ylabel!(L"\log n_t")
-    xlabel!(L"\log z_t")
-
-    savefig(file_save*"binscatter_logn.pdf")
-    =#
 end
 
 # Check convergence 

@@ -12,9 +12,8 @@ W            = weight matrix for SMM
 σ_η          = 2nd param
 χ            = 3rd param
 γ            = 4th param
-hbar         = 5th param
-ρ            = 6th param
-σ_ϵ          = 7th param
+ρ            = 5th param
+σ_ϵ          = 6th param
     ORDERING OF MOMENTS
 std_Δlw      = 1st moment (st dev of wage growth)
 dlw1_du      = 2nd moment (dlog w_1 / d u)

@@ -6,20 +6,21 @@ addprocs(SlurmManager())
 println(nprocs())
 
 # File location for saving jld output + slurm idx
-file  = "pretesting_fix_a"
+@everywhere cyc = 1.0
+file  = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
 
 @everywhere begin
 
-    # get moment targets and weight matrix
+    # Get moment targets and weight matrix
     drop_mom = Dict(:dlw_dly => false, :std_Δlw => false, :alp_ρ => false, :alp_σ => false) # drop micro wage + ALP moments
-    @unpack data_mom, mom_key, K, W = moment_targets(; drop_mom = drop_mom)
+    @unpack data_mom, mom_key, K, W = moment_targets(; drop_mom = drop_mom, dlw1_du = -cyc)
 
     # Get productivity parameters 
-    shocks  = rand_shocks(N_sim_macro = 10^4, N_sim_macro_workers = 1, N_sim_micro = 1)
-    ρ, σ_ϵ  = calibrateZ(shocks; ρ_y =  data_mom[mom_key[:alp_ρ]], σ_y = data_mom[mom_key[:alp_σ]])
+    shocks  = rand_shocks(; N_sim_micro = 1, T_sim_micro = 1)
+    #ρ, σ_ϵ  = calibrateZ(shocks; ρ_y =  data_mom[mom_key[:alp_ρ]], σ_y = data_mom[mom_key[:alp_σ]])
         
     # Define the baseline values
     param_vals  = OrderedDict{Symbol, Real}([
@@ -29,11 +30,11 @@ file  = "pretesting_fix_a"
                     (:χ, 0.0),           # χ
                     (:γ, 0.4916),        # γ
                     (:hbar, 1.0),        # hbar
-                    (:ρ, ρ),             # ρ
-                    (:σ_ϵ, σ_ϵ),         # σ_ϵ
-                    (:ι, 0.8) ])         # ι
+                    (:ρ, 0.9852231261640975),           # ρ
+                    (:σ_ϵ, 0.002428522112613342),       # σ_ϵ
+                    (:ι, 0.9) ])         # ι
 
-    # Parameters we will fix (if any) in: ε, σ_η, χ, γ, hbar, ρ, σ_ϵ
+    # Parameters we will fix (if any) in: ε, σ_η, χ, γ
     params_fix   = [:hbar, :ε, :σ_η, :ρ, :σ_ϵ] 
     param_bounds = get_param_bounds()
     for p in params_fix
@@ -52,7 +53,7 @@ file  = "pretesting_fix_a"
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 100^2
+    I_max        = 200^2
     lb           = zeros(J)
     ub           = zeros(J)
 
@@ -64,13 +65,14 @@ file  = "pretesting_fix_a"
     s            = SobolSeq(lb, ub)
     seq          = skip(s, 10000, exact = true)
     sob_seq      = reduce(hcat, next!(seq) for i = 1:I_max)
+    
 end
 
 # Evaluate the objective function for each parameter vector
 @time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W; fix_a = true), 1:I_max) 
 
 # Kill the processes
-#rmprocs(nprocs())
+rmprocs(workers())
 
 # Clean the output 
 

@@ -12,12 +12,12 @@ addprocs(SlurmManager())
 @everywhere begin
 
     # Get slurm job array idx
-    ja_idx  = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
+    ja_idx      = 1 # parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
 
     # different values of the epsilon 
-    eps_vals    = 0.3:0.3:3.0
-    eps         = eps_vals[ja_idx]
-    file        = "pretesting_fix_eps"*replace(string(eps), "." => "")  
+    eps_vals    = 0.5:0.5:5.0
+    ε           = eps_vals[ja_idx]
+    file        = "pretesting_fix_eps"*replace(string(ε), "." => "")  
 
     # get moment targets and weight matrix
     @unpack data_mom, mom_key, K, W = moment_targets()
@@ -28,7 +28,7 @@ addprocs(SlurmManager())
     @unpack ρ, σ_ϵ, ι, P_z, p_z, z_ss_idx, χ, γ, σ_η, hbar = model()
     param_vals        = OrderedDict{Symbol, Real}([ 
                         (:a, 1.0),           # effort 
-                        (:ε, eps),           # ε
+                        (:ε, ε),             # ε
                         (:σ_η, σ_η),         # σ_η 
                         (:χ, χ),             # χ
                         (:γ, γ),             # γ
@@ -38,11 +38,11 @@ addprocs(SlurmManager())
                         (:ι, ι) ])           # ι
 
     # Specifciations for the shocks in simulation
-    shocks  = rand_shocks(P_z, p_z; N_sim_macro_alp_workers = 1, z0_idx = z_ss_idx)
+    shocks           = rand_shocks(P_z, p_z; N_sim_macro_alp_workers = 1, z0_idx = z_ss_idx)
 
     # Parameters we will fix (if any) in ε, σ_η, χ, γ 
-    params_fix   = [:ε, :hbar, :ρ, :σ_ϵ] 
-    param_bounds = get_param_bounds()
+    params_fix       = [:ε, :hbar, :ρ, :σ_ϵ] 
+    param_bounds     = get_param_bounds()
     for p in params_fix
         delete!(param_bounds, p)
     end
@@ -59,7 +59,7 @@ addprocs(SlurmManager())
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 3*10^4
+    I_max        = 25*10^4
     lb           = zeros(J)
     ub           = zeros(J)
 
@@ -74,6 +74,8 @@ addprocs(SlurmManager())
 end
 
 # Evaluate the objective function for each parameter vector
+@time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W), 1:1) 
+
 @time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W), 1:I_max) 
 
 # Kill the processes

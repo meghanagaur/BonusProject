@@ -1,0 +1,23 @@
+{
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{4}{c}}
+\toprule
+                    &\multicolumn{2}{c}{$\lambda = 1600$ $\lambda = 10^5}&\multicolumn{2}{c}{}                       \\\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+                    &\multicolumn{1}{c}{(1)}         &\multicolumn{1}{c}{(2)}         &\multicolumn{1}{c}{(3)}         &\multicolumn{1}{c}{(4)}         \\
+$\log \theta $      &         TFP         &         ALP         &         TFP         &         ALP         \\
+\midrule
+$\log$ ALP          &      -11.90\sym{***}&                     &                     &      -12.23\sym{***}\\
+                    &     (2.367)         &                     &                     &     (2.657)         \\
+\addlinespace
+\log tfp            &                     &     0.00172         &      -14.11\sym{***}&                     \\
+                    &                     &     (2.725)         &     (2.562)         &                     \\
+\addlinespace
+Constant            &      0.0674         &  -0.0000103         &     0.00374         &     0.00688         \\
+                    &    (0.0415)         &    (0.0482)         &    (0.0224)         &    (0.0235)         \\
+\midrule
+Controls            &                     &                     &                     &                     \\
+R^2                 &       0.252         &    5.33e-09         &       0.288         &       0.220         \\
+Observations        &          77         &          77         &          77         &          77         \\
+\bottomrule
+\end{tabular}
+}
