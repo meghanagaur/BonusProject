@@ -15,8 +15,8 @@ xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
 ## Logistics
-files        = ["baseline"]
-big_run      = false #true        
+files        = ["baseline" "fix_a_bwc10" "fix_chi0"]
+big_run      = true        
 file_idx     = big_run ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]                              
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
@@ -40,9 +40,9 @@ else
     vary_z_N                 = 201           # increase # of gridpoints when taking numerical derivatives
     #N_sim_micro             = 2*10^4        # increase # of workers for wage simulations
     #N_sim_macro             = 10^4          # increase # of panels for macro stats excluding endogenous ALP
-    N_sim_macro_alp_workers  = 10^4          # increase # of workers for endogneous ALP simulation
-    N_sim_macro_alp          = 500           # increase # of panels for endogneous ALP simulation
-    est_alp                  = true          # whether or not to simulate endogenous ALP
+    N_sim_macro_alp_workers  = 2*10^4        # increase # of workers for endogneous ALP simulation
+    N_sim_macro_alp          = 1000          # increase # of panels for endogneous ALP simulation
+    est_alp                  = false         # whether or not to simulate endogenous ALP
 end
 
 # Load output

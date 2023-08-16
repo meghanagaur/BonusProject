@@ -19,9 +19,12 @@ file  = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
     @unpack data_mom, mom_key, K, W = moment_targets(; drop_mom = drop_mom, dlw1_du = -cyc)
 
     # Get productivity parameters 
-    shocks  = rand_shocks(; N_sim_micro = 1, T_sim_micro = 1)
-    #ρ, σ_ϵ  = calibrateZ(shocks; ρ_y =  data_mom[mom_key[:alp_ρ]], σ_y = data_mom[mom_key[:alp_σ]])
-        
+    shocks      = rand_shocks(; N_sim_micro = 1, T_sim_micro = 1)
+    
+    ρ, σ_ϵ     = calibrateZ(shocks; ρ_y =  data_mom[mom_key[:alp_ρ]], σ_y = data_mom[mom_key[:alp_σ]])
+    #ρ           = 0.9852231261640975
+    #σ_ϵ         = 0.002428522112613342
+    
     # Define the baseline values
     param_vals  = OrderedDict{Symbol, Real}([
                     (:a, 1.0),           # fixed effort 
@@ -30,8 +33,8 @@ file  = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
                     (:χ, 0.0),           # χ
                     (:γ, 0.4916),        # γ
                     (:hbar, 1.0),        # hbar
-                    (:ρ, 0.9852231261640975),           # ρ
-                    (:σ_ϵ, 0.002428522112613342),       # σ_ϵ
+                    (:ρ,  ρ),            # ρ
+                    (:σ_ϵ, σ_ϵ),         # σ_ϵ
                     (:ι, 0.9) ])         # ι
 
     # Parameters we will fix (if any) in: ε, σ_η, χ, γ

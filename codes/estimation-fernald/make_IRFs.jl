@@ -20,7 +20,10 @@ labels       = ["Incentives + Bargaining" "Bargaining" "User Guide"]
 big_run      = true        
 
 # Settings for IRFs
-N = big_run ? 200 : 10
+N    = big_run ? 200 : 10
+dlz  = 0.01
+z_ss = 1.0
+dθ   = zeros(N, length(files))
 
 # Initilize the Plots 
 p1 = plot()
@@ -59,29 +62,35 @@ for file_idx = 1:length(files)
 
     # Unpack parameters
     @unpack σ_η, χ, γ, ε, ρ, ι = Params
+    lz1  = log(z_ss) + dlz 
 
     ## Vary initial productivity z_0 
     if fix_a == false
-        ss  = IRFs(; ρ = ρ, T = 12*20, N = N, lz1 = 0.0, u1 = 0.06, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = false)
+        ss  = IRFs(; ρ = ρ, T = 12*20, N = N, lz1 = log(z_ss), u1 = 0.06, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = false)
         @assert(abs(ss.u_t[end]- ss.u_ss)<eps())
-        irf = IRFs(; ρ = ρ, T = 12*20, N = N, lz1 = 0.01, u1 = ss.u_ss, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = false)
+        irf = IRFs(; ρ = ρ, T = 12*20, N = N, lz1 = lz1, u1 = ss.u_ss, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = false)
     elseif fix_a == true
-        ss  = IRFs(; ρ = ρ, T = 12*20, N = N, lz1 = 0.0, u1 = 0.06, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = true)
+        ss  = IRFs(; ρ = ρ, T = 12*20, N = N, lz1 = log(z_ss), u1 = 0.06, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = true)
         @assert(abs(ss.u_t[end]-ss.u_ss)<eps())
-        irf = IRFs(; ρ = ρ, T = 12*20, N = N, lz1 = 0.01, u1 = ss.u_ss, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = true)
+        irf = IRFs(; ρ = ρ, T = 12*20, N = N, lz1 = lz1, u1 = ss.u_ss, ε = ε, σ_η = σ_η, χ = χ, γ = γ, ι = ι, fix_a = true)
     end
     
     # Plot series in % deviations from SS 
     dθ_t  = (irf.θ_t - ss.θ_t)./(ss.θ_t)       # % deviations 
-    du_t  = (irf.u_t .- ss.u_ss)./(ss.u_ss)    # % deviations
-    dlz_t = (irf.lz_t - ss.lz_t)               # log deviations 
+    du_t  = (irf.u_t .- ss.u_ss)               # percentage point 
+    dlz_t = (irf.lz_t .- log(z_ss))            # log deviations 
 
     # re-index to start at 0
     plot!(p1, 0:N-1, 100*dθ_t, label = labels[file_idx], ylabel = L"\theta", xlabel = L"t")
     plot!(p2, 0:N, 100*du_t, label = labels[file_idx], ylabel = L"u", xlabel = L"t", legend=:bottomright)
     plot!(p3, 0:N-1, 100*dlz_t[1:N], label = labels[file_idx], ylabel = L"z", xlabel = L"t")
+    dθ[:, file_idx] = (log.(irf.θ_t) - log.(ss.θ_t))./dlz_t[1:N]
 end
 
 savefig(p1, file_save*"θ.pdf")
 savefig(p2, file_save*"u.pdf")
 savefig(p3, file_save*"z.pdf")
+
+dampening = dθ[:,2]./dθ[:,1]
+plot(0:100, dampening[1:101], legend=:false, xlabel = L"t")
+savefig(file_save*"gap.pdf")

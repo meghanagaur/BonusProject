@@ -70,8 +70,8 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, λ = 10^5)
 
     # Composite flag; truncate simulation and only penalize IR flags for log z values within 3 standard deviations of μ_z 
     σ_z     = σ_ϵ/sqrt(1 - ρ^2)
-    idx_1   = findfirst(x-> x > -3σ_z, logz) 
-    idx_2   = findlast(x-> x <= 3σ_z, logz) 
+    idx_1   = findfirst(x-> x > -5σ_z, logz) 
+    idx_2   = findlast(x-> x <= 5σ_z, logz) 
     flag    = maximum(flag_z[idx_1:idx_2])
     flag_IR = maximum(flag_IR_z[idx_1:idx_2])
 

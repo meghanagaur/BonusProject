@@ -37,7 +37,7 @@ if algo_nlopt == :OPTIM
     opt_1  = nothing
     opt_2  = nothing
 else
-    opt_1  = nothing #Opt(:LN_NELDERMEAD, J)  #Opt(:LN_SBPLX, J) 
+    opt_1  = Opt(:LN_NELDERMEAD, J)  #Opt(:LN_SBPLX, J) 
     opt_2  = Opt(:LN_BOBYQA, J) 
 
     # Objective function
@@ -51,7 +51,7 @@ else
     if !isnothing(opt_1)
         opt_1.min_objective       = obj 
         # tolerance and time settings 
-        opt_1.stopval             = 1e-2
+        opt_1.stopval             = 1e-3
         opt_1.ftol_rel            = 1e-4
         opt_1.ftol_abs            = 1e-4
         opt_1.xtol_rel            = 0.0  
@@ -63,7 +63,7 @@ else
     if !isnothing(opt_2)
         opt_2.min_objective       = obj
         # tolerance and time settings 
-        opt_2.stopval             = 1e-4
+        opt_2.stopval             = 1e-5
         opt_2.ftol_rel            = 1e-8
         opt_2.ftol_abs            = 1e-8
         opt_2.xtol_rel            = 0.0  

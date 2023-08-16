@@ -16,7 +16,7 @@ linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, le
 
 ## Logistics
 files        = ["baseline"]
-big_run      = true        
+big_run      = false        
 file_idx     = big_run ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]                              
 file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
@@ -80,7 +80,7 @@ if fix_a == false
     @time output = simulate(modd, shocks; check_mult = false, λ = λ) # get output
 else
     sol          = solveModelFixedEffort(modd; a = Params[:a], noisy = false);
-    @time output = simulateFixedEffort(modd, shocks; a = Params[:a])  
+    @time output = simulateFixedEffort(modd, shocks; a = Params[:a], λ = λ)  
 end
 
 # Unpack parameters
