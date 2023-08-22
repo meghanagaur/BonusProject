@@ -15,14 +15,14 @@ xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
 ## Logistics
-files        = ["baseline" "fix_a_bwc10" "fix_chi0"]
-big_run      = true        
+files        = ["baseline"] #["baseline" "fix_a_bwc10" "fix_chi0"]
+big_run      = false        
 file_idx     = big_run ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]                              
-file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
-file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
-file_save    = "figs/vary-z0/"*file_str*"/"             # file to-save 
-λ            = 10^5
+file_pre     = "smm/jld-original/pretesting_"*file_str*".jld2"   # pretesting data location
+file_est     = "smm/jld-original/estimation_"*file_str*".txt"    # estimation output location
+file_save    = "figs/vary-z0/"*file_str*"/"                      # file to-save 
+λ            = 10^5                                              # smoothing parameter for HP filter
 
 # Make directory for figures
 mkpath(file_save)
@@ -31,15 +31,11 @@ println("File name: "*file_str)
 # Settings for simulation
 if big_run == false
     vary_z_N                 = 51           # lower # of gridpoints when taking numerical derivatives
-    #N_sim_micro              = 10^4        # lower # of workers for wage simulations
-    #N_sim_macro              = 10^4        # lower # of panels for macro stats exc. ALP
     N_sim_macro_alp_workers  = 1
     N_sim_macro_alp          = 1
     est_alp                  = false
 else
     vary_z_N                 = 201           # increase # of gridpoints when taking numerical derivatives
-    #N_sim_micro             = 2*10^4        # increase # of workers for wage simulations
-    #N_sim_macro             = 10^4          # increase # of panels for macro stats excluding endogenous ALP
     N_sim_macro_alp_workers  = 2*10^4        # increase # of workers for endogneous ALP simulation
     N_sim_macro_alp          = 1000          # increase # of panels for endogneous ALP simulation
     est_alp                  = false         # whether or not to simulate endogenous ALP
@@ -69,8 +65,7 @@ end
 # Get moments (check for multiplicity and verfiy solutions are the same)
 modd       = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
 @unpack P_z, p_z, z_ss_idx = modd
-shocks     = rand_shocks(P_z, p_z; z0_idx = z_ss_idx, #N_sim_micro = N_sim_micro, N_sim_macro = N_sim_macro, 
-            N_sim_macro_alp_workers = N_sim_macro_alp_workers, N_sim_macro_alp = N_sim_macro_alp)
+shocks     = rand_shocks(P_z, p_z; z0_idx = z_ss_idx, N_sim_macro_alp_workers = N_sim_macro_alp_workers, N_sim_macro_alp = N_sim_macro_alp)
 
 if fix_a == false
    
@@ -94,12 +89,12 @@ if fix_a == false
     plot(p1, p2, layout = (1,2),  size = (800,400),title="Implicit Effort Gap", legend=:false)
     savefig(file_save*"effort_error.pdf")
 
-    @time output = simulate(modd, shocks; check_mult = false, est_alp = est_alp, λ = λ) # get output
+    @time output = simulate(modd, shocks; check_mult = false, est_alp = est_alp, λ = λ, sd_cut = 3.0) # get output
 
 else
 
     sol          = solveModelFixedEffort(modd; a = Params[:a], noisy = false);
-    @time output = simulateFixedEffort(modd, shocks; a = Params[:a])  
+    @time output = simulateFixedEffort(modd, shocks; a = Params[:a], sd_cut = 3.0)  
 
 end
 
@@ -173,6 +168,7 @@ hall         = solveHall(modd, bonus.Y, bonus.W)
 # Print out some cyclical fluctuations
 dlY_dlz      = slopeFD(log.(max.(eps(), bonus.Y)), logz; diff = "central")
 dlW_dlz      = slopeFD(log.(max.(eps(), bonus.W)), logz; diff = "central")
+dlW_dlY      = slopeFD(log.(max.(eps(), bonus.W)), log.(max.(eps(), bonus.Y)); diff = "central")
 dla0_dlz     = slopeFD(log.(max.(eps(), bonus.a1)), logz; diff = "central")
 tt_B         = slopeFD(bonus.θ, zgrid).*zgrid./bonus.θ
 tt_H         = slopeFD(hall.θ, zgrid).*zgrid./hall.θ
@@ -181,6 +177,7 @@ tt_B0        = slopeFD(bonus_chi0.θ, zgrid).*zgrid./bonus_chi0.θ
 println("dla_dlz: \t"*string(round.(dla0_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("dlY_dlz: \t"*string(round.(dlY_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("dlW_dlz: \t"*string(round.(dlW_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dlW_dlY: \t"*string(round.(dlW_dlY[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("dlθ_dlz: \t"*string(round.(tt_B[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 
 # Plot labels

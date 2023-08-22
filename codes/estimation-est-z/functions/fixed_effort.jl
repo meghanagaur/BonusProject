@@ -194,7 +194,7 @@ end
 """
 Simulate the model with fixed effort.
 """
-function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5)
+function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut = 5.0)
     
     # Initialize moments to export (default = NaN)
     std_Δlw   = 0.0  # st dev of YoY wage growth
@@ -245,8 +245,8 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5)
 
     # Composite flag; truncate simulation and only penalize IR flags for log z values within XX standard deviations of μ_z 
     σ_z     = σ_ϵ/sqrt(1 - ρ^2)
-    idx_1   = findfirst(x-> x > -5σ_z, logz) 
-    idx_2   = findlast(x-> x <= 5σ_z, logz) 
+    idx_1   = findfirst(x-> x > -sd_cut*σ_z, logz) 
+    idx_2   = findlast(x-> x <= sd_cut*σ_z, logz) 
     flag    = maximum(flag_z[idx_1:idx_2])
     flag_IR = maximum(flag_IR_z[idx_1:idx_2])
 

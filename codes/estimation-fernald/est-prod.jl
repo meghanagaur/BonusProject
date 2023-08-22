@@ -17,13 +17,13 @@ function calibrateZ(shocks; λ = 10^5, ρ_z = 0.87, σ_z = 0.016, N_z = 13, zbar
     opt.min_objective         = obj
 
     # Bound constraints
-    opt.lower_bounds        = [0.9, 0.0001] 
+    opt.lower_bounds        = [0.8, 0.0001] 
     opt.upper_bounds        = [0.999, 0.01] 
 
     # tolerance and time settings 
     opt.stopval            = 1e-8
-    opt.ftol_rel           = 1e-8
-    opt.ftol_abs           = 1e-8
+    opt.ftol_rel           = 1e-9
+    opt.ftol_abs           = 1e-9
     opt.xtol_rel           = 0.0  
     opt.maxtime            = 60*5
 
@@ -81,13 +81,29 @@ N_sim_macro     = 10^4
 burnin          = 5000
 T_sim_macro     = 828
 z_shocks_macro  = rand(Uniform(0,1), T_sim_macro + burnin, N_sim_macro)          # z shocks: T x 1
+shocks          = (z_shocks_macro = z_shocks_macro, T_sim_macro = T_sim_macro, burnin =burnin, N_sim_macro = N_sim_macro)
 
-shocks  = (z_shocks_macro = z_shocks_macro, T_sim_macro = T_sim_macro, burnin =burnin, N_sim_macro = N_sim_macro)
-ρ, σ_ϵ  = calibrateZ(shocks)
-    
+ρ_sh, σ_ϵ_sh      = calibrateZ(shocks; ρ_z = 0.87, σ_z = 0.016, λ = 10^5)
+simulateTFP([ρ_sh, σ_ϵ_sh], z_shocks_macro, T_sim_macro, burnin, N_sim_macro; λ = 10^5, ρ_z = 0.87, σ_z = 0.016, N_z = 13, zbar = 1)
+
+ρ_1600, σ_ϵ_1600  = calibrateZ(shocks; ρ_z = 0.6547, σ_z = 0.0096, λ = 1600)
+simulateTFP([ρ_1600, σ_ϵ_1600], z_shocks_macro, T_sim_macro, burnin, N_sim_macro; λ = 1600, ρ_z = 0.6547, σ_z = 0.0096, N_z = 13, zbar = 1)
+
 #=
+******************************************************************
+For λ = 10^5:
 minimum:                7.0008927135002045e-9
 minimizer:              [0.9662368625721576, 0.005553431765652789]
 reason for stopping:    STOPVAL_REACHED
 (ρ = 0.9662368625721576, σ_ϵ = 0.005553431765652789)
+
+So we set: ρ =  0.966, σ_ϵ = 0.0056
+******************************************************************
+For λ = 1600:
+minimum:                8.285285973755293e-8
+minimizer:              [0.8927270988859004, 0.0060216710869923674]
+reason for stopping:    FTOL_REACHED
+(ρ = 0.8927270988859004, σ_ϵ = 0.0060216710869923674)
+
+So we set: ρ =  0.8927, σ_ϵ = 0.0060
 =#

@@ -78,14 +78,4 @@ opt       = Optim.optimize(ι -> obj(ι, 1, df.avg_frate[1]), 0.2, 20,  Brent())
 #0.7999305738095385
 fr(1,ι_opt)
 
-# stationary job-finding rate of 0.47 for θ = 1, u_ss = 0.06,
-# using u_ss = s/(s+f), s = 0.031
-opt       = Optim.optimize(ι -> obj(ι, 1, 0.47), 0.2, 20,  Brent())
-ι_opt     = Optim.minimizer(opt)
-#0.9180482789470614
 
-fr(1,1.25)
-fr(1,0.92)
-fr(1,0.8)
-s    = 0.031
-u_ss = s/(s+df.avg_frate[1])  
