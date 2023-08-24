@@ -1,13 +1,13 @@
-cd(dirname(@__FILE__))
-
 # Produce main figures/moments for the paper
+
+cd(dirname(@__FILE__))
 
 # turn off for cluster
 ENV["GKSwstype"] = "nul"
 
 # Load helper files
 include("functions/smm_settings.jl")                    # SMM inputs, settings, packages, etc.
-include("functions/moments.jl")                         # vary z1 functions
+include("functions/moments.jl")                         # vary z_0 functions
 
 using DataFrames, Binscatters, DelimitedFiles, LaTeXStrings, IntervalArithmetic, IntervalRootFinding,
 Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
@@ -15,7 +15,7 @@ xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
 ## Logistics
-files        = ["baseline"] #["baseline" "fix_a_bwc10" "fix_chi0"]
+files        = ["cyc15"] #["baseline" "fix_a_bwc10" "fix_chi0"]
 big_run      = false        
 file_idx     = big_run ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]                              
@@ -30,7 +30,7 @@ println("File name: "*file_str)
 
 # Settings for simulation
 if big_run == false
-    vary_z_N                 = 51           # lower # of gridpoints when taking numerical derivatives
+    vary_z_N                 = 101           # lower # of gridpoints when taking numerical derivatives
     N_sim_macro_alp_workers  = 1
     N_sim_macro_alp          = 1
     est_alp                  = false
@@ -92,14 +92,12 @@ if fix_a == false
     @time output = simulate(modd, shocks; check_mult = false, est_alp = est_alp, λ = λ, sd_cut = 3.0) # get output
 
 else
-
     sol          = solveModelFixedEffort(modd; a = Params[:a], noisy = false);
     @time output = simulateFixedEffort(modd, shocks; a = Params[:a], sd_cut = 3.0)  
-
 end
 
 # Unpack parameters
-@unpack std_Δlw, dlw1_du, dlw_dly, u_ss, alp_ρ, alp_σ, dlu_dly, std_u, flag, flag_IR, IR_err, std_z  = output
+@unpack std_Δlw, dlw1_du, dlw_dly, u_ss, alp_ρ, alp_σ, dlu_dly, flag, flag_IR, IR_err, std_z, std_u, std_θ, dlθ_dlz, dlu_dlz = output
 
 # CHANGE ROUNDING MODE TO ROUND NEAREST AWAY 
 
@@ -131,54 +129,48 @@ println("u_ss: \t\t"*string(round.(u_ss, RoundNearestTiesAway, digits = 3)))
 println("------------------------")
 println("UNTARGETED MOMENTS")
 println("------------------------")
-println("dlu_dly: \t"*string(round.(dlu_dly, RoundNearestTiesAway, digits = 3)))
+println("UNCONDITIONAL")
+println("------------------------")
+println("dlθ_dlz (sim): \t"*string(round.(dlθ_dlz, RoundNearestTiesAway, digits = 3)))
+println("std logθ: \t"*string(round.(std_θ, RoundNearestTiesAway, digits = 3)))
 println("std logu: \t"*string(round.(std_u, RoundNearestTiesAway, digits = 3)))
 println("std logz: \t"*string(round.(std_z, RoundNearestTiesAway, digits = 3)))
 println("std logy: \t"*string(round.(alp_σ, RoundNearestTiesAway, digits = 3)))
+println("dlu_dly: \t"*string(round.(dlu_dly, RoundNearestTiesAway, digits = 3)))
+println("ALP_ρ: \t\t"*string(round.(alp_ρ, RoundNearestTiesAway, digits = 3)))
+println("ALP_σ: \t\t"*string(round.(alp_σ, RoundNearestTiesAway, digits = 3)))
 
-# Compute some extra moments
+# Compute additional conditional moments
+println("------------------------")
+println("CONDITIONAL")
+println("------------------------")
 @unpack θ, w_0, Y, az  = sol
 
 println("a(μ_z): \t"*string(round.(az[modd.z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("θ(μ_z): \t"*string(round.(θ, RoundNearestTiesAway, digits = 3)))
-println("Y (ss): \t"*string(round.(Y, RoundNearestTiesAway, digits = 3)))
-println("W (ss): \t"*string(round.(w_0/modd.ψ, RoundNearestTiesAway, digits = 3)))
-println("W/Y (ss): \t"*string(round.(w_0/(modd.ψ*Y), RoundNearestTiesAway, digits = 3)))
+println("Y (μ_z): \t"*string(round.(Y, RoundNearestTiesAway, digits = 3)))
+println("W (μ_z): \t"*string(round.(w_0/modd.ψ, RoundNearestTiesAway, digits = 3)))
+println("W/Y (μ_z): \t"*string(round.(w_0/(modd.ψ*Y), RoundNearestTiesAway, digits = 3)))
 
 ## Vary initial productivity z_0 
 
 # Get the Bonus model aggregates
-modd       = model(N_z = vary_z_N, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
-modd_chi0  = model(N_z = vary_z_N, χ = 0.0, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
+modd_big    = model(N_z = vary_z_N, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
+modd_chi0   = model(N_z = vary_z_N, χ = 0.0, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
 
 if fix_a == true
-    bonus      = vary_z0(modd; fix_a = fix_a, a = Params[:a])
+    bonus      = vary_z0(modd_big; fix_a = fix_a, a = Params[:a])
     bonus_chi0 = vary_z0(modd_chi0; fix_a = fix_a, a = Params[:a])
 else 
-    bonus      = vary_z0(modd; fix_a = fix_a)
+    bonus      = vary_z0(modd_big; fix_a = fix_a)
     bonus_chi0 = vary_z0(modd_chi0; fix_a = fix_a)
 end
 
 # Get primitives
-@unpack P_z, zgrid, N_z, ρ, β, s, z_ss_idx, q, ι, κ, χ, μ_z, ψ, hp, logz = modd
+@unpack P_z, zgrid, N_z, ρ, β, s, z_ss_idx, q, ι, κ, χ, μ_z, ψ, hp, logz = modd_big
 
 # Get Hall aggregates
-hall         = solveHall(modd, bonus.Y, bonus.W)
-
-# Print out some cyclical fluctuations
-dlY_dlz      = slopeFD(log.(max.(eps(), bonus.Y)), logz; diff = "central")
-dlW_dlz      = slopeFD(log.(max.(eps(), bonus.W)), logz; diff = "central")
-dlW_dlY      = slopeFD(log.(max.(eps(), bonus.W)), log.(max.(eps(), bonus.Y)); diff = "central")
-dla0_dlz     = slopeFD(log.(max.(eps(), bonus.a1)), logz; diff = "central")
-tt_B         = slopeFD(bonus.θ, zgrid).*zgrid./bonus.θ
-tt_H         = slopeFD(hall.θ, zgrid).*zgrid./hall.θ
-tt_B0        = slopeFD(bonus_chi0.θ, zgrid).*zgrid./bonus_chi0.θ
-
-println("dla_dlz: \t"*string(round.(dla0_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
-println("dlY_dlz: \t"*string(round.(dlY_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
-println("dlW_dlz: \t"*string(round.(dlW_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
-println("dlW_dlY: \t"*string(round.(dlW_dlY[z_ss_idx], RoundNearestTiesAway, digits = 3)))
-println("dlθ_dlz: \t"*string(round.(tt_B[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+hall         = solveHall(modd_big, bonus.Y, bonus.W)
 
 # Plot labels
 rigid      = "Rigid Wage: fixed w and a"
@@ -189,17 +181,31 @@ maxz_idx   = findlast(x -> x <=  0.05, logz)
 maxz_idx   = isnothing(maxz_idx) ? vary_z_N : maxz_idx
 range_1    = minz_idx:maxz_idx
 
-# Get decomposition components
-@unpack JJ_EVT, WC, BWC_resid, IWC_resid, BWC_share, c_term = decomposition(modd, bonus; fix_a = fix_a)
+# Compute some numerical derivatives
+dlY_dlz      = slopeFD(log.(max.(eps(), bonus.Y)), logz; diff = "central")
+dlW_dlz      = slopeFD(log.(max.(eps(), bonus.W)), logz; diff = "central")
+dlW_dlY      = slopeFD(log.(max.(eps(), bonus.W)), log.(max.(eps(), bonus.Y)); diff = "central")
+dla0_dlz     = slopeFD(log.(max.(eps(), bonus.a1)), logz; diff = "central")
+dlθ_dlY      = slopeFD(log.(max.(eps(), bonus.θ)), log.(max.(eps(), bonus.Y)); diff = "central")
+dlθ_dlz      = slopeFD(log.(max.(eps(), bonus.θ)), logz; diff = "central")
+dlθ_dlz_H    = slopeFD(log.(max.(eps(), hall.θ)), logz; diff = "central")
+dlθ_dlz0     = slopeFD(log.(max.(eps(), bonus_chi0.θ)), logz; diff = "central")
+dJ_dz        = slopeFD(bonus.J, zgrid; diff = "central")
+dJ_dz_H      = slopeFD(hall.J, zgrid; diff = "central")
+dJ_dz0       = slopeFD(bonus_chi0.J, zgrid; diff = "central")
 
-## Compute C term and dJ/dz in Bonus, Hall
-JJ_B      = slopeFD(bonus.J, zgrid; diff = "central")
-JJ_H      = slopeFD(hall.J, zgrid; diff = "central")
-JJ_B0     = slopeFD(bonus_chi0.J, zgrid; diff = "central")
+println("dla_dlz: \t"*string(round.(dla0_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dlY_dlz: \t"*string(round.(dlY_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dlW_dlz: \t"*string(round.(dlW_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dlW_dlY: \t"*string(round.(dlW_dlY[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dlθ_dlz: \t"*string(round.(dlθ_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+
+# Get decomposition components
+@unpack JJ_EVT, WC, BWC_resid, IWC_resid, BWC_share, c_term = decomposition(modd_big, bonus; fix_a = fix_a)
 
 ## Share of Incentive Wage Flexibility
 println("------------------------")
-println("WAGE CYCLICALITY")
+println("WAGE CYCLICALITY MOMENTS")
 println("------------------------")
 
 ## Share of bargained wage flexibility
@@ -207,9 +213,23 @@ println("------------------------")
 println("BWC Share #1: \t"*string(round(BWC_share[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("BWC Share #2: \t"*string(round((BWC_resid./WC)[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("IWC: \t\t"*string(round((1-BWC_share[z_ss_idx])*dlw1_du , RoundNearestTiesAway, digits = 3)))
+#println(IWC_resid[z_ss_idx])
+#println(((1-BWC_share[z_ss_idx])*WC)[z_ss_idx])
+println("C term at μ_z: \t"*string(round(c_term[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 
-## Print the C term at steady state
-println("C term at SS: \t"*string(round(c_term[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+# Make some plots of conditional moments
+p1 = plot(logz[range_1], dlW_dlz[range_1], title=L"d \log W_0/d \log z_0")
+p2 = plot(logz[range_1], dlW_dlY[range_1], title=L"d \log W_0/d \log Y_0")
+p3 = plot(logz[range_1], dla0_dlz[range_1], title=L"d \log a(z_0,z_0) /d \log z_0")
+p4 = plot(logz[range_1], dlY_dlz[range_1], title=L"d \log Y_0 /d \log z_0")
+plot(p1,p2,p3,p4, legend=:false)
+xaxis!(L"\log z")
+savefig(file_save*"cond_moments.pdf")
+
+plot(logz[range_1], dlθ_dlz[range_1],  label=L"d \log  \theta_0/d \log z_0")
+plot!(logz[range_1], dlθ_dlY[range_1],  label=L"d \log \theta_0/d \log Y_0")
+xaxis!(L"\log z")
+savefig(file_save*"dlθ_dlY_dlz.pdf")
 
 if fix_a == false
    
@@ -230,6 +250,23 @@ if fix_a == false
     yaxis!(L"a(z_0|z_0)")
 
     savefig(p2, file_save*"efforts.pdf")
+
+    p2 = plot(logz[range_1], bonus.az[range_1,range_1[1]], legend=:topleft, label=L"\log z_0="*string(round(logz[range_1[1]], digits=3)))
+    plot!(p2, logz[range_1], bonus.az[range_1, Int64(median(range_1))], label=L"\log z_0="*string(round(logz[Int64(median(range_1))], digits=3)))
+    plot!(p2, logz[range_1], bonus.az[range_1, range_1[end]], label=L"\log z_0="*string(round(logz[range_1[end]], digits=3)))
+    xaxis!(L"\log z_t")
+    yaxis!(L"a(z_t|z_0)")
+
+    savefig(p2, file_save*"efforts_shifts.pdf")
+
+    pt(x) = x^(1+1/ε)
+    p2 = plot(logz[range_1], ψ*pt.(bonus.az[range_1,range_1[1]]), legend=:topleft, label=L"\log z_0="*string(round(logz[range_1[1]], digits=3)))
+    plot!(p2, logz[range_1], ψ*pt.(bonus.az[range_1, Int64(median(range_1))]), label=L"\log z_0="*string(round(logz[Int64(median(range_1))], digits=3)))
+    plot!(p2, logz[range_1], ψ*pt.(bonus.az[range_1, range_1[end]]), label=L"\log z_0="*string(round(logz[range_1[end]], digits=3)))
+    xaxis!(L"\log z_t")
+    yaxis!(L"\psi a(z_t|z_0)^{1 + 1/\epsilon}")
+
+    savefig(p2, file_save*"passthrough_shifts.pdf")
 
     # Plot EPDV of wages
     p3 = plot(logz[range_1], bonus.W[range_1], linecolor=:red, label=fip, legend=:topleft)
@@ -257,22 +294,32 @@ if fix_a == false
 
     savefig(p5, file_save*"omega.pdf")
 
+    # BWC share
+    p6 = plot(logz[range_1], (BWC_resid./WC)[range_1], legend=:false, title="BWC Share")
+    plot!(p6, logz[range_1], BWC_share[range_1])
+    xaxis!(L"\log z_0")
+    savefig(p6, file_save*"BWC_share.pdf")
+
+    p7 = plot(logz[range_1], (bonus.W./bonus.Y)[range_1], title=L"W_0(z_0)/Y_0(z_0)", legend=:false)
+    xaxis!(L"\log z_0")
+    savefig(p7, file_save*"labor_share.pdf")
+
     # Plot tightness fluctuations: dlog θ / d log z
-    idx1    = max( max( findfirst(x -> ~isnan(x) && ~iszero(x) && x < 120, tt_B)) , 
-                    max( findfirst(x -> ~isnan(x)  && ~iszero(x)  && x < 120, tt_H))) # start at reasonable scale
+    idx1    = max( max( findfirst(x -> ~isnan(x) && ~iszero(x) && x < 120, dlθ_dlz)) , 
+                    max( findfirst(x -> ~isnan(x)  && ~iszero(x)  && x < 120, dlθ_dlz_H))) # start at reasonable scale
     range_2 = idx1:maxz_idx
 
-    p6 = plot(logz[range_2], tt_B[range_2], linecolor=:red, label=fip, legend=:topright)
-    plot!(logz[range_2], tt_H[range_2], linecolor=:blue,label=rigid)
-    plot!(logz[range_2], tt_B0[range_2], linecolor=:cyan,label=ip, linestyle=:dash)
+    p8 = plot(logz[range_2], dlθ_dlz[range_2], linecolor=:red, label=fip, legend=:topright)
+    plot!(p8, logz[range_2], dlθ_dlz_H[range_2], linecolor=:blue,label=rigid)
+    plot!(p8, logz[range_2], dlθ_dlz0[range_2], linecolor=:cyan,label=ip, linestyle=:dash)
     xaxis!(L" \log z_0")
     yaxis!(L"\frac{d \log \theta(z_0) }{d \log z_0}")
 
-    savefig(p6, file_save*"dlogtheta.pdf")
+    savefig(p8, file_save*"dlogtheta.pdf")
 
     # Compute the direct effect on the IR constraint
     ω_B  = bonus.ω
-    dω_B = slopeFD(ω_B, modd.zgrid)
+    dω_B = slopeFD(ω_B, modd_big.zgrid)
     B    = (χ/(1-β*ρ))
     A    = (log(γ) + β*B*(1-ρ)*μ_z)/(1-β)
     ω_2  = A .+ B*logz
@@ -285,19 +332,19 @@ if fix_a == false
 
     dIR  = dω_2.*(ρ*β - 1)/(1-ρ*β*(1-s))
 
-    plot(zgrid[range_2], JJ_B[range_2] , linecolor=:red, label = "bonus", linestyle=:dot)
+    plot(zgrid[range_2], dJ_dz[range_2] , linecolor=:red, label = "bonus", linestyle=:dot)
     plot!(zgrid[range_2], JJ_EVT[range_2], linecolor=:black, label = "EVT")
-    plot!(zgrid[range_2], JJ_B0[range_2], linecolor=:blue, label = "chi0 ", linestyle=:dash)
-    plot!(zgrid[range_2], JJ_H[range_2] , linecolor=:green, label = "hall", linestyle=:dashdot)
+    plot!(zgrid[range_2], dJ_dz0[range_2], linecolor=:blue, label = "chi0 ", linestyle=:dash)
+    plot!(zgrid[range_2], dJ_dz_H[range_2] , linecolor=:green, label = "hall", linestyle=:dashdot)
 
-    JJ_EVT[z_ss_idx] - JJ_B[z_ss_idx]     # C term
-    JJ_EVT[z_ss_idx] - JJ_H[z_ss_idx]     # C term
-    JJ_EVT[z_ss_idx] - JJ_B0[z_ss_idx]    # should be close to 0
+    JJ_EVT[z_ss_idx] - dJ_dz[z_ss_idx]     # C term
+    JJ_EVT[z_ss_idx] - dJ_dz_H[z_ss_idx]     # C term
+    JJ_EVT[z_ss_idx] - dJ_dz0[z_ss_idx]    # should be close to 0
 
     ## C term graphs
     p1 = plot(logz[range_2], JJ_EVT[range_2], linecolor=:black, label = "Incentive Pay: No C term", legend =:bottomright)
-    plot!(logz[range_2], JJ_H[range_2], linecolor=:blue, label = rigid)
-    plot!(logz[range_2], JJ_B0[range_2], linecolor=:yellow, label = ip, legend =:bottom)
+    plot!(logz[range_2], dJ_dz_H[range_2], linecolor=:blue, label = rigid)
+    plot!(logz[range_2], dJ_dz0[range_2], linecolor=:yellow, label = ip, legend =:bottom)
     xaxis!(L"z_0")
     yaxis!(L"\frac{d J(z_0) }{d z_0}")
 

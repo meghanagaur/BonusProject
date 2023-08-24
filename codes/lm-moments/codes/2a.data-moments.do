@@ -45,11 +45,11 @@ foreach var of varlist lurate* {
 }
 
 * First, standard deviation of TPF/ALP
-estpost tabstat lalp_hp ltfp_hp ltfp_unadj_hp lurate_hp, statistics(sd) 
-esttab . using "tables/std_hp100000.tex", replace label nostar booktabs not cells("lalp_hp(fmt(a3)) ltfp_hp(fmt(a3)) ltfp_unadj_hp(fmt(a3))  lurate_hp(fmt(a3))") noobs substitute("sd" "S.D." "lalp_hp" "ALP" "ltfp_hp" "TFP" "ltfp_unadj_hp" "TFP (unadj.)" "lurate_hp" "$ u_t $") nonumber compress 
+estpost tabstat lalp_hp ltfp_hp ltfp_unadj_hp lurate_hp ltightness_hp, statistics(sd) 
+esttab . using "tables/std_hp100000.tex", replace label nostar booktabs not cells("lalp_hp(fmt(a3)) ltfp_hp(fmt(a3)) ltfp_unadj_hp(fmt(a3))  lurate_hp(fmt(a3)) ltightness_hp(fmt(a3))") noobs substitute("sd" "S.D." "lalp_hp" "ALP" "ltfp_hp" "TFP" "ltfp_unadj_hp" "TFP (unadj.)" "lurate_hp" "$ u_t $"  "ltightness_hp" "$ \theta_t $") nonumber compress 
 
-estpost tabstat lalp_hp1600 ltfp_hp1600 ltfp_unadj_hp1600 lurate_hp1600, statistics(sd)  
-esttab . using "tables/std_hp1600.tex", replace label nostar booktabs not cells("lalp_hp1600(fmt(a3)) ltfp_hp1600(fmt(a3)) ltfp_unadj_hp1600(fmt(a3))  lurate_hp1600(fmt(a3))") noobs substitute("sd" "S.D." "lalp_hp1600" "ALP" "ltfp_hp1600" "TFP" "ltfp_unadj_hp1600" "TFP (unadj.)" "lurate_hp1600" "$ u_t $") nonumber compress 
+estpost tabstat lalp_hp1600 ltfp_hp1600 ltfp_unadj_hp1600 lurate_hp1600 ltightness_hp1600, statistics(sd)  
+esttab . using "tables/std_hp1600.tex", replace label nostar booktabs not cells("lalp_hp1600(fmt(a3)) ltfp_hp1600(fmt(a3)) ltfp_unadj_hp1600(fmt(a3)) lurate_hp1600(fmt(a3)) ltightness_hp1600(fmt(a3))") noobs substitute("sd" "S.D." "lalp_hp1600" "ALP" "ltfp_hp1600" "TFP" "ltfp_unadj_hp1600" "TFP (unadj.)" "lurate_hp1600" "$ u_t $" "ltightness_hp1600" "$\theta_t $") nonumber compress 
 
 * Summarize and produce correlations
 pwcorr ltightness_hp1600 ltfp_sa_hp1600
@@ -98,7 +98,7 @@ label var lalp_hp1600_sh "ALP (Shimer)"
 label var lalp_hp_sh "ALP (Shimer)"
 
 estpost correlate ltightness_hp1600_sh ltfp_hp1600 ltfp_unadj_hp1600 lalp_hp1600 lalp_hp1600_sh, matrix listwise
-esttab . using "tables/ltightness_lprod__hp1600_corr_sh.tex", unstack not compress replace label nonumbers booktabs
+esttab . using "tables/ltightness_lprod_hp1600_corr_sh.tex", unstack not compress replace label nonumbers booktabs
 
 estpost correlate ltightness_hp_sh ltfp_hp ltfp_unadj_hp lalp_hp lalp_hp_sh, matrix listwise
 esttab . using "tables/ltightness_lprod_hp100000_corr_sh.tex", unstack not compress replace label nonumbers booktabs

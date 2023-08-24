@@ -21,6 +21,7 @@ big_run      = false
 # Initialize vectors
 bwc          = zeros(length(files))
 epsilon      = copy(bwc)
+chi          = copy(bwc)
 
 # Settings for simulation
 if big_run == false
@@ -32,8 +33,8 @@ end
 Threads.@threads for file_idx = 1:length(files)
 
     file_str     = files[file_idx]                              
-    file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
-    file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
+    file_pre     = "smm/jld-original/pretesting_"*file_str*".jld2"   # pretesting data location
+    file_est     = "smm/jld-original/estimation_"*file_str*".txt"    # estimation output location
 
     # Load output
     est_output = readdlm(file_est, ',', Float64)   # estimation output       
@@ -55,7 +56,8 @@ Threads.@threads for file_idx = 1:length(files)
 
     # Unpack parameters
     @unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ, ι = Params
-    epsilon[file_idx]                     = ε
+    epsilon[file_idx]  = ε
+    chi[file_idx]      = χ
 
     ## Vary initial productivity z_0 
 
@@ -83,4 +85,13 @@ plot(sort(epsilon[i]), bwc[i], legend=:false)
 annotate!([epsilon[end]], [bwc[end]], "X", annotationcolor=:red)
 xlabel!(L"\epsilon")
 ylabel!(L"\textrm{BWC\ Share}")
-savefig("figs/vary-z0/vary_eps_bwc.pdf")
+savefig("figs/vary_eps_bwc.pdf")
+
+# Plot calibrated χ as a function of epsilon
+
+i = sortperm(epsilon)
+plot(sort(epsilon[i]), chi[i], legend=:false)
+annotate!([epsilon[end]], [chi[end]], "X", annotationcolor=:red)
+xlabel!(L"\epsilon")
+ylabel!(L"\chi")
+savefig("figs/vary_eps_chi.pdf")

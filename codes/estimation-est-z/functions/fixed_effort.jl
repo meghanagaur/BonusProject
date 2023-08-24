@@ -194,7 +194,7 @@ end
 """
 Simulate the model with fixed effort.
 """
-function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut = 5.0)
+function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut = 3.0)
     
     # Initialize moments to export (default = NaN)
     std_Δlw   = 0.0  # st dev of YoY wage growth

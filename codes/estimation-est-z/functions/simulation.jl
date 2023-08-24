@@ -6,7 +6,7 @@ Then, compute the effort optimal effort a and wage w,
 as a(z|z_0) and w(z|z_0). u0 = initial unemployment rate.
 λ = HP filtering parameter.
 """
-function simulate(modd, shocks; u0 = 0.06, check_mult = false, λ = 10^5, sd_cut = 5.0)
+function simulate(modd, shocks; u0 = 0.06, check_mult = false, λ = 10^5, sd_cut = 3.0)
     
     # Initialize moments to export (default = NaN)
     std_Δlw   = 0.0  # st dev of YoY wage growth

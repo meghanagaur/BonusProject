@@ -111,7 +111,7 @@ for i = 1:length(files)
     plot!(p2, 0:NN-1, 100*du_t[i][1:NN], label = labels[i], ylabel = L"u", xlabel = L"t", legend=:false)
 end
 
-#dlogz
+# dlogz
 p3 = plot()
 for i = 1:length(files)
     plot!(p3, 0:NN-1, 100*dlz_t[i][1:NN], label = labels[i], ylabel = L"z", xlabel = L"t", legend=:false)

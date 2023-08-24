@@ -19,7 +19,8 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, est_alp = false, 
     std_u     = 0.0  # st dev of log u_t
     std_θ     = 0.0  # st dev of log θ_t
     std_z     = 0.0  # st dev of log z_t
-    u_ss_2    = 0.0  # u_ss <- nonstochastic steady state
+    u_ss_ns   = 0.0  # u_ss <- nonstochastic steady state
+    dlu_dlz   = 0.0  # regression coefficient
     dlθ_dlz   = 0.0  # regression coefficient
 
     # Get all of the relevant parameters, functions for the model
@@ -98,16 +99,12 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, est_alp = false, 
         zshocks_macro  = zgrid[z_idx_macro]     # z shocks
 
         # Bootstrap across N_sim_macro simulations
-        dlw1_du_n      = zeros(N_sim_macro)     # cyclicality of new hire wages 
-        dlθ_dlz_n      = zeros(N_sim_macro)
-        std_u_n        = zeros(N_sim_macro)     # standard deviation of log quarterly unemployment
-        std_θ_n        = zeros(N_sim_macro)     # standard deviation of log quarterly tightness
-        std_z_n        = zeros(N_sim_macro)     # standard deviation of log quarterly productivity
-
-        # Bootstrap endogenous labor productivity moments across N_sim_macro_alp simulations
-        alp_ρ_n        = zeros(N_sim_macro_alp) 
-        alp_σ_n        = zeros(N_sim_macro_alp)
-        dlu_dly_n      = zeros(N_sim_macro_alp)
+        dlw1_du_n      = zeros(N_sim_macro)     # cyclicality of new hire wages (monthly)
+        dlθ_dlz_n      = zeros(N_sim_macro)     # cyclicality of tightness (monthly)
+        dlu_dlz_n      = zeros(N_sim_macro)     # cyclicality of tightness (monthly)
+        std_u_n        = zeros(N_sim_macro)     # standard deviation of log unemployment (quarterly)
+        std_θ_n        = zeros(N_sim_macro)     # standard deviation of log tightness (quarterly)
+        std_z_n        = zeros(N_sim_macro)     # standard deviation of log productivity (quarterly)
 
         # Compute evolution of unemployment for the z_t path
         T             = T_sim_macro + burnin_macro
@@ -123,32 +120,32 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, est_alp = false, 
             end
 
             # Estimate d E[log w_1] / d u (pooled ols)
-            #du_t    = [0; u_t[2:end,n] - u_t[1:end-1,n]]
-            #@views dlw1_du_n[n]  = cov(lw1_t[burnin_macro+1:end, n], du_t[burnin_macro+1:end])/max(eps(), var(du_t[burnin_macro+1:end]))
-            #@views dlw1_du_n[n]  = cov(100*lw1_t[burnin_macro+1:end, n], 100*u_t[burnin_macro+1:end, n])/max(eps(), var(100*u_t[burnin_macro+1:end, n]))
             @views dlw1_du_n[n]  = cov(lw1_t[burnin_macro+1:end, n], u_t[burnin_macro+1:end, n])/max(eps(), var(u_t[burnin_macro+1:end, n]))
 
-            # Compute quarterly average of u_t, z_t in post-burn-in period
+            # Compute quarterly average of u_t, z_t, and θ_t in post-burn-in period
             @views u_q           = [mean(u_t[burnin_macro+1:end, n][(t_q*3 - 2):t_q*3]) for t_q = 1:T_q_macro] 
             @views z_q           = [mean(zshocks_macro[burnin_macro+1:end, n][(t_q*3 - 2):t_q*3]) for t_q = 1:T_q_macro] 
             @views θ_q           = [mean(θ_t[burnin_macro+1:end, n][(t_q*3 - 2):t_q*3]) for t_q = 1:T_q_macro] 
 
-            # hp-filter the quarterly log unemployment series, nudge to avoid runtime error
+            # HP-filter the quarterly log unemployment series, nudge to avoid runtime error
             logu_q_resid, _      = hp_filter(log.(max.(u_q, eps())), λ)   
             logz_q_resid, _      = hp_filter(log.(max.(z_q, eps())), λ)  
             logθ_q_resid, _      = hp_filter(log.(max.(θ_q, eps())), λ)  
 
-            # Compute the standard deviation of log u_t and log z_t
+            # Compute the standard deviation of log u_t, log θ_t, and log z_t
             std_u_n[n]           = std(logu_q_resid)
             std_z_n[n]           = std(logz_q_resid)
             std_θ_n[n]           = std(logθ_q_resid)
 
-            # Regress log θ on log z 
+            # Regress log θ and log u on log z 
+            @views dlu_dlz_n[n]  = cov(logu_q_resid, logz_q_resid)/max(eps(), var(logz_q_resid))
             @views dlθ_dlz_n[n]  = cov(logθ_q_resid, logz_q_resid)/max(eps(), var(logz_q_resid))
+
         end
 
         # Compute cross-simulation averages
         dlw1_du = mean(dlw1_du_n)
+        dlu_dlz = mean(dlu_dlz_n)
         dlθ_dlz = mean(dlθ_dlz_n)
         std_u   = mean(std_u_n) 
         std_θ   = mean(std_θ_n) 
@@ -156,7 +153,12 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, est_alp = false, 
                 
         # Standard deviation and persistence of average labor productivity 
         if est_alp == true
-            
+        
+            # Bootstrap endogenous labor productivity moments across N_sim_macro_alp simulations
+            alp_ρ_n        = zeros(N_sim_macro_alp)      # autocorrelation of ALP (quarterly)
+            alp_σ_n        = zeros(N_sim_macro_alp)      # unconditinoal standard deviation of ALP (quarterly)
+            dlu_dly_n      = zeros(N_sim_macro_alp)      # cyclicality of unemployment (quarterly)
+
             Threads.@threads for n = 1:N_sim_macro_alp
                 alp_ρ_n[n], alp_σ_n[n], dlu_dly_n[n] = simulateALP(z_idx_macro[:,n], s_shocks_macro, jf_shocks_macro, N_sim_macro_alp_workers, 
                                                                     T_sim_macro, burnin_macro, T_q_macro, s, f_z, y_z; λ = λ)
@@ -171,15 +173,16 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, est_alp = false, 
         u_ss    = mean(vec(mean(u_t[burnin_macro+1:end,:], dims = 1)))
  
         # Compute nonstochastic SS unemployment: define u_ss = s/(s + f(θ(z_ss)), at log z_ss = μ_z
-        #u_ss_2  = s/(s  + f(θ_z[z_ss_idx]))
+        u_ss_ns  = s/(s  + f(θ_z[z_ss_idx]))
     end
     
-    # determine an IR error for all initial z within 3 uncond. standard deviations
+    # Determine an IR error for all initial z within 3 uncond. standard deviations of μ_z
     IR_err = sqrt(sum((err_IR_z[idx_1:idx_2]).^2))
 
     # Export the simulation results
-    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, u_ss_2 = u_ss_2, alp_ρ = alp_ρ, dlθ_dlz = dlθ_dlz,
-    alp_σ = alp_σ, dlu_dly = dlu_dly, std_u = std_u, std_θ = std_θ, std_z = std_z, flag = flag, flag_IR = flag_IR, IR_err = IR_err)
+    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, alp_ρ = alp_ρ, alp_σ = alp_σ, 
+            dlθ_dlz = dlθ_dlz, dlu_dlz = dlu_dlz, dlu_dly = dlu_dly, std_u = std_u, std_θ = std_θ, std_z = std_z, 
+            flag = flag, flag_IR = flag_IR, IR_err = IR_err, u_ss_ns = u_ss_ns)
 end
 
 """
@@ -442,13 +445,13 @@ function simulateALP(z_idx_macro, s_shocks_macro, jf_shocks_macro, N_sim_macro_a
     @views dlu_dlz  = cov(lu_q[2:end], ly_q[1:end-1])/max(eps(), var(ly_q[1:end-1]))
 
     # hp-filter the quarterly log output and unemployment series
-    ly_q_resid, _ = hp_filter(ly_q, λ)
+    ly_q_resid, _   = hp_filter(ly_q, λ)
 
     # Compute standard deviation of log ALP
-    alp_σ  = std(ly_q_resid)
+    alp_σ           = std(ly_q_resid)
 
     # Compute persistence of log ALP (OLS)
-    alp_ρ  = first(autocor(ly_q_resid, [1]))
+    alp_ρ           = first(autocor(ly_q_resid, [1]))
 
     return (alp_ρ = alp_ρ, alp_σ = alp_σ, dlu_dlz = dlu_dlz)
 end

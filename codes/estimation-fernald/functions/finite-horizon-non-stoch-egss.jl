@@ -142,7 +142,7 @@ function solveModel_FH(modd, lz_t; max_iter1 = 50, max_iter2 = 1000, a_min = 10^
             end
 
             # compute EPDV of output
-            Y_1  = mapreduce(t -> yz[t] *(β*(1-s))^(t-1), +, 1:T)  
+            Y_1  = mapreduce(t -> yz[t]*(β*(1-s))^(t-1), +, 1:T)  
             err2 = abs(Y_0 - Y_1)       
 
             #= if doing bisection search on Y_0 
@@ -227,7 +227,7 @@ function solveModelFixedEffort_FH(modd, lz_t; max_iter1 = 50, a = 1.0,
     lz1     = lz_t[1]
     ω       = [log(γ)/(1-β) + (χ*lz1*ρ^(t-1))/(1 - ρ*β) for t = 1:T+1]
     
-    # exponetiate log z_t to get z_t
+    # exponentiate log z_t to get z_t
     z_t     = exp.(lz_t)
 
     # set tolerance parameters for outermost loop
@@ -321,7 +321,7 @@ function IRFs(; ρ = 0.966, T = 12*20, N = 200, lz1 = 0.0, u1 = 0.06, ι = 0.9,
     θ_t     = zeros(N)          
     u_t     = zeros(N)
     u_t[1]  = u1 
-    modd    = model_FH(; ρ =  0.966, ε = ε, σ_η = σ_η, χ = χ, γ = γ, T = T, ι = ι) 
+    modd    = model_FH(; ρ =  ρ, ε = ε, σ_η = σ_η, χ = χ, γ = γ, T = T, ι = ι) 
 
     # solve to get θ_t (jump variable so can be done asychronously)
     @Threads.threads for n = 1:N
