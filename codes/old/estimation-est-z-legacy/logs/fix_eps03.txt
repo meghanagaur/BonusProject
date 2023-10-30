@@ -1,0 +1,42 @@
+My SLURM_ARRAY_JOB_ID is .
+My SLURM_ARRAY_TASK_ID is 
+Executing on the machine: della-h12n4
+File name: fix_eps03
+------------------------
+ESTIMATED PARAMETERS
+------------------------
+σ_η: 		0.3843
+χ: 		0.5757
+γ: 		0.5462
+hbar: 		3.9587
+ε: 		0.3
+ρ: 		0.9808
+σ_ϵ: 		0.0042
+ι: 		0.8
+------------------------
+TARGETED MOMENTS
+------------------------
+std_Δlw: 	0.0636
+dlw1_du: 	-1.0012
+dlw_dly: 	0.0349
+u_ss: 		0.0686
+alp_ρ: 		0.8886
+alp_σ: 		0.0169
+------------------------
+UNTARGETED MOMENTS
+------------------------
+u_ss_2: 	0.0704
+dlu_dlz: 	-4.5772
+std_logu: 	0.0775
+θ(μ_z): 	1.0035
+W/Y (ss): 	0.9498
+C term at μ_z: 	-7.57627
+------------------------
+WAGE FLEXIBILITY
+------------------------
+IWF Share: 		0.14822
+IWF Share: 		0.45734
+BWF Share #1: 		0.85178
+BWF Share #2: 		0.54266
+BWF Share #3: 		0.85178
+WF with χ = 0/WF 	0.34935

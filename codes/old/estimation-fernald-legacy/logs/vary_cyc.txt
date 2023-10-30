@@ -1,0 +1,348 @@
+File name: fix_hbar10_cyc025
+164.950157 seconds (58.10 M allocations: 286.603 GiB, 2.93% gc time, 6.12% compilation time)
+Checking for multiplicity of roots..
+Root{Interval{Float64}}[Root([0.980368, 0.980369], :unique)]
+Root{Interval{Float64}}[Root([0.984114, 0.984115], :unique)]
+Root{Interval{Float64}}[Root([0.987874, 0.987875], :unique)]
+Root{Interval{Float64}}[Root([0.991648, 0.991649], :unique)]
+Root{Interval{Float64}}[Root([0.995436, 0.995437], :unique)]
+Root{Interval{Float64}}[Root([0.999237, 0.999238], :unique)]
+Root{Interval{Float64}}[Root([1.00305, 1.00306], :unique)]
+Root{Interval{Float64}}[Root([1.00688, 1.00689], :unique)]
+Root{Interval{Float64}}[Root([1.01072, 1.01073], :unique)]
+Root{Interval{Float64}}[Root([1.01458, 1.01459], :unique)]
+Root{Interval{Float64}}[Root([1.01845, 1.01846], :unique)]
+Root{Interval{Float64}}[Root([1.02234, 1.02235], :unique)]
+Root{Interval{Float64}}[Root([1.02623, 1.02624], :unique)]
+------------------------
+ESTIMATED PARAMETERS
+------------------------
+σ_η: 		0.522
+χ: 		0.148
+γ: 		0.752
+hbar: 		1.0
+ε: 		0.311
+ρ: 		0.966
+σ_ϵ: 		0.0056
+ι: 		0.9
+------------------------
+TARGETED MOMENTS
+------------------------
+std_Δlw: 	0.0623
+dlw1_du: 	-0.261
+dlw_dly: 	0.0346
+u_ss: 		0.0567
+------------------------
+UNTARGETED MOMENTS
+------------------------
+u_ss_2: 	0.0523
+dlu_dly: 	-6.55
+std logu: 	0.156
+std logz: 	0.016
+std logy: 	0.0205
+a(μ_z): 	1.0
+θ(μ_z): 	1.53
+Y (ss): 	29.3
+W (ss): 	28.1
+W/Y (ss): 	0.958
+dla_dlz: 	0.25
+dlY_dlz: 	0.611
+dlW_dlz: 	0.181
+dlθ_dlz: 	17.5
+------------------------
+WAGE FLEXIBILITY
+------------------------
+IWF Share #1: 		0.581
+IWF Share #2: 		0.581
+WF with χ = 0/WF 	0.682
+C term at μ_z: 		-2.12
+File name: fix_hbar10_cyc05
+135.886931 seconds (32.50 M allocations: 285.094 GiB, 2.51% gc time)
+Checking for multiplicity of roots..
+Root{Interval{Float64}}[Root([0.89002, 0.890021], :unique)]
+Root{Interval{Float64}}[Root([0.910719, 0.91072], :unique)]
+Root{Interval{Float64}}[Root([0.931898, 0.931899], :unique)]
+Root{Interval{Float64}}[Root([0.953568, 0.953569], :unique)]
+Root{Interval{Float64}}[Root([0.975741, 0.975742], :unique)]
+Root{Interval{Float64}}[Root([0.998429, 0.99843], :unique)]
+Root{Interval{Float64}}[Root([1.02164, 1.02165], :unique)]
+Root{Interval{Float64}}[Root([1.04539, 1.0454], :unique)]
+Root{Interval{Float64}}[Root([1.0697, 1.06971], :unique)]
+Root{Interval{Float64}}[Root([1.09456, 1.09457], :unique)]
+Root{Interval{Float64}}[Root([1.12001, 1.12002], :unique)]
+Root{Interval{Float64}}[Root([1.14605, 1.14606], :unique)]
+Root{Interval{Float64}}[Root([1.17268, 1.17269], :unique)]
+------------------------
+ESTIMATED PARAMETERS
+------------------------
+σ_η: 		0.531
+χ: 		0.232
+γ: 		0.501
+hbar: 		1.0
+ε: 		1.83
+ρ: 		0.966
+σ_ϵ: 		0.0056
+ι: 		0.9
+------------------------
+TARGETED MOMENTS
+------------------------
+std_Δlw: 	0.0636
+dlw1_du: 	-0.499
+dlw_dly: 	0.0352
+u_ss: 		0.0592
+------------------------
+UNTARGETED MOMENTS
+------------------------
+u_ss_2: 	0.0544
+dlu_dly: 	-3.44
+std logu: 	0.162
+std logz: 	0.016
+std logy: 	0.0427
+a(μ_z): 	1.02
+θ(μ_z): 	1.39
+Y (ss): 	29.9
+W (ss): 	28.7
+W/Y (ss): 	0.961
+dla_dlz: 	1.15
+dlY_dlz: 	0.757
+dlW_dlz: 	0.376
+dlθ_dlz: 	17.8
+------------------------
+WAGE FLEXIBILITY
+------------------------
+IWF Share #1: 		0.684
+IWF Share #2: 		0.684
+WF with χ = 0/WF 	0.892
+C term at μ_z: 		-3.41
+File name: fix_hbar10_cyc075
+146.256919 seconds (32.52 M allocations: 285.066 GiB, 2.85% gc time)
+Checking for multiplicity of roots..
+Root{Interval{Float64}}[Root([0.907154, 0.907155], :unique)]
+Root{Interval{Float64}}[Root([0.924793, 0.924794], :unique)]
+Root{Interval{Float64}}[Root([0.942774, 0.942775], :unique)]
+Root{Interval{Float64}}[Root([0.961105, 0.961106], :unique)]
+Root{Interval{Float64}}[Root([0.979791, 0.979792], :unique)]
+Root{Interval{Float64}}[Root([0.99884, 0.998841], :unique)]
+Root{Interval{Float64}}[Root([1.01825, 1.01826], :unique)]
+Root{Interval{Float64}}[Root([1.03805, 1.03806], :unique)]
+Root{Interval{Float64}}[Root([1.05823, 1.05824], :unique)]
+Root{Interval{Float64}}[Root([1.0788, 1.07881], :unique)]
+Root{Interval{Float64}}[Root([1.09978, 1.09979], :unique)]
+Root{Interval{Float64}}[Root([1.12116, 1.12117], :unique)]
+Root{Interval{Float64}}[Root([1.14295, 1.14296], :unique)]
+------------------------
+ESTIMATED PARAMETERS
+------------------------
+σ_η: 		0.534
+χ: 		0.435
+γ: 		0.523
+hbar: 		1.0
+ε: 		1.53
+ρ: 		0.966
+σ_ϵ: 		0.0056
+ι: 		0.9
+------------------------
+TARGETED MOMENTS
+------------------------
+std_Δlw: 	0.064
+dlw1_du: 	-0.75
+dlw_dly: 	0.0351
+u_ss: 		0.0598
+------------------------
+UNTARGETED MOMENTS
+------------------------
+u_ss_2: 	0.0571
+dlu_dly: 	-3.03
+std logu: 	0.121
+std logz: 	0.016
+std logy: 	0.0382
+a(μ_z): 	1.02
+θ(μ_z): 	1.24
+Y (ss): 	29.8
+W (ss): 	28.7
+W/Y (ss): 	0.964
+dla_dlz: 	0.925
+dlY_dlz: 	0.681
+dlW_dlz: 	0.399
+dlθ_dlz: 	14.8
+------------------------
+WAGE FLEXIBILITY
+------------------------
+IWF Share #1: 		0.444
+IWF Share #2: 		0.444
+WF with χ = 0/WF 	0.786
+C term at μ_z: 		-6.36
+File name: fix_hbar10_cyc125
+134.125809 seconds (31.98 M allocations: 285.076 GiB, 3.17% gc time)
+Checking for multiplicity of roots..
+Root{Interval{Float64}}[Root([0.841063, 0.841064], :unique), Root([1e-08, 7.02867e-08], :unknown)]
+Root{Interval{Float64}}[Root([0.868845, 0.868846], :unique), Root([1e-08, 7.02867e-08], :unknown)]
+Root{Interval{Float64}}[Root([0.89754, 0.897541], :unique), Root([1e-08, 7.02867e-08], :unknown)]
+Root{Interval{Float64}}[Root([0.92718, 0.927181], :unique), Root([1e-08, 7.02867e-08], :unknown)]
+Root{Interval{Float64}}[Root([0.957794, 0.957795], :unique), Root([1e-08, 7.02867e-08], :unknown)]
+Root{Interval{Float64}}[Root([0.989415, 0.989416], :unique), Root([1e-08, 7.02867e-08], :unknown)]
+Root{Interval{Float64}}[Root([1.02207, 1.02208], :unique), Root([1e-08, 7.02867e-08], :unknown)]
+Root{Interval{Float64}}[Root([1.05581, 1.05582], :unique), Root([1e-08, 7.02867e-08], :unknown)]
+Root{Interval{Float64}}[Root([1e-08, 7.02867e-08], :unknown), Root([1.09065, 1.09066], :unique)]
+Root{Interval{Float64}}[Root([1e-08, 7.02867e-08], :unknown), Root([1.12664, 1.12665], :unique)]
+Root{Interval{Float64}}[Root([1e-08, 7.02867e-08], :unknown), Root([1.16382, 1.16383], :unique)]
+Root{Interval{Float64}}[Root([1e-08, 7.02867e-08], :unknown), Root([1.20221, 1.20222], :unique)]
+Root{Interval{Float64}}[Root([1.24187, 1.24188], :unique), Root([1e-08, 7.02867e-08], :unknown)]
+------------------------
+ESTIMATED PARAMETERS
+------------------------
+σ_η: 		0.535
+χ: 		0.587
+γ: 		0.467
+hbar: 		1.0
+ε: 		2.58
+ρ: 		0.966
+σ_ϵ: 		0.0056
+ι: 		0.9
+------------------------
+TARGETED MOMENTS
+------------------------
+std_Δlw: 	0.0639
+dlw1_du: 	-1.25
+dlw_dly: 	0.0351
+u_ss: 		0.0597
+------------------------
+UNTARGETED MOMENTS
+------------------------
+u_ss_2: 	0.0583
+dlu_dly: 	-1.64
+std logu: 	0.0872
+std logz: 	0.016
+std logy: 	0.0532
+a(μ_z): 	1.02
+θ(μ_z): 	1.18
+Y (ss): 	29.9
+W (ss): 	28.8
+W/Y (ss): 	0.965
+dla_dlz: 	1.42
+dlY_dlz: 	0.658
+dlW_dlz: 	0.453
+dlθ_dlz: 	11.7
+------------------------
+WAGE FLEXIBILITY
+------------------------
+IWF Share #1: 		0.339
+IWF Share #2: 		0.339
+WF with χ = 0/WF 	0.821
+C term at μ_z: 		-8.64
+File name: fix_hbar10_cyc15
+139.061838 seconds (31.75 M allocations: 285.072 GiB, 2.53% gc time)
+Checking for multiplicity of roots..
+Root{Interval{Float64}}[Root([0.874757, 0.874758], :unique)]
+Root{Interval{Float64}}[Root([0.89746, 0.897461], :unique)]
+Root{Interval{Float64}}[Root([0.920751, 0.920752], :unique)]
+Root{Interval{Float64}}[Root([0.944644, 0.944645], :unique)]
+Root{Interval{Float64}}[Root([0.969156, 0.969157], :unique)]
+Root{Interval{Float64}}[Root([0.994302, 0.994303], :unique)]
+Root{Interval{Float64}}[Root([1.02009, 1.0201], :unique)]
+Root{Interval{Float64}}[Root([1.04656, 1.04657], :unique)]
+Root{Interval{Float64}}[Root([1.07371, 1.07372], :unique)]
+Root{Interval{Float64}}[Root([1.10156, 1.10157], :unique)]
+Root{Interval{Float64}}[Root([1.13013, 1.13014], :unique)]
+Root{Interval{Float64}}[Root([1.15945, 1.15946], :unique)]
+Root{Interval{Float64}}[Root([1.18952, 1.18953], :unique)]
+------------------------
+ESTIMATED PARAMETERS
+------------------------
+σ_η: 		0.534
+χ: 		0.651
+γ: 		0.491
+hbar: 		1.0
+ε: 		2.04
+ρ: 		0.966
+σ_ϵ: 		0.0056
+ι: 		0.9
+------------------------
+TARGETED MOMENTS
+------------------------
+std_Δlw: 	0.0638
+dlw1_du: 	-1.5
+dlw_dly: 	0.0351
+u_ss: 		0.0597
+------------------------
+UNTARGETED MOMENTS
+------------------------
+u_ss_2: 	0.0587
+dlu_dly: 	-1.64
+std logu: 	0.074
+std logz: 	0.016
+std logy: 	0.0452
+a(μ_z): 	1.02
+θ(μ_z): 	1.16
+Y (ss): 	29.8
+W (ss): 	28.8
+W/Y (ss): 	0.965
+dla_dlz: 	1.12
+dlY_dlz: 	0.627
+dlW_dlz: 	0.453
+dlθ_dlz: 	10.1
+------------------------
+WAGE FLEXIBILITY
+------------------------
+IWF Share #1: 		0.266
+IWF Share #2: 		0.266
+WF with χ = 0/WF 	0.765
+C term at μ_z: 		-9.57
+File name: fix_hbar10_cyc10
+145.692407 seconds (31.63 M allocations: 285.046 GiB, 1.96% gc time)
+Checking for multiplicity of roots..
+Root{Interval{Float64}}[Root([0.861675, 0.861676], :unique)]
+Root{Interval{Float64}}[Root([0.886453, 0.886454], :unique)]
+Root{Interval{Float64}}[Root([0.911941, 0.911942], :unique)]
+Root{Interval{Float64}}[Root([0.938159, 0.93816], :unique)]
+Root{Interval{Float64}}[Root([0.965129, 0.96513], :unique)]
+Root{Interval{Float64}}[Root([0.992871, 0.992872], :unique)]
+Root{Interval{Float64}}[Root([1.0214, 1.02141], :unique)]
+Root{Interval{Float64}}[Root([1.05076, 1.05077], :unique)]
+Root{Interval{Float64}}[Root([1.08096, 1.08097], :unique)]
+Root{Interval{Float64}}[Root([1.11202, 1.11203], :unique)]
+Root{Interval{Float64}}[Root([1.14397, 1.14398], :unique)]
+Root{Interval{Float64}}[Root([1.17684, 1.17685], :unique)]
+Root{Interval{Float64}}[Root([1.21065, 1.21066], :unique)]
+------------------------
+ESTIMATED PARAMETERS
+------------------------
+σ_η: 		0.534
+χ: 		0.515
+γ: 		0.48
+hbar: 		1.0
+ε: 		2.25
+ρ: 		0.966
+σ_ϵ: 		0.0056
+ι: 		0.9
+------------------------
+TARGETED MOMENTS
+------------------------
+std_Δlw: 	0.0638
+dlw1_du: 	-0.999
+dlw_dly: 	0.0351
+u_ss: 		0.0597
+------------------------
+UNTARGETED MOMENTS
+------------------------
+u_ss_2: 	0.0577
+dlu_dly: 	-2.08
+std logu: 	0.102
+std logz: 	0.016
+std logy: 	0.0485
+a(μ_z): 	1.02
+θ(μ_z): 	1.2
+Y (ss): 	29.9
+W (ss): 	28.8
+W/Y (ss): 	0.964
+dla_dlz: 	1.28
+dlY_dlz: 	0.678
+dlW_dlz: 	0.436
+dlθ_dlz: 	13.2
+------------------------
+WAGE FLEXIBILITY
+------------------------
+IWF Share #1: 		0.398
+IWF Share #2: 		0.398
+WF with χ = 0/WF 	0.82
+C term at μ_z: 		-7.57
