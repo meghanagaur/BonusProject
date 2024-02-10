@@ -9,7 +9,6 @@ function calibrateZ(shocks; ρ_y = 0.89, σ_y = 0.017, N_z = 11, a = 1.0, zbar =
     obj(x, dummy_gradient!)   = simulateALP(x, z_shocks_macro, T_sim_macro, burnin, N_sim_macro; ρ_y = ρ_y, σ_y = σ_y,  N_z = N_z, a = a, zbar = zbar)
     opt.min_objective         = obj
 
-
     # Bound constraints
     opt.lower_bounds        = [0.9, 0.0001] 
     opt.upper_bounds        = [0.999, 0.01] 

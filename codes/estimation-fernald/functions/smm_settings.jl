@@ -15,7 +15,7 @@ ForwardDiff, Interpolations, LinearAlgebra, Parameters, Random, Roots, StatsBase
 include("utils.jl")                     # basic utility functions  
 include("obj_func.jl")                  # objective functions
 include("simulation.jl")                # simulation functions
-include("fixed_effort.jl")              # solve the model with fixed effort
+include("bargaining.jl")           # solve the model with fixed effort
 include("tik-tak.jl")                   # tik-tak code 
 
 """

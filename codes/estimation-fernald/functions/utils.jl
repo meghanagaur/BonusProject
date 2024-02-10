@@ -55,3 +55,19 @@ function slopeFD(y, x; diff = "central")
     end
     return dydx
 end
+
+"""
+Law of motion for unemployment
+given u0, returns u1
+"""
+function uLM(u0, s, f)
+    u1 = u0 + s*(1 - u0) - (1-s)*f*u0
+    return u1
+end
+
+"""
+Return quarterly average of monthly series x_t, length T_q
+"""
+function quarterlyAverage(x_t, T_q)
+    return [mean(x_t[(t_q*3 - 2):t_q*3]) for t_q = 1:T_q] 
+end

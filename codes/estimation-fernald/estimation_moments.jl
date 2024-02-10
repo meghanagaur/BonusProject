@@ -15,7 +15,7 @@ xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
 ## Logistics
-files        = ["cyc15"] #["baseline" "fix_a_bwc10" "fix_chi0"]
+files        = ["fix_a_bwc10"] #["baseline" "fix_a_bwc10" "fix_chi0"]
 big_run      = false        
 file_idx     = big_run ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]                              
@@ -30,15 +30,14 @@ println("File name: "*file_str)
 
 # Settings for simulation
 if big_run == false
-    vary_z_N                 = 101           # lower # of gridpoints when taking numerical derivatives
-    N_sim_macro_alp_workers  = 1
-    N_sim_macro_alp          = 1
-    est_alp                  = false
+    fix_wages                = false 
+    N_vary_z                 = 51            # # of gridpoints when taking numerical derivatives
+    N_sim_alp_workers        = 1
+    N_sim_alp                = 1
 else
-    vary_z_N                 = 201           # increase # of gridpoints when taking numerical derivatives
-    N_sim_macro_alp_workers  = 2*10^4        # increase # of workers for endogneous ALP simulation
-    N_sim_macro_alp          = 1000          # increase # of panels for endogneous ALP simulation
-    est_alp                  = false         # whether or not to simulate endogenous ALP
+    N_vary_z                 = 201           # number of gridpoints when taking numerical derivatives
+    N_sim_alp_workers        = 10^4          # number of workers for endogneous ALP simulation
+    N_sim_alp                = 1000          # number of panels for endogneous ALP simulation
 end
 
 # Load output
@@ -62,16 +61,21 @@ end
 # Unpack parameters
 @unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ, ι = Params
 
-# Get moments (check for multiplicity and verfiy solutions are the same)
-modd       = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
-@unpack P_z, p_z, z_ss_idx = modd
-shocks     = rand_shocks(P_z, p_z; z0_idx = z_ss_idx, N_sim_macro_alp_workers = N_sim_macro_alp_workers, N_sim_macro_alp = N_sim_macro_alp)
+# Model set-up
+modd                       = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
+shocks                     = rand_shocks(modd.P_z, modd.p_z; z0_idx = modd.z_ss_idx, N_sim_alp_workers = N_sim_alp_workers, N_sim_alp = N_sim_alp)
 
+# Compute simulated model moments 
 if fix_a == false
    
-    # check for multiplicity roots
+    sol                     = getModel(modd)
+    @unpack a_z, θ_z, W, Y  = sol
+    a_z                     = a_z[:, modd.z_ss_idx]
+    @time output            = simulate(modd, shocks; check_mult = false, smm = false, λ = λ, sd_cut = 3.0) # get output
+
+    #= Check for multiplicity roots
     println("Checking for multiplicity of roots..")
-    sol   = solveModel(modd; noisy = false)
+   
     a_min = 10^-8
     a_max = 10
 
@@ -86,27 +90,25 @@ if fix_a == false
         plot!(p2, x -> a_gap(x, z), a_min, 2.0)
     end
 
-    plot(p1, p2, layout = (1,2),  size = (800,400),title="Implicit Effort Gap", legend=:false)
+    plot(p1, p2, layout = (1,2), size = (800,400), title = "Implicit Effort Gap", legend=:false)
     savefig(file_save*"effort_error.pdf")
-
-    @time output = simulate(modd, shocks; check_mult = false, est_alp = est_alp, λ = λ, sd_cut = 3.0) # get output
-
+    =#
 else
-    sol          = solveModelFixedEffort(modd; a = Params[:a], noisy = false);
-    @time output = simulateFixedEffort(modd, shocks; a = Params[:a], sd_cut = 3.0)  
+    @unpack a_z, θ_z, W, Y = getFixedEffort(modd; a = 1.0, fixed_wages = fixed_wages) 
+    @time output = simulateFixedEffort(modd, shocks; a = Params[:a], sd_cut = 3.0, fixed_wages = fixed_wages, smm = false)  
 end
 
 # Unpack parameters
-@unpack std_Δlw, dlw1_du, dlw_dly, u_ss, alp_ρ, alp_σ, dlu_dly, flag, flag_IR, IR_err, std_z, std_u, std_θ, dlθ_dlz, dlu_dlz = output
+@unpack std_Δlw, dlw1_du, dlw_dly, u_ss, flag, flag_IR, IR_err, rho_lx, std_lx, corr_lx, macro_vars = output
 
 # CHANGE ROUNDING MODE TO ROUND NEAREST AWAY 
 
 println("Min fval: \t"*string(round(minimum(est_output[:,1]), RoundNearestTiesAway, digits = 10 )) )
 
 # Estimated parameters
-println("------------------------")
+println("------------------------------------------------")
 println("ESTIMATED PARAMETERS")
-println("------------------------")
+println("------------------------------------------------")
 println("σ_η: \t\t"*string(round.(Params[:σ_η], RoundNearestTiesAway, digits = 3)))
 println("χ: \t\t"*string(round.(Params[:χ], RoundNearestTiesAway, digits = 3)))
 println("γ: \t\t"*string(round.(Params[:γ], RoundNearestTiesAway, digits = 3)))
@@ -117,46 +119,61 @@ println("σ_ϵ: \t\t"*string(round.(Params[:σ_ϵ], RoundNearestTiesAway, digits
 println("ι: \t\t"*string(round.(Params[:ι], RoundNearestTiesAway, digits = 3)))
 
 # Targeted moments
-println("------------------------")
+println("\n------------------------------------------------")
 println("TARGETED MOMENTS")
-println("------------------------")
+println("------------------------------------------------")
 println("std_Δlw: \t"*string(round.(std_Δlw, RoundNearestTiesAway, digits = 3)))
 println("dlw0_du: \t"*string(round.(dlw1_du, RoundNearestTiesAway, digits = 3)))
 println("dlw_dly: \t"*string(round.(dlw_dly, RoundNearestTiesAway, digits = 3)))
 println("u_ss: \t\t"*string(round.(u_ss, RoundNearestTiesAway, digits = 3)))
 
 # Untargeted moments
-println("------------------------")
-println("UNTARGETED MOMENTS")
-println("------------------------")
-println("UNCONDITIONAL")
-println("------------------------")
-println("dlθ_dlz (sim): \t"*string(round.(dlθ_dlz, RoundNearestTiesAway, digits = 3)))
-println("std logθ: \t"*string(round.(std_θ, RoundNearestTiesAway, digits = 3)))
-println("std logu: \t"*string(round.(std_u, RoundNearestTiesAway, digits = 3)))
-println("std logz: \t"*string(round.(std_z, RoundNearestTiesAway, digits = 3)))
-println("std logy: \t"*string(round.(alp_σ, RoundNearestTiesAway, digits = 3)))
-println("dlu_dly: \t"*string(round.(dlu_dly, RoundNearestTiesAway, digits = 3)))
-println("ALP_ρ: \t\t"*string(round.(alp_ρ, RoundNearestTiesAway, digits = 3)))
-println("ALP_σ: \t\t"*string(round.(alp_σ, RoundNearestTiesAway, digits = 3)))
+println("\n------------------------------------------------")
+println("UNTARGETED MOMENTS, UNCONDITIONAL")
+println("------------------------------------------------")
 
-# Compute additional conditional moments
-println("------------------------")
-println("CONDITIONAL")
-println("------------------------")
-@unpack θ, w_0, Y, az  = sol
+println("\nSTANDARD DEVIATION")
+println("------------------------------------------------")
+for i = 1:length(macro_vars) 
+    println(string(macro_vars[i])*": \t"*string(round(std_lx[i],RoundNearestTiesAway, digits = 3)))
+end
 
-println("a(μ_z): \t"*string(round.(az[modd.z_ss_idx], RoundNearestTiesAway, digits = 3)))
-println("θ(μ_z): \t"*string(round.(θ, RoundNearestTiesAway, digits = 3)))
-println("Y (μ_z): \t"*string(round.(Y, RoundNearestTiesAway, digits = 3)))
-println("W (μ_z): \t"*string(round.(w_0/modd.ψ, RoundNearestTiesAway, digits = 3)))
-println("W/Y (μ_z): \t"*string(round.(w_0/(modd.ψ*Y), RoundNearestTiesAway, digits = 3)))
+println("\nAUTOCORRELATION")
+println("------------------------------------------------")
+for i = 1:length(macro_vars) 
+    println(string(macro_vars[i])*": \t"*string(round(rho_lx[i],RoundNearestTiesAway, digits = 3)))
+end
+
+println("\nCORRELATIONS")
+println("------------------------------------------------")
+for var in macro_vars 
+    print("\t"*string(var))
+end
+println()
+for i = 1:length(macro_vars) 
+    str = "\n"*string(macro_vars[i])
+    for j = 1:length(macro_vars)
+        str = str*"\t"*string(round(corr_lx[i,j],RoundNearestTiesAway, digits = 3))
+    end 
+    println(str)
+end
+
+# Compute conditional moments
+println("------------------------------------------------")
+println("CONDITIONAL ON z = μ_z")
+println("------------------------------------------------")
+
+println("a(μ_z): \t"*string(round.(a_z[modd.z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("θ(μ_z): \t"*string(round.(θ_z[modd.z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("Y (μ_z): \t"*string(round.(Y[modd.z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("W (μ_z): \t"*string(round.(W[modd.z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("W/Y (μ_z): \t"*string(round.(W[modd.z_ss_idx]./Y[modd.z_ss_idx], RoundNearestTiesAway, digits = 3)))
 
 ## Vary initial productivity z_0 
 
 # Get the Bonus model aggregates
-modd_big    = model(N_z = vary_z_N, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
-modd_chi0   = model(N_z = vary_z_N, χ = 0.0, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
+modd_big    = model(N_z = N_vary_z, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
+modd_chi0   = model(N_z = N_vary_z, χ = 0.0, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
 
 if fix_a == true
     bonus      = vary_z0(modd_big; fix_a = fix_a, a = Params[:a])
@@ -178,7 +195,7 @@ fip        = "Incentive Pay: variable w and a"
 ip         = "Incentive Pay, setting "*L"\chi = 0"
 minz_idx   = max( findfirst(x -> x >=  -0.05, logz), findfirst(x -> x > 10^-8, bonus.θ))
 maxz_idx   = findlast(x -> x <=  0.05, logz)
-maxz_idx   = isnothing(maxz_idx) ? vary_z_N : maxz_idx
+maxz_idx   = isnothing(maxz_idx) ? N_vary_z : maxz_idx
 range_1    = minz_idx:maxz_idx
 
 # Compute some numerical derivatives

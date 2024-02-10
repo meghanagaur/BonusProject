@@ -19,8 +19,8 @@ files        = ["baseline"]
 big_run      = false        
 file_idx     = big_run ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]                              
-file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
-file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
+file_pre     = "smm/jld-original/pretesting_"*file_str*".jld2"   # pretesting data location
+file_est     = "smm/jld-original/estimation_"*file_str*".txt"    # estimation output location
 file_save    = "figs/vary-z0/"*file_str*"/"             # file to-save 
 λ            = 10^5
 

@@ -80,8 +80,44 @@ Folder structure
 \end_layout
 
 \begin_layout Enumerate
-
+codes
 \end_layout
 
+\begin_deeper
+\begin_layout Enumerate
+estimation-alp
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+internal calibration of ALP
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+estimation-fernald
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+use 
+\begin_inset Formula $z_{t}$
+\end_inset
+
+ process from Fernald utilization-adjusted TFP
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+lm-moments
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+stata code to get labor market data from FRED
+\end_layout
+
+\end_deeper
+\end_deeper
 \end_body
 \end_document

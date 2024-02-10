@@ -29,7 +29,7 @@ function vary_z0(modd; check_mult = false, fix_a = false, a = 1.0)
         ## Store series of interest
         w_0[iz]     = sol.w_0         
         θ_0[iz]     = sol.θ       
-        W_0[iz]     = sol.w_0/ψ       
+        W_0[iz]     = sol.W     
         Y_0[iz]     = sol.Y            
         ω_0[iz]     = sol.ω             
         J_0[iz]     = Y_0[iz] - W_0[iz] 
@@ -170,10 +170,6 @@ function decomposition(modd, bonus; fix_a = false)
     c_term          = JJ - JJ_EVT
     BWC_share       = -(c_term./WC)                  
 
-    # Compute the residual <- used for alternative construction of BWC
-    #qq(x)           = -(x^(-1 + ι))*(1 + x^ι)^(-1 - 1/ι) # q'(θ)
-    #total_resid     = -(κ./(q.(bonus.θ)).^2).*qq.(bonus.θ).*slopeFD(bonus.θ, zgrid) # d kappa/q(θ(z_0)) / d z_0
-
     if fix_a == true
         
         return (JJ_EVT = JJ_EVT, WC = WC, BWC_resid = WC, IWC_resid = zeros(N_z), BWC_share = BWC_share, c_term = c_term)
@@ -225,7 +221,6 @@ function decomposition(modd, bonus; fix_a = false)
 
         # Solve for the BWC share (residual definition)
         BWC             = WC - IWC
-        #resid          = BWC - JJ_EVT  # partial kappa/q(θ(z_0)) / partial z_0
 
         return (JJ_EVT = JJ_EVT, WC = WC, BWC_resid = BWC, IWC_resid = IWC, BWC_share = BWC_share, c_term = c_term)
     end
