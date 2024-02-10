@@ -36,8 +36,8 @@ if big_run == false
     N_sim_alp                = 1
 else
     N_vary_z                 = 201           # number of gridpoints when taking numerical derivatives
-    N_sim_alp_workers        = 10^4          # number of workers for endogneous ALP simulation
-    N_sim_alp                = 1000          # number of panels for endogneous ALP simulation
+    N_sim_alp_workers        = 100           # number of workers for endogneous ALP simulation
+    N_sim_alp                = 100             # number of panels for endogneous ALP simulation
 end
 
 # Load output
@@ -94,8 +94,8 @@ if fix_a == false
     savefig(file_save*"effort_error.pdf")
     =#
 else
-    @unpack a_z, θ_z, W, Y = getFixedEffort(modd; a = 1.0, fixed_wages = fixed_wages) 
-    @time output = simulateFixedEffort(modd, shocks; a = Params[:a], sd_cut = 3.0, fixed_wages = fixed_wages, smm = false)  
+    @unpack a_z, θ_z, W, Y = getFixedEffort(modd; a = 1.0, fix_wages = fix_wages) 
+    @time output = simulateFixedEffort(modd, shocks; a = Params[:a], sd_cut = 3.0, fix_wages = fix_wages, smm = false)  
 end
 
 # Unpack parameters
@@ -169,6 +169,7 @@ println("Y (μ_z): \t"*string(round.(Y[modd.z_ss_idx], RoundNearestTiesAway, dig
 println("W (μ_z): \t"*string(round.(W[modd.z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("W/Y (μ_z): \t"*string(round.(W[modd.z_ss_idx]./Y[modd.z_ss_idx], RoundNearestTiesAway, digits = 3)))
 
+#=
 ## Vary initial productivity z_0 
 
 # Get the Bonus model aggregates
@@ -374,6 +375,7 @@ if fix_a == false
 
     savefig(file_save*"cterm_multiplier.pdf")
 end
+=#
 
 # Check convergence 
 indices    = sortperm(est_output[:,1])

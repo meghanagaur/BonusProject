@@ -37,7 +37,7 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut
     if  max(flag_IR, flag) < 1 
 
         # Unpack the relevant shocks
-        @unpack burnin_macro, z_idx_macro, T_sim_macro, N_sim_macro = shocks
+        @unpack burnin_macro, z_idx_macro, T_sim_macro, N_sim_macro, N_sim_alp = shocks
 
         # Compute model data for long z_t series (trim to post-burn-in when computing moment)
 
@@ -54,7 +54,7 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut
 
         # Compute evolution of unemployment for the z_t path
         T              = T_sim_macro + burnin_macro
-        T_q_macro      = Int(T_sim_macro/3)
+        T_q            = Int(T_sim_macro/3)
         u_t            = zeros(T, N_sim_macro)
         u_t[1,:]      .= u0
 
@@ -65,7 +65,7 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut
             end
 
             # Estimate d E[log w_1] / d u (pooled ols)
-            @views dlw1_du_n[n]  = cov(lw0_t[burnin_macro+1:end, n], u_t[burnin_macro+1:end, n])/max(eps(), var(u_t[burnin_macro+1:end, n]))
+            @views dlw1_du_n[n]  = cov(lw1_t[burnin_macro+1:end, n], u_t[burnin_macro+1:end, n])/max(eps(), var(u_t[burnin_macro+1:end, n]))
         end
 
         # TARGETED MOMENTS 
@@ -79,19 +79,23 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut
         # UNTARGETED MOMENTS
         if smm == false 
 
-            # 5 variables x N simulation
-            lx_q  = zeros(T_q_macro, N_macro_vars, N_sim_macro)
+            # Simulate on-the-job wage volatility
+            std_Δlw = simulateWageMomentsFixedEffort(s_shocks_micro, jf_shocks_micro, z_idx_micro, 
+                        N_sim_micro, T_sim_micro, burnin_micro, f_z, lw1_z, s; fix_wages = fix_wages)
 
-            Threads.@threads for n = 1:N_sim_macro
+            # 5 variables x N simulation
+            lx_q  = zeros(T_q_macro, N_macro_vars, N_sim_alp)
+
+            Threads.@threads for n = 1:N_sim_alp
         
                 @views v_t         = θ_t[burnin_macro+1:end, n].*u_t[burnin_macro+1:end, n]
 
                 # Compute quarterly average of u_t, z_t, θ_t, and y_t in post-burn-in period
-                @views y_q         = quarterlyAverage(y_t[burnin_macro+1:end, n], T_q_macro)    
-                @views u_q         = quarterlyAverage(u_t[burnin_macro+1:end, n], T_q_macro)            
-                @views v_q         = quarterlyAverage(v_t, T_q_macro) 
-                @views θ_q         = quarterlyAverage(θ_t[burnin_macro+1:end, n], T_q_macro)          
-                @views w_q         = quarterlyAverage(w_t[burnin_macro+1:end, n], T_q_macro)    
+                @views y_q         = quarterlyAverage(y_t[burnin_macro+1:end, n], T_q; weights = u_t[burnin_macro+1:end, n])    
+                @views u_q         = quarterlyAverage(u_t[burnin_macro+1:end, n], T_q)            
+                @views v_q         = quarterlyAverage(v_t, T_q) 
+                @views θ_q         = quarterlyAverage(θ_t[burnin_macro+1:end, n], T_q)          
+                @views w_q         = quarterlyAverage(w_t[burnin_macro+1:end, n], T_q; weights = u_t[burnin_macro+1:end, n])    
 
                 # HP-filter the quarterly log unemployment series, nudge to avoid runtime error
                 ly_q_resid, _      = hp_filter(log.(max.(y_q, eps())), λ)  
@@ -105,11 +109,11 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut
             end
 
             # Moments
-            rho_n          = zeros(N_macro_vars, N_sim_macro)
-            std_n          = zeros(N_macro_vars, N_sim_macro)
-            corr_n         = zeros(N_macro_vars, N_macro_vars, N_sim_macro)
+            rho_n          = zeros(N_macro_vars, N_sim_alp)
+            std_n          = zeros(N_macro_vars, N_sim_alp)
+            corr_n         = zeros(N_macro_vars, N_macro_vars, N_sim_alp)
 
-            Threads.@threads for n = 1:N_sim_macro
+            Threads.@threads for n = 1:N_sim_alp
                 
                 @inbounds for j = 1:N_macro_vars
 
@@ -176,7 +180,7 @@ function getFixedEffortWages(modd; a = 1.0)
         if flag_z[iz] < 1             
             
             # log wage of new hires (wage is constant throughout contract)
-            lw0_z[iz]     = log(max(eps(), w_0))
+            lw1_z[iz]     = log(max(eps(), w_0))
            
             # Tightness and job-finding rate, given z_0 = z
             θ_z[iz]       = θ      
@@ -188,7 +192,7 @@ function getFixedEffortWages(modd; a = 1.0)
     end
 
     # Export the main objects 
-    return (θ_z = θ_z, f_z = f_z, lw0_z = lw0_z, 
+    return (θ_z = θ_z, f_z = f_z, lw1_z = lw1_z, 
             a_z = a*ones(N_z), W = W_z, Y = Y_z, w_z = exp.(lw0_z),
             flag_z = flag_z, flag_IR_z = flag_IR_z, err_IR_z = err_IR_z)
 end
@@ -210,11 +214,11 @@ function getFixedEffortFlexWages(modd; a = 1.0)
     # Build vectors     
     flag_IR_z = zeros(Int64, N_z)        # IR flags
     err_IR_z  = zeros(N_z)               # IR error
-    lw0_z     = log.(max.(eps(), w_z))   # new hire wage 
+    lw1_z     = log.(max.(eps(), w_z))   # new hire wage 
     f_z       = f.(θ_z)                  # job-finding rate
 
     # Export the main objects
-    return (θ_z = θ_z, f_z = f_z, w_z = w_z, lw0_z = lw0_z, 
+    return (θ_z = θ_z, f_z = f_z, w_z = w_z, lw1_z = lw1_z, 
             a_z = a*ones(N_z), W = W, Y = Y, 
             flag_z = flag_z, flag_IR_z = flag_IR_z, err_IR_z = err_IR_z)
 end
@@ -255,7 +259,6 @@ function solveFixedEffortWages(modd; a = 1.0, z_0 = nothing, max_iter1 = 1000, m
     Y_0    = 0               # initalize Y for export
     U      = 0               # initalize worker's EU from contract for export
     w_0    = 0               # initialize initial wage constant for export                      
-    az     = fill(a, N_z)    # effort for each z_t (constant)
     yz     = a*zgrid         # per-period output for each z_t 
 
     # Solve for the present value of output (exogenous)    
@@ -366,7 +369,6 @@ function solveFixedEffortFlexWages(modd; a = 1.0, max_iter1 = 1000, max_iter2 = 
     iter3   = 1
 
     # Initialize default values and search parameters
-    α      = 0               # dampening parameter
     Y_0    = zeros(N_z)      # initalize Y for export
     yz     = a*zgrid         # per-period output for each z_t 
     
@@ -375,34 +377,49 @@ function solveFixedEffortFlexWages(modd; a = 1.0, max_iter1 = 1000, max_iter2 = 
                 
         Y_1    = yz + β*(1-s)*P_z*Y_0    
         err1   = maximum(abs.(Y_0 - Y_1))  # Error       
+        
         if (err1 > tol1) 
             iter1 += 1
             if (iter1 < max_iter1) 
-                Y_0    = α*Y_0 + (1 - α)*Y_1 
+                Y_0    = copy(Y_1)
             end
         end
-        #println(err1)
+
+        if noisy 
+            println("Y_0 iter: "*string(iter1))
+            println("Y_0 error: "*string(err1))
+        end
+
     end
 
-    # Solve for the worker's continuation value upon separation 
+    #=Solve for the worker's continuation value upon separation 
     U_0   = zeros(N_z) # initial guess
     flow  = β*s*(P_z*ω)
 
     @inbounds while err2 > tol2 && iter2 <= max_iter2
         U_1  = flow + β*(1-s)*(P_z*U_0)
         err2 = maximum(abs.(U_1 - U_0))
+       
         if (err2 > tol2) 
             iter2 += 1
             if (iter2 < max_iter2) 
-                U_0  = α*U_0 + (1 - α)*U_1
+                U_0  = copy(U_1)
             end
         end
-        #println(err2)
+
+        if noisy 
+            println("U_0 iter: "*string(iter2))
+            println("U_0 error: "*string(err2))
+        end
     end
     
-    # Solve for wages 
     Ω      = ω .+ h(a)/ψ - U_0
     logw   = Ω - β*(1-s)*(P_z*Ω) 
+    @assert maximum(abs.(logw - log.(ξ.(zgrid))) .- h(a) ) < 10^-6 
+    =#
+    
+    # Solve for wages 
+    logw    = log.(ξ.(zgrid)) .+ h(a)
 
     # Solve for the EPDV of wages (to compute profits)
     W_0    = zeros(N_z) 
@@ -411,9 +428,14 @@ function solveFixedEffortFlexWages(modd; a = 1.0, max_iter1 = 1000, max_iter2 = 
     # solve via simple value function iteration
     @inbounds while err3 > tol3 && iter3 < max_iter3
         W_1    = w_z + β*(1-s)*P_z*W_0
-        err    = maximum(abs.(W_1 - W_0))
+        err3   = maximum(abs.(W_1 - W_0))
         W_0    = copy(W_1)
         iter3   +=1
+
+        if noisy 
+            println("W_0 iter: "*string(iter3))
+            println("W_0 error: "*string(err3))
+        end
     end
 
     # Solve for tightness from the firm's free-entry condition
@@ -423,4 +445,112 @@ function solveFixedEffortFlexWages(modd; a = 1.0, max_iter1 = 1000, max_iter2 = 
     return (θ_z = (q_0.^(-ι) .- 1).^(1/ι), Y = Y_0, W = W_0, w_z = w_z, 
             err1 = err1, err2 = err2, err3 = err3, iter1 = iter1, iter2 = iter2, iter3 = iter3, wage_flag = maximum(w_z .<= 0),
             conv_flag1 = (iter1 > max_iter1), conv_flag2 = (iter2 > max_iter2), conv_flag3 = (iter3 > max_iter3))
+end
+
+"""
+Simulate wage moments givenn N x T panel of z_it and η_it
+"""
+function simulateWageMomentsFixedEffort(s_shocks, jf_shocks, z_idx, N_sim, 
+                    T_sim, burnin, f_z, lw1_z, s; fix_wages = false)
+
+    # Information about job/employment spells
+    T            = T_sim + burnin
+    lw           = zeros(N_sim, T)           # N x T panel of log wages
+    tenure       = zeros(N_sim, T)           # N x T panel of tenure
+
+    # Initialize period 1 values (production) 
+    lw[:,1]     .= lw1_z[z_idx[1]] 
+    tenure[:,1] .= 1
+
+    # N x 1 vectors 
+    unemp      = zeros(N_sim)            # current unemployment status
+    z_1        = fill(z_idx[1], N_sim)   # relevant initial z for contract
+
+    @views @inbounds for t = 2:T
+
+        # index by current z_t: aggregate variables 
+        zt    = z_idx[t]                # current productivity
+        ft    = f_z[zt]                 # people find jobs in period t
+
+        Threads.@threads for n = 1:N_sim
+
+            if unemp[n] == false  
+               
+                # separation shock at the end of t-1 
+                if s_shocks[n, t-1] < s              
+                    
+                    # find a job and produce within the period t
+                    if  jf_shocks[n, t] < ft               
+                        z_1[n]      = zt                    # new initial z for contract
+                        lw[n, t]    = lw1_z[zt]             
+                        tenure[n,t] = 1                    
+
+                    else
+                        unemp[n]     = true
+                    end
+
+                # no separation shock, remain employed    
+                else        
+                    if fix_wages == true
+                        lw[n, t]    = lw1_z[z_1[n]]
+                    else
+                        lw[n, t]    = lw1_z[zt]
+                    end
+                    tenure[n,t] = tenure[n,t-1] + 1
+                end
+
+            elseif unemp[n] == true
+                
+                # job-finding shock
+                if jf_shocks[n, t] < ft             
+                    unemp[n]    = false              
+                    z_1[n]      = zt                  # new initial z for contract
+                    lw[n, t]    = lw1_z[zt]       
+                    tenure[n,t] = 1                
+                end 
+
+            end
+
+        end
+
+    end
+
+    # compute micro wage moments using post-burn-in data
+    @views ten_pb        = tenure[:, burnin+1:end]'  # reshape to T x N
+    @views lw_pb         = lw[:, burnin+1:end]'      # reshape to T x N 
+
+    # compute YoY wage changes for 13 month spells
+    dlw = fill(NaN, Int64(ceil(T_sim/12)),  N_sim)
+    Threads.@threads for n = 1:N_sim
+
+        # log wages
+        lw_n  = lw_pb[:, n]
+        ten_n = ten_pb[:,n]
+
+        # record new hires for given worker
+        new   = findall(isequal(1), ten_n)
+        new   = [1; new; T_sim + 1]
+
+        # go through employment spells
+        @inbounds for i = 2:lastindex(new)
+            
+            t0    = new[i-1]                             # beginning of job spell 
+            t1    = findfirst(isequal(0), ten_n[t0:new[i] - 1])
+            t1    = isnothing(t1) ? new[i] - 1 : t1 - 1  # end of job spell (right before new job spell)
+            
+            if t1 - t0 >= 12
+                t2                                 = collect(t0:12:t1)[end-1]
+                idx                                = findfirst(isnan, dlw[:, n])
+                dlw_s                              = [lw_n[t+12] - lw_n[t] for t = t0:12:t2]
+                dlw[idx:idx+length(dlw_s)-1, n]   .= dlw_s
+            end
+
+        end
+    end
+
+    # Stdev of YoY log wage changes for job-stayers
+    @views Δlw      = dlw[isnan.(dlw).==0]
+    std_Δlw         = isempty(Δlw) ? NaN : std(Δlw) 
+
+    return (std_Δlw = std_Δlw)
 end

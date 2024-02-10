@@ -68,6 +68,12 @@ end
 """
 Return quarterly average of monthly series x_t, length T_q
 """
-function quarterlyAverage(x_t, T_q)
-    return [mean(x_t[(t_q*3 - 2):t_q*3]) for t_q = 1:T_q] 
+function quarterlyAverage(x_t, T_q; weights = nothing)
+    if weights == nothing
+        return [mean(x_t[(t_q*3 - 2):t_q*3]) for t_q = 1:T_q] 
+    else
+        total1 = [sum(weights[(t_q*3 - 2):t_q*3]) for t_q = 1:T_q]
+        total2 = [sum(x_t[(t_q*3 - 2):t_q*3].*weights[(t_q*3 - 2):t_q*3]) for t_q = 1:T_q]
+        return total1./total2 
+    end
 end

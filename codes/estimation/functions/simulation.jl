@@ -111,18 +111,18 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, smm = false, λ =
 
                 # Simulate endogenous ALP and wages
                 ly_q_resid, lw_q_resid = simulateALP(z_idx_macro[:,n], s_shocks_macro, jf_shocks_macro, η_shocks_macro, N_sim_alp_workers, 
-                                                 T_sim_macro, burnin_macro, T_q_macro, s, f_z, y_z, hp_z, lw1_z; λ = λ)
+                                                T_sim_macro, burnin_macro, T_q_macro, s, f_z, y_z, hp_z, lw1_z; λ = λ)
                 
                 # Shimer ordering
                 lx_q[:, :, n]      .= [ly_q_resid lu_q_resid lv_q_resid lθ_q_resid lw_q_resid]  
             end
 
             # Moments
-            rho_n          = zeros(N_macro_vars, N_sim_macro)
-            std_n          = zeros(N_macro_vars, N_sim_macro)
-            corr_n         = zeros(N_macro_vars, N_macro_vars, N_sim_macro)
+            rho_n          = zeros(N_macro_vars, N_sim_alp)
+            std_n          = zeros(N_macro_vars, N_sim_alp)
+            corr_n         = zeros(N_macro_vars, N_macro_vars, N_sim_alp)
 
-            Threads.@threads for n = 1:N_sim_macro
+            Threads.@threads for n = 1:N_sim_alp
                 
                 @inbounds for j = 1:N_macro_vars
 
@@ -134,6 +134,11 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, smm = false, λ =
                     end
                 end
             end 
+
+            # Compute cross-simulation averages
+            rho_lx    = mean(rho_n, dims = 2) 
+            std_lx    = mean(std_n, dims = 2) 
+            corr_lx   = mean(corr_n, dims = 3)[:,:,1]
 
         end
     end
@@ -303,7 +308,7 @@ function simulateWageMoments(η_shocks, s_shocks, jf_shocks, z_idx, N_sim, T_sim
 end
 
 """
-Simulate average labor productivity a*z for N_sim x T_sim jobs,
+Simulate average labor productivity a*z for N_sim x T_sim observations,
 ignoring η shocks. HP-filter log average output with smoothing parameter λ.
 """
 function simulateALP(z_idx, s_shocks, jf_shocks, η_shocks, N_sim,
@@ -374,7 +379,7 @@ function simulateALP(z_idx, s_shocks, jf_shocks, η_shocks, N_sim,
         end
     end
 
-    # Construct quarterly averages
+    # Construct quarterly averages of wages and output
     ly_q = zeros(T_q)                                       
     lw_q = zeros(T_q)                                       
 

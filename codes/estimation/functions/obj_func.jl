@@ -22,7 +22,7 @@ u_ss         = 4th moment (SS unemployment rate)
 alp_ρ        = 5th moment (persistence of ALP)
 alp_σ        = 6th moment (std of ALP)
 """
-function objFunction(xx, param_vals, param_est, shocks, data_mom, W; fix_a = false)
+function objFunction(xx, param_vals, param_est, shocks, data_mom, W; smm = true, fix_a = false, fix_wages = false)
 
     # Get the relevant parameters
     Params =  OrderedDict{Symbol, Float64}()
@@ -35,13 +35,13 @@ function objFunction(xx, param_vals, param_est, shocks, data_mom, W; fix_a = fal
     end
 
     @unpack σ_η, χ, γ, hbar, ε, ρ, σ_ϵ, ι = Params
-    baseline   = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
+    baseline = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
 
     # Simulate the model and compute moments
     if fix_a == true 
-        out        = simulateFixedEffort(baseline, shocks; a = Params[:a])
+        out        = simulateFixedEffort(baseline, shocks; smm = smm, a = Params[:a], fix_wages = fix_wages)
     elseif fix_a == false
-        out        = simulate(baseline, shocks)
+        out        = simulate(baseline, shocks; smm = smm)
     end
 
     # Record flags and update objective function
