@@ -88,7 +88,7 @@ u_ss         = 4th moment (SS unemployment rate)
 alp_ρ        = 5th moment (ρ of ALP)
 alp_σ        = 6th moment (σ of ALP)
 """
-function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, data_mom, W; fix_a = false)
+function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, data_mom, W; smm = true, fix_a = false, fix_wages = false)
 
     Params =  OrderedDict{Symbol, Float64}()
     for (k, v) in param_vals
@@ -105,9 +105,9 @@ function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, dat
 
     # Simulate the model and compute moments
     if fix_a == true 
-        out        = simulateFixedEffort(baseline, shocks; a = Params[:a])
+        out        = simulateFixedEffort(baseline, shocks; smm = smm, a = Params[:a], fix_wages = fix_wages)
     elseif fix_a == false
-        out        = simulate(baseline, shocks)
+        out        = simulate(baseline, shocks; smm = smm)
     end
 
     # Record flags and update objective function

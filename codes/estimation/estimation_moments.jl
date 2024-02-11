@@ -15,7 +15,7 @@ xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
 ## Logistics
-files        = ["fix_a_bwc10"] #["baseline" "fix_a_bwc10" "fix_chi0"]
+files        = ["fix_a_bwc10"] #["baseline" "fix_a_bwc10" "fix_a_bwc0543" "fix_chi0"]
 big_run      = false        
 file_idx     = big_run ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]                              
@@ -29,15 +29,13 @@ mkpath(file_save)
 println("File name: "*file_str)
 
 # Settings for simulation
+fix_wages = true 
 if big_run == false
-    fix_wages                = false 
-    N_vary_z                 = 51            # # of gridpoints when taking numerical derivatives
-    N_sim_alp_workers        = 1
-    N_sim_alp                = 1
+    N_vary_z                 = 51            # number of gridpoints when taking numerical derivatives
+    smm                      = true
 else
     N_vary_z                 = 201           # number of gridpoints when taking numerical derivatives
-    N_sim_alp_workers        = 100           # number of workers for endogneous ALP simulation
-    N_sim_alp                = 100             # number of panels for endogneous ALP simulation
+    smm                      = false
 end
 
 # Load output
@@ -63,7 +61,7 @@ end
 
 # Model set-up
 modd                       = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
-shocks                     = rand_shocks(modd.P_z, modd.p_z; z0_idx = modd.z_ss_idx, N_sim_alp_workers = N_sim_alp_workers, N_sim_alp = N_sim_alp)
+shocks                     = rand_shocks(modd.P_z, modd.p_z; smm = smm, z0_idx = modd.z_ss_idx)
 
 # Compute simulated model moments 
 if fix_a == false
@@ -71,7 +69,7 @@ if fix_a == false
     sol                     = getModel(modd)
     @unpack a_z, θ_z, W, Y  = sol
     a_z                     = a_z[:, modd.z_ss_idx]
-    @time output            = simulate(modd, shocks; check_mult = false, smm = false, λ = λ, sd_cut = 3.0) # get output
+    @time output            = simulate(modd, shocks; check_mult = false, smm = smm, λ = λ, sd_cut = 3.0) # get output
 
     #= Check for multiplicity roots
     println("Checking for multiplicity of roots..")
@@ -95,7 +93,7 @@ if fix_a == false
     =#
 else
     @unpack a_z, θ_z, W, Y = getFixedEffort(modd; a = 1.0, fix_wages = fix_wages) 
-    @time output = simulateFixedEffort(modd, shocks; a = Params[:a], sd_cut = 3.0, fix_wages = fix_wages, smm = false)  
+    @time output           = simulateFixedEffort(modd, shocks; a = Params[:a], sd_cut = 3.0, fix_wages = fix_wages, smm = smm)  
 end
 
 # Unpack parameters
@@ -159,7 +157,7 @@ for i = 1:length(macro_vars)
 end
 
 # Compute conditional moments
-println("------------------------------------------------")
+println("\n------------------------------------------------")
 println("CONDITIONAL ON z = μ_z")
 println("------------------------------------------------")
 
@@ -169,20 +167,15 @@ println("Y (μ_z): \t"*string(round.(Y[modd.z_ss_idx], RoundNearestTiesAway, dig
 println("W (μ_z): \t"*string(round.(W[modd.z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("W/Y (μ_z): \t"*string(round.(W[modd.z_ss_idx]./Y[modd.z_ss_idx], RoundNearestTiesAway, digits = 3)))
 
-#=
 ## Vary initial productivity z_0 
 
-# Get the Bonus model aggregates
+# Increase grid size
 modd_big    = model(N_z = N_vary_z, χ = χ, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
 modd_chi0   = model(N_z = N_vary_z, χ = 0.0, γ = γ, hbar = hbar, ε = ε, σ_η = σ_η, ι = ι, ρ = ρ, σ_ϵ = σ_ϵ)
 
-if fix_a == true
-    bonus      = vary_z0(modd_big; fix_a = fix_a, a = Params[:a])
-    bonus_chi0 = vary_z0(modd_chi0; fix_a = fix_a, a = Params[:a])
-else 
-    bonus      = vary_z0(modd_big; fix_a = fix_a)
-    bonus_chi0 = vary_z0(modd_chi0; fix_a = fix_a)
-end
+# Get the Bonus model aggregates
+bonus      = vary_z0(modd_big; fix_a = fix_a, a = Params[:a])
+bonus_chi0 = vary_z0(modd_chi0; fix_a = fix_a, a = Params[:a])
 
 # Get primitives
 @unpack P_z, zgrid, N_z, ρ, β, s, z_ss_idx, q, ι, κ, χ, μ_z, ψ, hp, logz = modd_big
@@ -194,7 +187,7 @@ hall         = solveHall(modd_big, bonus.Y, bonus.W)
 rigid      = "Rigid Wage: fixed w and a"
 fip        = "Incentive Pay: variable w and a"
 ip         = "Incentive Pay, setting "*L"\chi = 0"
-minz_idx   = max( findfirst(x -> x >=  -0.05, logz), findfirst(x -> x > 10^-8, bonus.θ))
+minz_idx   = max( findfirst(x -> x >=  -0.05, logz), findfirst(x -> x > 10^-8, bonus_chi0.θ))
 maxz_idx   = findlast(x -> x <=  0.05, logz)
 maxz_idx   = isnothing(maxz_idx) ? N_vary_z : maxz_idx
 range_1    = minz_idx:maxz_idx
@@ -212,6 +205,7 @@ dJ_dz        = slopeFD(bonus.J, zgrid; diff = "central")
 dJ_dz_H      = slopeFD(hall.J, zgrid; diff = "central")
 dJ_dz0       = slopeFD(bonus_chi0.J, zgrid; diff = "central")
 
+# Print values at the median productivity level
 println("dla_dlz: \t"*string(round.(dla0_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("dlY_dlz: \t"*string(round.(dlY_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("dlW_dlz: \t"*string(round.(dlW_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
@@ -222,7 +216,7 @@ println("dlθ_dlz: \t"*string(round.(dlθ_dlz[z_ss_idx], RoundNearestTiesAway, d
 @unpack JJ_EVT, WC, BWC_resid, IWC_resid, BWC_share, c_term = decomposition(modd_big, bonus; fix_a = fix_a)
 
 ## Share of Incentive Wage Flexibility
-println("------------------------")
+println("\n------------------------")
 println("WAGE CYCLICALITY MOMENTS")
 println("------------------------")
 
@@ -235,7 +229,7 @@ println("IWC: \t\t"*string(round((1-BWC_share[z_ss_idx])*dlw1_du , RoundNearestT
 #println(((1-BWC_share[z_ss_idx])*WC)[z_ss_idx])
 println("C term at μ_z: \t"*string(round(c_term[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 
-# Make some plots of conditional moments
+# Make some plots of conditional elasticities
 p1 = plot(logz[range_1], dlW_dlz[range_1], title=L"d \log W_0/d \log z_0")
 p2 = plot(logz[range_1], dlW_dlY[range_1], title=L"d \log W_0/d \log Y_0")
 p3 = plot(logz[range_1], dla0_dlz[range_1], title=L"d \log a(z_0,z_0) /d \log z_0")
@@ -269,23 +263,6 @@ if fix_a == false
 
     savefig(p2, file_save*"efforts.pdf")
 
-    p2 = plot(logz[range_1], bonus.az[range_1,range_1[1]], legend=:topleft, label=L"\log z_0="*string(round(logz[range_1[1]], digits=3)))
-    plot!(p2, logz[range_1], bonus.az[range_1, Int64(median(range_1))], label=L"\log z_0="*string(round(logz[Int64(median(range_1))], digits=3)))
-    plot!(p2, logz[range_1], bonus.az[range_1, range_1[end]], label=L"\log z_0="*string(round(logz[range_1[end]], digits=3)))
-    xaxis!(L"\log z_t")
-    yaxis!(L"a(z_t|z_0)")
-
-    savefig(p2, file_save*"efforts_shifts.pdf")
-
-    pt(x) = x^(1+1/ε)
-    p2 = plot(logz[range_1], ψ*pt.(bonus.az[range_1,range_1[1]]), legend=:topleft, label=L"\log z_0="*string(round(logz[range_1[1]], digits=3)))
-    plot!(p2, logz[range_1], ψ*pt.(bonus.az[range_1, Int64(median(range_1))]), label=L"\log z_0="*string(round(logz[Int64(median(range_1))], digits=3)))
-    plot!(p2, logz[range_1], ψ*pt.(bonus.az[range_1, range_1[end]]), label=L"\log z_0="*string(round(logz[range_1[end]], digits=3)))
-    xaxis!(L"\log z_t")
-    yaxis!(L"\psi a(z_t|z_0)^{1 + 1/\epsilon}")
-
-    savefig(p2, file_save*"passthrough_shifts.pdf")
-
     # Plot EPDV of wages
     p3 = plot(logz[range_1], bonus.W[range_1], linecolor=:red, label=fip, legend=:topleft)
     hline!([hall.W], linecolor=:blue, label=rigid)
@@ -316,8 +293,10 @@ if fix_a == false
     p6 = plot(logz[range_1], (BWC_resid./WC)[range_1], legend=:false, title="BWC Share")
     plot!(p6, logz[range_1], BWC_share[range_1])
     xaxis!(L"\log z_0")
+
     savefig(p6, file_save*"BWC_share.pdf")
 
+    # Labor share
     p7 = plot(logz[range_1], (bonus.W./bonus.Y)[range_1], title=L"W_0(z_0)/Y_0(z_0)", legend=:false)
     xaxis!(L"\log z_0")
     savefig(p7, file_save*"labor_share.pdf")
@@ -365,17 +344,15 @@ if fix_a == false
     plot!(logz[range_2], dJ_dz0[range_2], linecolor=:yellow, label = ip, legend =:bottom)
     xaxis!(L"z_0")
     yaxis!(L"\frac{d J(z_0) }{d z_0}")
-
     savefig(p1, file_save*"dJ_dz_0_c_term.pdf")
 
     # plot the lower bound
     plot(logz[range_2], c_term[range_2]./dIR[range_2], legend=:bottomright, label=L"\mu(z)" )
     plot!(logz[range_2], bonus.w_0[range_2], linestyle=:dash, label=L"w_{-1}(z)")
     xaxis!(L"\log z_0")
-
     savefig(file_save*"cterm_multiplier.pdf")
+
 end
-=#
 
 # Check convergence 
 indices    = sortperm(est_output[:,1])

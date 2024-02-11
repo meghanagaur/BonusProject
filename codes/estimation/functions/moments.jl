@@ -2,45 +2,25 @@
 Vary z_0, and compute relevant aggregates.
 _B denotes Bonus model.
 """
-function vary_z0(modd; check_mult = false, fix_a = false, a = 1.0)
+function vary_z0(modd; fix_wages = false, fix_a = false, a = 1.0)
 
-    @unpack ψ, zgrid, z_ss_idx, N_z = modd
+    @unpack N_z, ω, z_ss_idx, zgrid = modd
 
-    w_0     = zeros(N_z)        # w0 (constant)
-    θ_0     = zeros(N_z)        # tightness
-    W_0     = zeros(N_z)        # EPV of wages
-    Y_0     = zeros(N_z)        # EPV of output
-    ω_0     = zeros(N_z)        # EPV value of unemployment at z0
-    J_0     = zeros(N_z)        # EPV profits
-    a1      = zeros(N_z)        # optimal effort @ start of contract
-    az      = zeros(N_z, N_z)   # optimal effort (j = initial z)
-    aflag   = zeros(N_z)        # effort flag
-    IR_flag = zeros(N_z)        # IR flag 
-
-    # Solve the model for different z_0
-    Threads.@threads for iz = 1:N_z
-        
-        if fix_a == true
-            sol = solveModelFixedEffort(modd; a = a, z_0 = zgrid[iz], noisy = false)
-        elseif fix_a == false
-            sol = solveModel(modd; z_0 = zgrid[iz], noisy = false, check_mult = check_mult)
-        end
-        
-        ## Store series of interest
-        w_0[iz]     = sol.w_0         
-        θ_0[iz]     = sol.θ       
-        W_0[iz]     = sol.W     
-        Y_0[iz]     = sol.Y            
-        ω_0[iz]     = sol.ω             
-        J_0[iz]     = Y_0[iz] - W_0[iz] 
-        a1[iz]      = sol.az[iz]      
-        aflag[iz]   = sol.effort_flag
-        IR_flag[iz] = sol.flag_IR  
-        az[:,iz]    = sol.az         
+    # Solve the model for different z_0  
+    if fix_a == true
+        sol     = getFixedEffort(modd; a = a, fix_wages = fix_wages)
+        az      = ones(N_z, N_z)*a
+        w_0     = sol.w_z
+        a1      = ones(N_z)*a
+    else
+        sol     = getModel(modd)
+        az      = sol.a_z
+        w_0     = sol.w0_z
+        a1      = diag(az) # initial effort
     end
-
-    return (az = az, w_0 = w_0, θ = θ_0, W = W_0, Y = Y_0, ω = ω_0, J = J_0, 
-            a1 = a1, zgrid = zgrid, aflag = aflag, IR_flag = IR_flag)
+        
+    return (az = az, w_0 = w_0, θ =  sol.θ_z, W = sol.W, Y =  sol.Y, J =   sol.Y -  sol.W, 
+            ω = ω, a1 = a1, zgrid = zgrid, IR_flag = sol.flag_IR_z)
 end
 
 """
@@ -244,10 +224,10 @@ function heatmap_moments(xx, combo, param_vals, shocks; N_z = 51, λ = 0^5)
     end
     
     @unpack σ_η, χ, γ, ε = Params
-
+ 
     # Simulate the model
     modd              = model(σ_η = σ_η, χ = χ, γ = γ, ε = ε) 
-    out               = simulate(modd, shocks; check_mult = false, est_alp = false, λ =10^5) 
+    out               = simulate(modd, shocks; smm = true, λ = λ) 
 
     # Solve model for each initial z_0
     modd_big          = model(σ_η = σ_η, χ = χ, γ = γ, ε = ε, N_z = N_z) 

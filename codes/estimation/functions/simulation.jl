@@ -160,11 +160,18 @@ N_sim_alp_workers       = num workers for endog ALP moments
 """
 function rand_shocks(P_z, p_z; z0_idx = 0, N_sim_micro = 5*10^4, T_sim_micro = 1000, burnin_micro = 500,
     N_sim_macro = 10^4, T_sim_macro = 828, burnin_macro = 500, N_sim_alp = 10^3, N_sim_alp_workers = 10^4, 
-    set_seed = true, seed = 512)
+    smm = false, set_seed = true, seed = 512)
 
     if set_seed == true
         Random.seed!(seed)
     end
+
+    # ALP estimation
+    N_sim_alp         = !smm ? N_sim_macro : 1
+    T_sim_alp         = !smm ? T_sim_macro : 1
+    burnin_alp        = !smm ? burnin_macro : 1 
+    N_sim_alp         = !smm ? N_sim_alp : 1
+    N_sim_alp_workers = !smm ? N_sim_alp_workers : 1
 
     # Draw uniform and standard normal shocks for micro moments
     z_shocks_micro  = rand(Uniform(0,1), T_sim_micro + burnin_micro)                           # z shocks: N x T
@@ -174,9 +181,9 @@ function rand_shocks(P_z, p_z; z0_idx = 0, N_sim_micro = 5*10^4, T_sim_micro = 1
 
     # Draw uniform shocks for macro moments
     z_shocks_macro  = rand(Uniform(0,1), T_sim_macro + burnin_macro, N_sim_macro)              # z shocks: T x 1
-    η_shocks_macro  = rand(Normal(0,1),  N_sim_alp_workers, T_sim_macro + burnin_macro)        # η shocks: N x T
-    s_shocks_macro  = rand(Uniform(0,1), N_sim_alp_workers, T_sim_macro + burnin_macro)        # separation shocks: N x T
-    jf_shocks_macro = rand(Uniform(0,1), N_sim_alp_workers, T_sim_macro + burnin_macro)        # job-finding shocks: N x T
+    η_shocks_macro  = rand(Normal(0,1),  N_sim_alp_workers, T_sim_alp + burnin_alp)        # η shocks: N x T
+    s_shocks_macro  = rand(Uniform(0,1), N_sim_alp_workers, T_sim_alp + burnin_alp)        # separation shocks: N x T
+    jf_shocks_macro = rand(Uniform(0,1), N_sim_alp_workers, T_sim_alp + burnin_alp)        # job-finding shocks: N x T
 
     # Build shocks for wages: z_it, η_it
     z_idx_micro    = simulateZShocks(P_z, p_z, z_shocks_micro, 1, T_sim_micro + burnin_micro; z0_idx = z0_idx)
@@ -191,7 +198,7 @@ function rand_shocks(P_z, p_z; z0_idx = 0, N_sim_micro = 5*10^4, T_sim_micro = 1
             N_sim_micro = N_sim_micro, T_sim_micro = T_sim_micro, burnin_micro = burnin_micro,
             s_shocks_micro = s_shocks_micro, jf_shocks_micro = jf_shocks_micro, η_shocks_micro = η_shocks_micro,
             N_sim_macro = N_sim_macro, N_sim_alp = N_sim_alp, N_sim_alp_workers = N_sim_alp_workers,
-            T_sim_macro = T_sim_macro, burnin_macro = burnin_macro, 
+            T_sim_macro = T_sim_macro, burnin_macro = burnin_macro, T_sim_alp = T_sim_alp, burnin_alp = burnin_alp,
             s_shocks_macro = s_shocks_macro, jf_shocks_macro = jf_shocks_macro, η_shocks_macro = η_shocks_macro)
 end
 

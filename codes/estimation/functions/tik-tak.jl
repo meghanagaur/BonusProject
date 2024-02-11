@@ -3,7 +3,8 @@ Workhouse function for TikTak, a global multistart optimization algorithm, loose
 Guvenen et al (2019). Derivative-free local optimization.
 """
 function tiktak(init_points, file, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; test = false,
-    I_min  = 100, max_iters = 80, crit_1 = 1e-4, crit_2 = 1e-8, opt_1 = nothing, opt_2  = nothing, switch_opt = 0.5, fix_a = false)
+    I_min  = 100, max_iters = 80, crit_1 = 1e-4, crit_2 = 1e-8, opt_1 = nothing, opt_2  = nothing, switch_opt = 0.5, 
+    fix_a = false, fix_wages = false)
 
     JJ          = length(param_vals)         # total num params (fixed + estimating)
     J           = length(param_bounds)       # num params we are estimating
@@ -38,7 +39,7 @@ function tiktak(init_points, file, param_bounds, param_vals, param_est, shocks, 
                 println("----------------------------")
                 
                 θ          = min((i_last/I_max)^2, 0.995)                     # convex updating parameter
-                #θ          = min( max(0.1, (i_last/I_max)^(1/2) ), 0.995 )   # concave updating parameter
+                #θ         = min( max(0.1, (i_last/I_max)^(1/2) ), 0.995 )    # concave updating parameter
                 idx        = argmin(cur_out[:,1])                             # check for the lowest function value across processes 
                 pstar      = cur_out[idx, 2:2+J-1]                            # get parameters 
                 start      = @views (1-θ)*init_points[:,i] + θ*pstar          # set new start value for local optimization
@@ -53,7 +54,8 @@ function tiktak(init_points, file, param_bounds, param_vals, param_est, shocks, 
             if (   (isnothing(opt_1) && i_last/I_max <= switch_opt) || (i_last/I_max > switch_opt && isnothing(opt_2)) )
 
                 crit            = i_last/I_max > switch_opt ? crit_2 : crit_1
-                optim           = Optim.optimize(x -> objFunction_WB(x, start, param_bounds, param_vals, param_est, shocks, data_mom, W; fix_a = fix_a)[1], 
+                optim           = Optim.optimize(x -> objFunction_WB(x, start, param_bounds, param_vals, param_est, shocks, data_mom, W; 
+                                    fix_a = fix_a, fix_wages = fix_wages)[1], 
                                     zeros(J), NelderMead(), Optim.Options(g_tol = crit, f_tol = crit, x_tol = crit, iterations = max_iters))
                 arg_min_t       = Optim.minimizer(optim)
                 min_f           = Optim.minimum(optim) 

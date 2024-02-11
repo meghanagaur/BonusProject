@@ -6,8 +6,13 @@ addprocs(SlurmManager())
 println(nprocs())
 
 # File location for saving jld output + slurm idx
-@everywhere cyc = 1.0
-file  = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
+@everywhere cyc = 0.543
+file            = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
+fix_wages       = true
+
+if fix_wages 
+    file = file*"fix_wages"
+end
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
@@ -32,7 +37,7 @@ file  = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
                         (:ι, ι) ])           # ι
 
     # Specifciations for the shocks in simulation
-    shocks            = rand_shocks(P_z, p_z; N_sim_alp_workers = 1, N_sim_micro = 1, T_sim_micro = 1, z0_idx = z_ss_idx)
+    shocks            = rand_shocks(P_z, p_z; smm = true, N_sim_micro = 1, T_sim_micro = 1, burnin_micro = 1, z0_idx = z_ss_idx)
 
     # Parameters we will fix (if any) in: ε, σ_η, χ, γ
     params_fix   = [:hbar, :ε, :σ_η, :ρ, :σ_ϵ] 
@@ -53,7 +58,7 @@ file  = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 200^2
+    I_max        = 100^2
     lb           = zeros(J)
     ub           = zeros(J)
 
@@ -65,11 +70,10 @@ file  = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
     s            = SobolSeq(lb, ub)
     seq          = skip(s, 10000, exact = true)
     sob_seq      = reduce(hcat, next!(seq) for i = 1:I_max)
-    
 end
 
 # Evaluate the objective function for each parameter vector
-@time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W; fix_a = true, fix_wages = false), 1:I_max) 
+@time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W; smm = true, fix_a = true, fix_wages = fix_wages), 1:I_max) 
 
 # Kill the processes
 rmprocs(workers())
@@ -96,4 +100,4 @@ IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 # Save the output
 save("../smm/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
-                            "W" => W, "data_mom" => data_mom, "fix_a" => true, "fix_wages" => false))
+                            "W" => W, "data_mom" => data_mom, "fix_a" => true, "fix_wages" => fix_wages))

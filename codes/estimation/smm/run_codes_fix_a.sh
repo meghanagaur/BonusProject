@@ -1,6 +1,6 @@
 #!/bin/bash
 
-files="fix_a_bwc10"
+files="fix_a_bwc10 fix_a_bwc0543"
 
 for file in $files
 do

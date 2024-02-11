@@ -6,8 +6,8 @@
 #SBATCH --ntasks=1               # total number of tasks across all nodes
 #SBATCH --cpus-per-task=30       # cpu-cores per task (>1 if multi-threaded tasks)
 #SBATCH --mem-per-cpu=8G         # memory per cpu-core (4G is default)
-#SBATCH --time=01:00:00          # total run time limit (HH:MM:SS)
-#SBATCH --array=1-3              # job array with index values 0, 1, 2, 3, 4
+#SBATCH --time=02:00:00          # total run time limit (HH:MM:SS)
+#SBATCH --array=1-1              # job array with index values 0, 1, 2, 3, 4
 #SBATCH --mail-type=end,fail     # send email on job start, end and fault
 #SBATCH --mail-user=mg4231@princeton.edu
 
