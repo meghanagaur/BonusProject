@@ -11,7 +11,7 @@ file            = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
 fix_wages       = true
 
 if fix_wages 
-    file = file*"fix_wages"
+    file = file*"_fix_wages"
 end
 
 # Load SMM inputs, settings, packages, etc.
