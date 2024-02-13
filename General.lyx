@@ -104,7 +104,63 @@ use
 \begin_inset Formula $z_{t}$
 \end_inset
 
- process from Fernald utilization-adjusted TFP
+ process that matches Fernald utilization-adjusted TFP
+\end_layout
+
+\begin_layout Enumerate
+estimation_moments.jl performs post-estimation analysis
+\end_layout
+
+\begin_layout Enumerate
+plot_bwc_eps.jl produces plot for the BWC share as a function of epsilon
+\end_layout
+
+\begin_layout Enumerate
+make_IRFs.jl produces IRFs to shocks of different sizes to 
+\begin_inset Formula $z_{0}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+
+\series bold
+pretesting
+\series default
+: pre-testing of initial points before the global optimzation
+\end_layout
+
+\begin_layout Enumerate
+
+\series bold
+smm
+\series default
+: estimation codes (implements a version of the tik-tak algorithm)
+\end_layout
+
+\begin_layout Enumerate
+
+\series bold
+functions
+\series default
+: main functions
+\end_layout
+
+\begin_layout Enumerate
+
+\series bold
+heatmaps
+\series default
+: produces identification heatmaps
+\end_layout
+
+\begin_layout Enumerate
+
+\series bold
+logs: 
+\series default
+log files with output from estimation_moments.jl when run on the cluster
 \end_layout
 
 \end_deeper
@@ -114,7 +170,7 @@ lm-moments
 
 \begin_deeper
 \begin_layout Enumerate
-stata code to get labor market data from FRED
+stata code to get labor market series from FRED
 \end_layout
 
 \end_deeper

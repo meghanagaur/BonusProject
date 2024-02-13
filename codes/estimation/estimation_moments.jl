@@ -16,7 +16,7 @@ linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, le
 
 ## Logistics
 files        = ["fix_a_bwc10"] #["baseline" "fix_a_bwc10" "fix_a_bwc0543" "fix_chi0"]
-big_run      = false        
+big_run      = true        
 file_idx     = big_run ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]                              
 file_pre     = "smm/jld-original/pretesting_"*file_str*".jld2"   # pretesting data location
@@ -29,12 +29,13 @@ mkpath(file_save)
 println("File name: "*file_str)
 
 # Settings for simulation
-fix_wages = true 
+fix_wages = false 
 if big_run == false
-    N_vary_z                 = 51            # number of gridpoints when taking numerical derivatives
+    # number of gridpoints when taking numerical derivatives
+    N_vary_z                 = 51           
     smm                      = true
 else
-    N_vary_z                 = 201           # number of gridpoints when taking numerical derivatives
+    N_vary_z                 = 201           
     smm                      = false
 end
 
@@ -206,11 +207,11 @@ dJ_dz_H      = slopeFD(hall.J, zgrid; diff = "central")
 dJ_dz0       = slopeFD(bonus_chi0.J, zgrid; diff = "central")
 
 # Print values at the median productivity level
-println("dla_dlz: \t"*string(round.(dla0_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
-println("dlY_dlz: \t"*string(round.(dlY_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
-println("dlW_dlz: \t"*string(round.(dlW_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
-println("dlW_dlY: \t"*string(round.(dlW_dlY[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("dlθ_dlz: \t"*string(round.(dlθ_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dlW_dlz: \t"*string(round.(dlW_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dlY_dlz: \t"*string(round.(dlY_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dlW_dlY: \t"*string(round.(dlW_dlY[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dla_dlz: \t"*string(round.(dla0_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 
 # Get decomposition components
 @unpack JJ_EVT, WC, BWC_resid, IWC_resid, BWC_share, c_term = decomposition(modd_big, bonus; fix_a = fix_a)

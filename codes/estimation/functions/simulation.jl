@@ -111,7 +111,7 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, smm = false, λ =
 
                 # Simulate endogenous ALP and wages
                 ly_q_resid, lw_q_resid = simulateALP(z_idx_macro[:,n], s_shocks_macro, jf_shocks_macro, η_shocks_macro, N_sim_alp_workers, 
-                                                T_sim_macro, burnin_macro, T_q_macro, s, f_z, y_z, hp_z, lw1_z; λ = λ)
+                                                T_sim_macro, burnin_macro, T_q_macro, s, f_z, y_z, hp_z, lw1_z, ψ; λ = λ)
                 
                 # Shimer ordering
                 lx_q[:, :, n]      .= [ly_q_resid lu_q_resid lv_q_resid lθ_q_resid lw_q_resid]  
@@ -159,7 +159,7 @@ N_sim_alp               = num seq to avg across for endog ALP moments (<= N_sim_
 N_sim_alp_workers       = num workers for endog ALP moments
 """
 function rand_shocks(P_z, p_z; z0_idx = 0, N_sim_micro = 5*10^4, T_sim_micro = 1000, burnin_micro = 500,
-    N_sim_macro = 10^4, T_sim_macro = 828, burnin_macro = 500, N_sim_alp = 10^3, N_sim_alp_workers = 10^4, 
+    N_sim_macro = 10^4, T_sim_macro = 828, burnin_macro = 500, N_sim_alp_workers = 10^4, 
     smm = false, set_seed = true, seed = 512)
 
     if set_seed == true
@@ -170,7 +170,6 @@ function rand_shocks(P_z, p_z; z0_idx = 0, N_sim_micro = 5*10^4, T_sim_micro = 1
     N_sim_alp         = !smm ? N_sim_macro : 1
     T_sim_alp         = !smm ? T_sim_macro : 1
     burnin_alp        = !smm ? burnin_macro : 1 
-    N_sim_alp         = !smm ? N_sim_alp : 1
     N_sim_alp_workers = !smm ? N_sim_alp_workers : 1
 
     # Draw uniform and standard normal shocks for micro moments
@@ -319,7 +318,7 @@ Simulate average labor productivity a*z for N_sim x T_sim observations,
 ignoring η shocks. HP-filter log average output with smoothing parameter λ.
 """
 function simulateALP(z_idx, s_shocks, jf_shocks, η_shocks, N_sim,
-                     T_sim, burnin, T_q, s, f_z, y_z, hp_z, lw1_z; λ = 10^5)
+                     T_sim, burnin, T_q, s, f_z, y_z, hp_z, lw1_z, ψ; λ = 10^5)
     # Active jobs
     T          = T_sim + burnin           # total time 
     y_m        = zeros(N_sim, T)          # N x T panel of output

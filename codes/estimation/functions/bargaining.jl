@@ -23,7 +23,7 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut
 
     # Get θ(z), f(z), w(z), lw0(z), y(z)
     y_z     = zgrid*a             
-    @unpack θ_z, f_z, w_z, lw1_z, flag_z, flag_IR_z, err_IR_z = getFixedEffort(modd; a = 1.0, fix_wages = fix_wages)
+    @unpack θ_z, f_z, w_z, lw1_z, W, flag_z, flag_IR_z, err_IR_z = getFixedEffort(modd; a = 1.0, fix_wages = fix_wages)
    
     # Composite flag; truncate simulation and only penalize IR flags for log z values within XX standard deviations of μ_z 
     σ_z     = σ_ϵ/sqrt(1 - ρ^2)
@@ -37,13 +37,15 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut
     if  max(flag_IR, flag) < 1 
 
         # Unpack the relevant shocks
-        @unpack burnin_macro, z_idx_macro, T_sim_macro, N_sim_macro, N_sim_alp = shocks
+        @unpack burnin_macro, z_idx_macro, T_sim_macro, N_sim_macro, N_sim_alp, 
+                s_shocks_micro, jf_shocks_micro, z_idx_micro, N_sim_micro, T_sim_micro, burnin_micro = shocks
 
         # Compute model data for long z_t series (trim to post-burn-in when computing moment)
 
         # Macro moments 
         z_idx_macro    = min.(max.(z_idx_macro, idx_1), idx_2)  
-        @views lw1_t   = lw1_z[z_idx_macro]     # E[log w_1 | z_t] series
+        #@views lw1_t   = lw1_z[z_idx_macro]    # E[log w_1 | z_t] series
+        @views lw1_t   = log.(W[z_idx_macro])   # E[log w_1 | z_t] series <- PRESENT VALUE
         @views θ_t     = θ_z[z_idx_macro]       # θ(z_t) series
         @views f_t     = f_z[z_idx_macro]       # f(θ(z_t)) series
         @views y_t     = y_z[z_idx_macro]       # y(z_t) series
@@ -84,18 +86,19 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut
                         N_sim_micro, T_sim_micro, burnin_micro, f_z, lw1_z, s; fix_wages = fix_wages)
 
             # 5 variables x N simulation
-            lx_q  = zeros(T_q_macro, N_macro_vars, N_sim_alp)
+            lx_q  = zeros(T_q, N_macro_vars, N_sim_alp)
 
             Threads.@threads for n = 1:N_sim_alp
         
                 @views v_t         = θ_t[burnin_macro+1:end, n].*u_t[burnin_macro+1:end, n]
 
                 # Compute quarterly average of u_t, z_t, θ_t, and y_t in post-burn-in period
-                @views y_q         = quarterlyAverage(y_t[burnin_macro+1:end, n], T_q; weights = u_t[burnin_macro+1:end, n])    
+                emp                =  1 .- u_t[burnin_macro+1:end, n]
+                @views y_q         = quarterlyAverage(y_t[burnin_macro+1:end, n], T_q; weights = emp)    
                 @views u_q         = quarterlyAverage(u_t[burnin_macro+1:end, n], T_q)            
                 @views v_q         = quarterlyAverage(v_t, T_q) 
                 @views θ_q         = quarterlyAverage(θ_t[burnin_macro+1:end, n], T_q)          
-                @views w_q         = quarterlyAverage(w_t[burnin_macro+1:end, n], T_q; weights = u_t[burnin_macro+1:end, n])    
+                @views w_q         = quarterlyAverage(w_t[burnin_macro+1:end, n], T_q; weights = emp)    
 
                 # HP-filter the quarterly log unemployment series, nudge to avoid runtime error
                 ly_q_resid, _      = hp_filter(log.(max.(y_q, eps())), λ)  

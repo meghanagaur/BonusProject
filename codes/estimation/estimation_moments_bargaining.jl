@@ -16,11 +16,11 @@ linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, le
 
 ## Logistics
 files        = ["fix_a_bwc10" "fix_a_bwc0543"  "fix_a_bwc10_fix_wages" "fix_a_bwc0543_fix_wages"] #["baseline" "fix_a_bwc10" "fix_a_bwc0543" "fix_chi0"]
-big_run      = false        
+big_run      = true        
 file_idx     = big_run ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]                              
-file_pre     = "smm/jld-original/pretesting_"*file_str*".jld2"   # pretesting data location
-file_est     = "smm/jld-original/estimation_"*file_str*".txt"    # estimation output location
+file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
+file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
 file_save    = "figs/vary-z0/"*file_str*"/"                      # file to-save 
 λ            = 10^5                                              # smoothing parameter for HP filter
 
@@ -205,11 +205,11 @@ dJ_dz_H      = slopeFD(hall.J, zgrid; diff = "central")
 dJ_dz0       = slopeFD(bonus_chi0.J, zgrid; diff = "central")
 
 # Print values at the median productivity level
-println("dla_dlz: \t"*string(round.(dla0_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
-println("dlY_dlz: \t"*string(round.(dlY_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
-println("dlW_dlz: \t"*string(round.(dlW_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
-println("dlW_dlY: \t"*string(round.(dlW_dlY[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 println("dlθ_dlz: \t"*string(round.(dlθ_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dlW_dlz: \t"*string(round.(dlW_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dlY_dlz: \t"*string(round.(dlY_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dlW_dlY: \t"*string(round.(dlW_dlY[z_ss_idx], RoundNearestTiesAway, digits = 3)))
+println("dla_dlz: \t"*string(round.(dla0_dlz[z_ss_idx], RoundNearestTiesAway, digits = 3)))
 
 # Get decomposition components
 @unpack JJ_EVT, WC, BWC_resid, IWC_resid, BWC_share, c_term = decomposition(modd_big, bonus; fix_a = fix_a)
@@ -350,7 +350,6 @@ if fix_a == false
     plot!(logz[range_2], bonus.w_0[range_2], linestyle=:dash, label=L"w_{-1}(z)")
     xaxis!(L"\log z_0")
     savefig(file_save*"cterm_multiplier.pdf")
-
 end
 
 # Check convergence 
