@@ -16,18 +16,27 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, smm = false, λ =
     dlw_dly   = 0.0  # passthrough: d log w_it / d log y_it
     u_ss      = 0.0  # stochastic mean of unemployment  
 
-    # Initialize untargeted moments
+    # Untargeted simulated moments (quarterly)
     macro_vars   = [:p, :u, :v, :θ, :w]
     N_macro_vars = length(macro_vars)
     rho_lx       = zeros(N_macro_vars)
     std_lx       = zeros(N_macro_vars)
     corr_lx      = zeros(N_macro_vars, N_macro_vars)
+    
+    # Additional cyclicality measures (quarterly)
+    dlw_dlp      = 0.0  # averages wages/output (quarterly)
+    dlw1_dlp     = 0.0  # averages new hire wages/output (quarterly)
+    dlW_dlY      = 0.0  # present value wages/output (monthly)
+    dlW_dlz      = 0.0  # present value wages (monthly)
+    dlY_dlz      = 0.0  # present value output (monthly)
+    dlθ_dlz      = 0.0  # present value tightness (monthly)
+
 
     # Get all of the relevant parameters, functions for the model
     @unpack hp, zgrid, logz, N_z, P_z, p_z, ψ, f, s, σ_η, χ, γ, hbar, ε, z_ss_idx, ρ, σ_ϵ = modd 
 
     # Generate model objects for every point on zgrid:
-    @unpack θ_z, f_z, hp_z, y_z, lw1_z, pt_z, flag_z, flag_IR_z, err_IR_z = getModel(modd; check_mult = check_mult) 
+    @unpack θ_z, f_z, hp_z, y_z, lw1_z, w0_z, pt_z, W, Y, flag_z, flag_IR_z, err_IR_z = getModel(modd; check_mult = check_mult) 
 
     # Composite flag; truncate simulation and only penalize IR flags for log z values within sd_cut standard deviations of μ_z 
     σ_z     = σ_ϵ/sqrt(1 - ρ^2)
@@ -41,8 +50,9 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, smm = false, λ =
     if  max(flag_IR, flag) < 1 
 
         # Unpack the relevant shocks
-        @unpack N_sim_micro, T_sim_micro, N_sim_macro, T_sim_macro, burnin_micro, burnin_macro, N_sim_alp, N_sim_alp_workers,
-        z_idx_micro, z_idx_macro, η_shocks_micro, s_shocks_micro, jf_shocks_micro, η_shocks_macro, s_shocks_macro, jf_shocks_macro = shocks
+        @unpack N_sim_micro, T_sim_micro, N_sim_macro, T_sim_macro, burnin_micro, burnin_macro, z_idx_macro,
+                N_sim_alp_workers, η_shocks_macro, s_shocks_macro, jf_shocks_macro,
+                z_idx_micro, η_shocks_micro, s_shocks_micro, jf_shocks_micro = shocks
 
         # scale normal output shocks by σ_η
         η_shocks_micro = η_shocks_micro*σ_η 
@@ -66,7 +76,6 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, smm = false, λ =
 
         # Compute evolution of unemployment for the z_t path
         T             = T_sim_macro + burnin_macro
-        T_q_macro     = Int(T_sim_macro/3)
         u_t           = zeros(T, N_sim_macro)
         u_t[1,:]     .= u0
 
@@ -80,49 +89,78 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, smm = false, λ =
 
             # Estimate d E[log w_1] / d u (pooled ols)
             @views dlw1_du_n[n]  = cov(lw1_t[burnin_macro+1:end, n], u_t[burnin_macro+1:end, n])/max(eps(), var(u_t[burnin_macro+1:end, n]))
-        
         end
 
-        # Compute cross-simulation averages
+        # TARGETED MOMENTS 
+
+        # Cyclicality of new hire wages 
         dlw1_du = mean(dlw1_du_n)
 
-        # Compute cross-simulation average of stochastic mean of unemployment: E[u_t | t > burnin]
+        # Stochastic mean of unemployment: E[u_t | t > burnin]
         u_ss    = mean(vec(mean(u_t[burnin_macro+1:end,:], dims = 1)))
 
         # UNTARGETED MOMENTS
         if smm == false 
 
-            # 5 variables x N simulation
-            lx_q  = zeros(T_q_macro, N_macro_vars, N_sim_alp)
-            
-            Threads.@threads for n = 1:N_sim_alp
-        
-                @views v_t         = θ_t[burnin_macro+1:end, n].*u_t[burnin_macro+1:end, n]
+            # quarterly data
+            T_q           = Int(T_sim_macro/3)
 
+            # initialize additional series
+            @views y_t     = y_z[z_idx_macro]       # y(z_t) series
+            @views lW_t    = log.(W[z_idx_macro])   # E[log w_1 | z_t] series <- PRESENT VALUE
+            @views lY_t    = log.(Y[z_idx_macro])   # E[log w_1 | z_t] series <- PRESENT VALUE
+            @views lz_t    = logz[z_idx_macro]      # log z grid
+            @views w0_t    = w0_z[z_idx_macro] 
+            @views w1_wgt  = u_t[burnin_macro+1:end,:].*f_t[burnin_macro+1:end, :]
+
+            # 5 variables x N simulation
+            lx_q       = zeros(T_q, N_macro_vars, N_sim_macro)
+            dlw_dlp_n  = zeros(N_sim_macro)     # cyclicality of wages
+            dlw1_dlp_n = zeros(N_sim_macro)     # cyclicality of new hire wages
+            dlθ_dlz_n  = zeros(N_sim_macro)     # cyclicality of tightness
+            dlW_dlz_n  = zeros(N_sim_macro)     # cyclicality of wages (present value) 
+            dlY_dlz_n  = zeros(N_sim_macro)     # cyclicality of output (present value) 
+            dlW_dlY_n  = zeros(N_sim_macro)     # cyclicality of new hire wages (present value) 
+
+            Threads.@threads for n = 1:N_sim_macro
+        
+                # Monthly cyclicality measures
+                @views dlθ_dlz_n[n]  = cov(log.(θ_t[burnin_macro+1:end, n]), lz_t[burnin_macro+1:end, n])/max(eps(), var(lz_t[burnin_macro+1:end, n]))
+                @views dlW_dlY_n[n]  = cov(lW_t[burnin_macro+1:end, n], lY_t[burnin_macro+1:end, n])/max(eps(), var(lY_t[burnin_macro+1:end, n]))
+                @views dlW_dlz_n[n]  = cov(lW_t[burnin_macro+1:end, n], lz_t[burnin_macro+1:end, n])/max(eps(), var(lz_t[burnin_macro+1:end, n]))
+                @views dlY_dlz_n[n]  = cov(lY_t[burnin_macro+1:end, n], lz_t[burnin_macro+1:end, n])/max(eps(), var(lz_t[burnin_macro+1:end, n]))
+        
                 # Compute quarterly average of u_t, z_t, θ_t, and y_t in post-burn-in period
+                @views v_t         = θ_t[burnin_macro+1:end, n].*u_t[burnin_macro+1:end, n]
                 @views u_q         = quarterlyAverage(u_t[burnin_macro+1:end, n], T_q_macro)            
                 @views v_q         = quarterlyAverage(v_t, T_q_macro) 
-                @views θ_q         = quarterlyAverage(θ_t[burnin_macro+1:end, n], T_q_macro)          
+                @views θ_q         = quarterlyAverage(θ_t[burnin_macro+1:end, n], T_q_macro)  
+                # note that E[w_1] = w_0, so we approximate 
+                @views w1_q        = quarterlyAverage(w0_t[burnin_macro+1:end, n], T_q_macro; weights = w1_wgt[:,n])       
 
                 # HP-filter the quarterly log unemployment series, nudge to avoid runtime error
                 lu_q_resid, _      = hp_filter(log.(max.(u_q, eps())), λ)   
                 lv_q_resid, _      = hp_filter(log.(max.(v_q, eps())), λ)   
                 lθ_q_resid, _      = hp_filter(log.(max.(θ_q, eps())), λ)   
+                lw1_q_resid, _     = hp_filter(log.(max.(w1_q, eps())), λ)   
 
                 # Simulate endogenous ALP and wages
-                ly_q_resid, lw_q_resid = simulateALP(z_idx_macro[:,n], s_shocks_macro, jf_shocks_macro, η_shocks_macro, N_sim_alp_workers, 
+                ly_q_resid, lw_q_resid = simulateWagesOutput(z_idx_macro[:,n], s_shocks_macro, jf_shocks_macro, η_shocks_macro, N_sim_alp_workers, 
                                                 T_sim_macro, burnin_macro, T_q_macro, s, f_z, y_z, hp_z, lw1_z, ψ; λ = λ)
                 
-                # Shimer ordering
+                # Moments
                 lx_q[:, :, n]      .= [ly_q_resid lu_q_resid lv_q_resid lθ_q_resid lw_q_resid]  
+                dlw_dlp_n[n]        = cov(lw_q_resid, ly_q_resid)/max(eps(), var(ly_q_resid))
+                dlw1_dlp_n[n]       = cov(lw1_q_resid, ly_q_resid)/max(eps(), var(ly_q_resid))
+
             end
 
             # Moments
-            rho_n          = zeros(N_macro_vars, N_sim_alp)
-            std_n          = zeros(N_macro_vars, N_sim_alp)
-            corr_n         = zeros(N_macro_vars, N_macro_vars, N_sim_alp)
+            rho_n          = zeros(N_macro_vars, N_sim_macro)
+            std_n          = zeros(N_macro_vars, N_sim_macro)
+            corr_n         = zeros(N_macro_vars, N_macro_vars, N_sim_macro)
 
-            Threads.@threads for n = 1:N_sim_alp
+            Threads.@threads for n = 1:N_sim_macro
                 
                 @inbounds for j = 1:N_macro_vars
 
@@ -136,15 +174,24 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, smm = false, λ =
             end 
 
             # Compute cross-simulation averages
-            rho_lx    = mean(rho_n, dims = 2) 
-            std_lx    = mean(std_n, dims = 2) 
-            corr_lx   = mean(corr_n, dims = 3)[:,:,1]
+            rho_lx       = mean(rho_n, dims = 2) 
+            std_lx       = mean(std_n, dims = 2) 
+            corr_lx      = mean(corr_n, dims = 3)[:,:,1]
+            dlθ_dlz      = mean(dlθ_dlz_n)
+            dlw_dlp      = mean(dlw_dlp_n)
+            dlw1_dlp     = mean(dlw1_dlp_n)
+            dlW_dlz      = mean(dlW_dlz_n)
+            dlY_dlz      = mean(dlY_dlz_n)
+            dlW_dlY      = mean(dlW_dlY_n)
 
         end
+        
     end
 
-    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, rho_lx = rho_lx, std_lx = std_lx,
-            corr_lx = corr_lx, macro_vars = macro_vars, flag = flag, flag_IR = flag_IR, IR_err = IR_err)
+    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, rho_lx = rho_lx, 
+            std_lx = std_lx, corr_lx = corr_lx, dlθ_dlz = dlθ_dlz, dlw_dlp = dlw_dlp, 
+            dlw1_dlp = dlw1_dlp, dlW_dlz = dlW_dlz, dlY_dlz = dlY_dlz, dlW_dlY = dlW_dlY,
+            macro_vars = macro_vars, flag = flag, flag_IR = flag_IR, IR_err = IR_err)
 end
 
 """
@@ -158,9 +205,9 @@ burnin_macro            = length burn-in for macro moments
 N_sim_alp               = num seq to avg across for endog ALP moments (<= N_sim_macro)
 N_sim_alp_workers       = num workers for endog ALP moments
 """
-function rand_shocks(P_z, p_z; z0_idx = 0, N_sim_micro = 5*10^4, T_sim_micro = 1000, burnin_micro = 500,
+function drawShocks(P_z; z0_idx = 0, N_sim_micro = 5*10^4, T_sim_micro = 1000, burnin_micro = 500,
     N_sim_macro = 10^4, T_sim_macro = 828, burnin_macro = 500, N_sim_alp_workers = 10^4, 
-    smm = false, set_seed = true, seed = 512)
+    smm = false, fix_a = false, set_seed = true, seed = 512)
 
     if set_seed == true
         Random.seed!(seed)
@@ -173,32 +220,44 @@ function rand_shocks(P_z, p_z; z0_idx = 0, N_sim_micro = 5*10^4, T_sim_micro = 1
     N_sim_alp_workers = !smm ? N_sim_alp_workers : 1
 
     # Draw uniform and standard normal shocks for micro moments
-    z_shocks_micro  = rand(Uniform(0,1), T_sim_micro + burnin_micro)                           # z shocks: N x T
-    η_shocks_micro  = rand(Normal(0,1),  N_sim_micro, T_sim_micro + burnin_micro)              # η shocks: N x T
-    s_shocks_micro  = rand(Uniform(0,1), N_sim_micro, T_sim_micro + burnin_micro)              # separation shocks: N x T
-    jf_shocks_micro = rand(Uniform(0,1), N_sim_micro, T_sim_micro + burnin_micro)              # job-finding shocks: N x T
+    if (smm == false) | (fix_a == false)
+        z_shocks_micro  = rand(Uniform(0,1), T_sim_micro + burnin_micro)                    # z shocks: N x T
+        s_shocks_micro  = rand(Uniform(0,1), N_sim_micro, T_sim_micro + burnin_micro)       # separation shocks: N x T
+        jf_shocks_micro = rand(Uniform(0,1), N_sim_micro, T_sim_micro + burnin_micro)       # job-finding shocks: N x T
+        z_idx_micro     = simulateZShocks(P_z, z_shocks_micro, 1, T_sim_micro + burnin_micro; z0_idx = z0_idx)
+    else 
+        z_shocks_micro  = 0
+        s_shocks_micro  = 0
+        jf_shocks_micro = 0
+        z_idx_micro     = 0
+    end
 
     # Draw uniform shocks for macro moments
-    z_shocks_macro  = rand(Uniform(0,1), T_sim_macro + burnin_macro, N_sim_macro)              # z shocks: T x 1
-    η_shocks_macro  = rand(Normal(0,1),  N_sim_alp_workers, T_sim_alp + burnin_alp)        # η shocks: N x T
+    z_shocks_macro  = rand(Uniform(0,1), T_sim_macro + burnin_macro, N_sim_macro)          # z shocks: T x 1
     s_shocks_macro  = rand(Uniform(0,1), N_sim_alp_workers, T_sim_alp + burnin_alp)        # separation shocks: N x T
     jf_shocks_macro = rand(Uniform(0,1), N_sim_alp_workers, T_sim_alp + burnin_alp)        # job-finding shocks: N x T
+    z_idx_macro     = simulateZShocks(P_z, z_shocks_macro, N_sim_macro, T_sim_macro + burnin_macro; z0_idx = z0_idx)
 
-    # Build shocks for wages: z_it, η_it
-    z_idx_micro    = simulateZShocks(P_z, p_z, z_shocks_micro, 1, T_sim_micro + burnin_micro; z0_idx = z0_idx)
-    
-    # Compute model data for long z_t series (trim to post-burn-in when computing moment)
-    z_idx_macro    = simulateZShocks(P_z, p_z, z_shocks_macro, N_sim_macro, T_sim_macro + burnin_macro; z0_idx = z0_idx)
-
+    # Idiosyncratic output shocks (only for model with incentives)
+    if fix_a == false 
+        η_shocks_micro  = rand(Normal(0,1),  N_sim_micro, T_sim_micro + burnin_micro)          # η shocks: N x T
+        η_shocks_macro  = rand(Normal(0,1),  N_sim_alp_workers, T_sim_alp + burnin_alp)        # η shocks: N x T
+    else
+        η_shocks_micro = 0
+        η_shocks_macro = 0
+    end
+            
     # make sure N_sim_alp <= N_sim_macro
     @assert(N_sim_macro >= N_sim_alp)
 
+    # Don't pass in η shocks
     return (z_idx_micro = z_idx_micro, z_idx_macro = z_idx_macro, 
             N_sim_micro = N_sim_micro, T_sim_micro = T_sim_micro, burnin_micro = burnin_micro,
             s_shocks_micro = s_shocks_micro, jf_shocks_micro = jf_shocks_micro, η_shocks_micro = η_shocks_micro,
-            N_sim_macro = N_sim_macro, N_sim_alp = N_sim_alp, N_sim_alp_workers = N_sim_alp_workers,
-            T_sim_macro = T_sim_macro, burnin_macro = burnin_macro, T_sim_alp = T_sim_alp, burnin_alp = burnin_alp,
+            N_sim_macro = N_sim_macro,  N_sim_alp_workers = N_sim_alp_workers,
+            T_sim_macro = T_sim_macro, burnin_macro = burnin_macro, 
             s_shocks_macro = s_shocks_macro, jf_shocks_macro = jf_shocks_macro, η_shocks_macro = η_shocks_macro)
+    
 end
 
 """
@@ -317,7 +376,7 @@ end
 Simulate average labor productivity a*z for N_sim x T_sim observations,
 ignoring η shocks. HP-filter log average output with smoothing parameter λ.
 """
-function simulateALP(z_idx, s_shocks, jf_shocks, η_shocks, N_sim,
+function simulateWagesOutput(z_idx, s_shocks, jf_shocks, η_shocks, N_sim,
                      T_sim, burnin, T_q, s, f_z, y_z, hp_z, lw1_z, ψ; λ = 10^5)
     # Active jobs
     T          = T_sim + burnin           # total time 
@@ -352,7 +411,7 @@ function simulateALP(z_idx, s_shocks, jf_shocks, η_shocks, N_sim,
                     if  jf_shocks[n, t] < ft  
                         z_1[n]       = zt                                     # new initial z for contract
                         y_m[n, t]    = y_zz[zt]                               # current output 
-                        lw_m[n, t]   = lw1_zz + ψ*hp_zz[z_1[n]]*η_shocks[n,t] # current wages    
+                        lw_m[n, t]   = lw1_zz + ψ*hp_zz[zt]*η_shocks[n,t] # current wages    
                     
                     # don't find a job and remain unemployed
                     else
@@ -408,10 +467,9 @@ end
 """
 Simulate T_sim x N_sim panel of productivity draws, given uniform shocks as inputs.
 """
-function simulateZShocks(P_z, p_z, z_shocks, N_sim, T_sim; z0_idx = 0)
+function simulateZShocks(P_z, z_shocks, N_sim, T_sim; z0_idx = 0)
    
     PI_z         = cumsum(P_z, dims = 2)         # CDF of transition density
-    pi_z         = cumsum(p_z)                   # CDF of invariant distribution
     z_shocks_idx = zeros(Int32, T_sim, N_sim)    # z_it indices
 
     Threads.@threads for n = 1:N_sim
@@ -447,3 +505,4 @@ function drawZShocks(P_z, zgrid; N = 10000, T = 100, z_0_idx = median(1:length(z
 
     return (z_shocks = z_shocks, z_shocks_idx = z_shocks_idx, N = N, T = T, z_0_idx = z_0_idx, seed = seed)
 end
+

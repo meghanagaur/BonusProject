@@ -61,8 +61,15 @@ Law of motion for unemployment
 given u0, returns u1
 """
 function uLM(u0, s, f)
-    u1 = u0 + s*(1 - u0) - (1-s)*f*u0
-    return u1
+    return u0 + s*(1 - u0) - (1-s)*f*u0
+end
+
+"""
+Law of motion for unemployment
+given u0, returns u1
+"""
+function uLM_prod(u0, s, f)
+    return u0 + s*(1 - u0) - f*(u0 + (1-u0)*s)
 end
 
 """

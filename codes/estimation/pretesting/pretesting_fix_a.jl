@@ -9,10 +9,11 @@ println(nprocs())
 @everywhere cyc = 0.543
 file            = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
 fix_wages       = true
+pv              = true 
 
-if fix_wages 
-    file = file*"_fix_wages"
-end
+# Update file name
+file = fix_wages ? file*"_fix_wages" : file
+file = pv ? file*"_pv" : file
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
@@ -20,11 +21,11 @@ end
 @everywhere begin
 
     # get moment targets and weight matrix
-    drop_mom = Dict(:dlw_dly => false, :std_Δlw => false) # drop micro wage moments
+    drop_mom = Dict(:dlw_dly => false, :std_Δlw => false, :alp_ρ => false, :alp_σ => false) 
     @unpack data_mom, mom_key, K, W = moment_targets(dlw1_du = -cyc; drop_mom = drop_mom)
 
     # Define the baseline values
-    @unpack ρ, σ_ϵ, ι, P_z, p_z, z_ss_idx, ε, χ, γ, σ_η, hbar = model()
+    @unpack ρ, σ_ϵ, ι, P_z, z_ss_idx, ε, χ, γ, σ_η, hbar = model()
     param_vals        = OrderedDict{Symbol, Real}([ 
                         (:a, 1.0),           # effort 
                         (:ε,   ε),           # ε
@@ -37,7 +38,7 @@ end
                         (:ι, ι) ])           # ι
 
     # Specifciations for the shocks in simulation
-    shocks            = rand_shocks(P_z, p_z; smm = true, N_sim_micro = 1, T_sim_micro = 1, burnin_micro = 1, z0_idx = z_ss_idx)
+    shocks            = drawShocks(P_z; smm = true, fix_a = true, z0_idx = z_ss_idx)
 
     # Parameters we will fix (if any) in: ε, σ_η, χ, γ
     params_fix   = [:hbar, :ε, :σ_η, :ρ, :σ_ϵ] 
@@ -73,7 +74,8 @@ end
 end
 
 # Evaluate the objective function for each parameter vector
-@time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W; smm = true, fix_a = true, fix_wages = fix_wages), 1:I_max) 
+@time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W; 
+                            smm = true, fix_a = true, fix_wages = fix_wages, pv = pv), 1:I_max) 
 
 # Kill the processes
 rmprocs(workers())
@@ -100,4 +102,4 @@ IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 # Save the output
 save("../smm/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
-                            "W" => W, "data_mom" => data_mom, "fix_a" => true, "fix_wages" => fix_wages))
+                            "W" => W, "data_mom" => data_mom, "fix_a" => true, "fix_wages" => fix_wages, "pv" = pv))

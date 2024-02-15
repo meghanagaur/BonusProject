@@ -22,7 +22,8 @@ u_ss         = 4th moment (SS unemployment rate)
 alp_ρ        = 5th moment (persistence of ALP)
 alp_σ        = 6th moment (std of ALP)
 """
-function objFunction(xx, param_vals, param_est, shocks, data_mom, W; smm = true, fix_a = false, fix_wages = false)
+function objFunction(xx, param_vals, param_est, shocks, data_mom, W; 
+                    smm = true, fix_a = false, fix_wages = false, pv = false, est_z = false)
 
     # Get the relevant parameters
     Params =  OrderedDict{Symbol, Float64}()
@@ -39,22 +40,27 @@ function objFunction(xx, param_vals, param_est, shocks, data_mom, W; smm = true,
 
     # Simulate the model and compute moments
     if fix_a == true 
-        out        = simulateFixedEffort(baseline, shocks; smm = smm, a = Params[:a], fix_wages = fix_wages)
-    elseif fix_a == false
+        out        = simulateFixedEffort(baseline, shocks; smm = smm, pv = pv, a = Params[:a], fix_wages = fix_wages)
+    elseif est_z == false
         out        = simulate(baseline, shocks; smm = smm)
+    elseif est_z == true
+        out        = simulateALP(baseline, shocks; smm = smm)
     end
 
-    # Record flags and update objective function
-    flag       = out.flag
-    flag_IR    = out.flag_IR
-    IR_err     = out.IR_err
-    mod_mom    = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
-    d          = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
+    # Get moments
+    @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, flag, flag_IR, IR_err = out
+    if est_z == false
+        alp_ρ = 0
+        alp_σ = 0
+    end
 
-    # Adjust f accordingly
+    mod_mom    = [std_Δlw, dlw1_du, dlw_dly, u_ss, alp_ρ, alp_σ]
+
+    # Compute objective function
+    d          = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
     f          = (d'*W*d)*(1-flag)*(1-flag_IR) + (1-flag_IR)*flag*10.0^8 + flag_IR*(100.0 + IR_err)
 
-    # Add extra checks for NaN
+    # Extra checks for NaN
     flag       = isnan(f) ? 1 : flag
     f          = isnan(f) ? 10.0^8 : f
 
@@ -77,18 +83,18 @@ W            = weight matrix for SMM
 σ_η          = 2nd param
 χ            = 3rd param
 γ            = 4th param
-hbar         = 5th param
 ρ            = 6th param
 σ_ϵ          = 7th param
     ORDERING OF MOMENTS
 std_Δlw      = 1st moment (st dev of wage growth)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
-dly_dΔlw     = 3rd moment (d log y_it / d Δ log w_it )
+dlw_dly      = 3rd moment (dlw_dly)
 u_ss         = 4th moment (SS unemployment rate)
 alp_ρ        = 5th moment (ρ of ALP)
 alp_σ        = 6th moment (σ of ALP)
 """
-function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, data_mom, W; smm = true, fix_a = false, fix_wages = false)
+function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, data_mom, W; 
+            smm = true, fix_a = false, fix_wages = false, pv = false, est_z = false)
 
     Params =  OrderedDict{Symbol, Float64}()
     for (k, v) in param_vals
@@ -105,22 +111,27 @@ function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, dat
 
     # Simulate the model and compute moments
     if fix_a == true 
-        out        = simulateFixedEffort(baseline, shocks; smm = smm, a = Params[:a], fix_wages = fix_wages)
-    elseif fix_a == false
+        out        = simulateFixedEffort(baseline, shocks; smm = smm, pv = pv, a = Params[:a], fix_wages = fix_wages)
+    elseif est_z == false
         out        = simulate(baseline, shocks; smm = smm)
+    elseif est_z == true
+        out        = simulateALP(baseline, shocks; smm = smm)
     end
 
-    # Record flags and update objective function
-    flag       = out.flag
-    flag_IR    = out.flag_IR
-    IR_err     = out.IR_err
-    mod_mom    = [out.std_Δlw, out.dlw1_du, out.dlw_dly, out.u_ss]
-    d          = (mod_mom - data_mom)./abs.(data_mom)  #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
-
-    # Adjust f accordingly
-    f          = (d'*W*d)*(1-flag)*(1-flag_IR) + (1-flag_IR)*flag*10.0^8 + flag_IR*(100.0 + IR_err)
+    # Get moments
+    @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, flag, flag_IR, IR_err = out
+    if est_z == false
+        alp_ρ = 0
+        alp_σ = 0
+    end
     
-    # Add extra checks for NaN
+    mod_mom    = [std_Δlw, dlw1_du, dlw_dly, u_ss, alp_ρ, alp_σ]
+
+    # Compute objective function
+    d          = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
+    f          = (d'*W*d)*(1-flag)*(1-flag_IR) + (1-flag_IR)*flag*10.0^8 + flag_IR*(100.0 + IR_err)
+
+    # Extra checks for NaN
     flag       = isnan(f) ? 1 : flag
     f          = isnan(f) ? 10.0^8 : f
 

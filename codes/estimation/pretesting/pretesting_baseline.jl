@@ -13,12 +13,13 @@ file  = "pretesting_baseline"
 @everywhere begin
 
     # get moment targets and weight matrix
-    @unpack data_mom, mom_key, K, W = moment_targets()
+    drop_mom = Dict(:alp_ρ => false, :alp_σ => false) 
+    @unpack data_mom, mom_key, K, W = moment_targets(drop_mom = drop_mom)
 
     # Define the baseline values
     
     # Define the baseline values
-    @unpack ρ, σ_ϵ, ι, P_z, p_z, z_ss_idx, ε, χ, γ, σ_η, hbar = model()
+    @unpack ρ, σ_ϵ, ι, P_z, z_ss_idx, ε, χ, γ, σ_η, hbar = model()
     param_vals        = OrderedDict{Symbol, Real}([ 
                         (:a, 1.0),           # effort 
                         (:ε,   ε),           # ε
@@ -31,9 +32,9 @@ file  = "pretesting_baseline"
                         (:ι, ι) ])           # ι
 
     # Specifciations for the shocks in simulation
-    shocks           = rand_shocks(P_z, p_z; N_sim_macro_alp_workers = 1, z0_idx = z_ss_idx)
+    shocks           = drawShocks(P_z; smm = true, fix_a = false, z0_idx = z_ss_idx)
 
-    # Parameters we will fix (if any) in ε, σ_η, χ, γ 
+    # Parameters we will fix (if any) in ε, σ_η, χ, γ, ρ, σ_ϵ
     params_fix   = [:hbar, :ρ, :σ_ϵ] 
     param_bounds = get_param_bounds()
     for p in params_fix
@@ -69,7 +70,8 @@ file  = "pretesting_baseline"
 end
 
 # Evaluate the objective function for each parameter vector
-@time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W), 1:I_max) 
+@time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W; 
+                            smm = true, fix_a = false, est_z = false), 1:I_max) 
 
 # Kill the processes
 rmprocs(workers())
@@ -96,4 +98,4 @@ IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 # Save the output
 save("../smm/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
-                            "W" => W, "data_mom" => data_mom, "fix_a" => false, "fix_wages" => false))
+                            "W" => W, "data_mom" => data_mom, "fix_a" => false, "est_z" => false))

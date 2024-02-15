@@ -21,16 +21,13 @@ println("JLD FILE = ", file_str)
 include("../../functions/smm_settings.jl")                # SMM inputs, settings, packages, etc.
 
 # Load the pretesting ouput. Use the "best" Sobol points for our starting points.
-@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W, fix_a, fix_wages = load(file_load) 
+@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W = load(file_load) 
 
 ## Specifciations for the shocks in simulation
-@unpack P_z, p_z, z_ss_idx = model(ρ = param_vals[:ρ], σ_ϵ = param_vals[:σ_ϵ])
+@unpack P_z, z_ss_idx = model(ρ = param_vals[:ρ], σ_ϵ = param_vals[:σ_ϵ])
 
-if fix_a == true
-    shocks  = rand_shocks(P_z, p_z; smm = true, N_sim_micro = 1, T_sim_micro = 1, burnin_micro = 1, z0_idx = z_ss_idx)
-else
-    shocks  = rand_shocks(P_z, p_z; smm = true, z0_idx = z_ss_idx)
-end
+# Load Shocks
+shocks  = drawShocks(P_z; smm = true, fix_a = false, z0_idx = z_ss_idx)
 
 # Define the NLopt optimization object
 if algo == :NLopt
@@ -41,7 +38,7 @@ if algo == :NLopt
     # Objective function
 
     # need to add dummy gradient: https://discourse.julialang.org/t/nlopt-forced-stop/47747/3
-    obj(x, dummy_gradient!)       = objFunction(x, param_vals, param_est, shocks, data_mom, W; fix_a = fix_a, fix_wages = fix_wages)[1]
+    obj(x, dummy_gradient!)       = objFunction(x, param_vals, param_est, shocks, data_mom, W; smm = true, fix_a = false, fix_wages = false, est_z = false)[1]
 
     # Bound constraints
     lower, upper                  = get_bounds(param_est, param_bounds)
@@ -99,7 +96,7 @@ println("Threads: ", Threads.nthreads())
 
 # Run the optimization code 
 @time output = tiktak(init_points, file_save, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
-                        opt_1 = opt_1, opt_2 = opt_2, fix_a = fix_a, fix_wages = fix_wages)
+                        opt_1 = opt_1, opt_2 = opt_2, fix_a = false, fix_wages = false, est_z = false)
 
 # Print output 
 for i = 1:N_string
