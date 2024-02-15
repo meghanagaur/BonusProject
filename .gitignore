@@ -1,6 +1,7 @@
 references
 misc
 submission
+codes/estimation-alp/
 
 # figs
 codes/estimation-est-z/figs/
@@ -25,7 +26,7 @@ codes/estimation-est-z-legacy/
 # heatmaps
 codes/estimation-fernald/heatmaps/jld/
 codes/estimation-est-z/heatmaps/jld/
-codes estimation/heatmaps/jld/
+codes/estimation/heatmaps/jld/
 
 # logs
 codes/estimation-fernald/logs/
