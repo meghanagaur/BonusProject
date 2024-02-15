@@ -9,6 +9,7 @@ file  = "pretesting_baseline_est_z"
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
+@everywhere include("../functions/simulation_est_z.jl")            
 
 @everywhere begin
 

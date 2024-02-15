@@ -17,13 +17,13 @@ W            = weight matrix for SMM
     ORDERING OF MOMENTS
 std_Δlw      = 1st moment (st dev of wage growth)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
-dly_dΔlw     = 3rd moment (d log y_it / d Δ log w_it )
+dlw_dly      = 3rd moment (dlw/dly)
 u_ss         = 4th moment (SS unemployment rate)
 alp_ρ        = 5th moment (persistence of ALP)
 alp_σ        = 6th moment (std of ALP)
 """
-function objFunction(xx, param_vals, param_est, shocks, data_mom, W; 
-                    smm = true, fix_a = false, fix_wages = false, pv = false, est_z = false)
+function objFunction(xx, param_vals, param_est, shocks, data_mom, W; smm = true,
+                     fix_a = false, fix_wages = false, pv = false, est_z = false)
 
     # Get the relevant parameters
     Params =  OrderedDict{Symbol, Float64}()
@@ -40,7 +40,7 @@ function objFunction(xx, param_vals, param_est, shocks, data_mom, W;
 
     # Simulate the model and compute moments
     if fix_a == true 
-        out        = simulateFixedEffort(baseline, shocks; smm = smm, pv = pv, a = Params[:a], fix_wages = fix_wages)
+        out        = simulateFixedEffort(baseline, shocks; smm = smm, fix_wages = fix_wages, pv = pv, a = Params[:a])
     elseif est_z == false
         out        = simulate(baseline, shocks; smm = smm)
     elseif est_z == true
@@ -88,7 +88,7 @@ W            = weight matrix for SMM
     ORDERING OF MOMENTS
 std_Δlw      = 1st moment (st dev of wage growth)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
-dlw_dly      = 3rd moment (dlw_dly)
+dlw_dly      = 3rd moment (dlw/dly)
 u_ss         = 4th moment (SS unemployment rate)
 alp_ρ        = 5th moment (ρ of ALP)
 alp_σ        = 6th moment (σ of ALP)
@@ -111,7 +111,7 @@ function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, dat
 
     # Simulate the model and compute moments
     if fix_a == true 
-        out        = simulateFixedEffort(baseline, shocks; smm = smm, pv = pv, a = Params[:a], fix_wages = fix_wages)
+        out        = simulateFixedEffort(baseline, shocks; smm = smm, fix_wages = fix_wages, pv = pv, a = Params[:a])
     elseif est_z == false
         out        = simulate(baseline, shocks; smm = smm)
     elseif est_z == true

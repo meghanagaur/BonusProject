@@ -15,14 +15,18 @@ xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
 ## Logistics
-files        = ["fix_a_bwc10"] #["fix_a_bwc10" "fix_a_bwc0543"  "fix_a_bwc10_fix_wages" "fix_a_bwc0543_fix_wages"] 
-pv           = true
-cluster      = false     
+cluster      = true  
+files        = ["fix_a_bwc10" "fix_a_bwc0543"]
+fix_wages    = true
+pv           = false  
+est_z        = false
 file_idx     = cluster ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]   
-file_str     = pv ? file_str*"_pv" : file 
-file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
-file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
+file_str     = fix_wages ? file_str*"_fix_wages" : file_str 
+file_str     = pv ? file_str*"_pv" : file_str 
+file_str     = est_z ? file_str*"_est_z" : file_str 
+file_pre     = "smm/jld/pretesting_"*file_str*".jld2"                 # pretesting data location
+file_est     = "smm/jld/estimation_"*file_str*".txt"                  # estimation output location
 file_save    = "figs/vary-z0/"*file_str*"/"                           # file to-save 
 λ            = 10^5                                                   # smoothing parameter for HP filter
 
@@ -36,7 +40,7 @@ smm                      = false
 
 # Load output
 est_output = readdlm(file_est, ',', Float64) # estimation output       
-@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, W, fix_a, fix_wages, pv = load(file_pre) # pretesting output
+@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, W, fix_a = load(file_pre) # pretesting output
 
 # Get the final minimum 
 idx        = argmin(est_output[:,1])         # check for the lowest function value across processes 
@@ -57,7 +61,7 @@ end
 
 # Model set-up
 modd                       = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar, ε = ε, ρ = ρ, σ_ϵ = σ_ϵ, ι = ι) 
-shocks                     = drawShocks(modd.P_z; smm = smm, z0_idx = modd.z_ss_idx, fix_a = true)
+shocks                     = drawShocks(modd.P_z; smm = smm, z0_idx = modd.z_ss_idx, fix_a = fix_a)
 
 # Compute simulated model moments  
 @unpack a_z, θ_z, W, Y = getFixedEffort(modd; a = 1.0, fix_wages = fix_wages) 
@@ -101,10 +105,10 @@ println("------------------------------------------------")
 
 println("dlw_dlp: \t"*string(round.(dlw_dlp, RoundNearestTiesAway, digits = 3)))
 println("dlw1_dlp: \t"*string(round.(dlw1_dlp, RoundNearestTiesAway, digits = 3)))
-println("dlW_dlY: \t"*string(round.(dlW_dlY, RoundNearestTiesAway, digits = 3)))
+println("dlθ_dlz: \t"*string(round.(dlθ_dlz, RoundNearestTiesAway, digits = 3)))
 println("dlW_dlz: \t"*string(round.(dlW_dlz, RoundNearestTiesAway, digits = 3)))
 println("dlY_dlz: \t"*string(round.(dlY_dlz, RoundNearestTiesAway, digits = 3)))
-println("dlθ_dlz: \t"*string(round.(dlθ_dlz, RoundNearestTiesAway, digits = 3)))
+println("dlW_dlY: \t"*string(round.(dlW_dlY, RoundNearestTiesAway, digits = 3)))
 
 println("\nSTANDARD DEVIATION")
 println("------------------------------------------------")

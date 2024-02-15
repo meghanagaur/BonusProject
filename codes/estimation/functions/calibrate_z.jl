@@ -2,7 +2,7 @@
 Solve for ρ, σ_ϵ such that we match quarterly ALP moments
 """
 function calibrateZ(; ρ_y = 0.89, σ_y = 0.017, N_z = 13, a = 1.0, zbar = 1.0,
-                    burnin_macro = 250, T_sim_macro = 828, N_sim_macro = 10^4,
+                    burnin = 250, T_sim = 828, N_sim = 10^4,
                     set_seed = true, seed = 512)
 
     # Draw uniform shocks for macro moments
@@ -10,12 +10,12 @@ function calibrateZ(; ρ_y = 0.89, σ_y = 0.017, N_z = 13, a = 1.0, zbar = 1.0,
         Random.seed!(seed)
     end
 
-    z_shocks_macro  = rand(Uniform(0,1), T_sim_macro + burnin_macro, N_sim_macro) # z shocks: T x 1
+    z_shocks                = rand(Uniform(0,1), T_sim + burnin, N_sim) # z shocks: T x 1
 
     # Objective function
-    opt                       = Opt(:LN_BOBYQA, 2) 
-    obj(x, dummy_gradient!)   = simulateExogALP(x, z_shocks_macro, T_sim_macro, burnin, N_sim_macro; ρ_y = ρ_y, σ_y = σ_y,  N_z = N_z, a = a, zbar = zbar)
-    opt.min_objective         = obj
+    opt                     = Opt(:LN_BOBYQA, 2) 
+    obj(x, dummy_gradient!) = simulateExogALP(x, z_shocks, T_sim, burnin, N_sim; ρ_y = ρ_y, σ_y = σ_y,  N_z = N_z, a = a, zbar = zbar)
+    opt.min_objective       = obj
 
     # Bound constraints
     opt.lower_bounds        = [0.9, 0.0001] 

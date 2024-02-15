@@ -103,7 +103,7 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, smm = false, λ =
         if smm == false 
 
             # quarterly data
-            T_q           = Int(T_sim_macro/3)
+            T_q            = Int(T_sim_macro/3)
 
             # initialize additional series
             @views y_t     = y_z[z_idx_macro]       # y(z_t) series
@@ -132,11 +132,11 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, smm = false, λ =
         
                 # Compute quarterly average of u_t, z_t, θ_t, and y_t in post-burn-in period
                 @views v_t         = θ_t[burnin_macro+1:end, n].*u_t[burnin_macro+1:end, n]
-                @views u_q         = quarterlyAverage(u_t[burnin_macro+1:end, n], T_q_macro)            
-                @views v_q         = quarterlyAverage(v_t, T_q_macro) 
-                @views θ_q         = quarterlyAverage(θ_t[burnin_macro+1:end, n], T_q_macro)  
+                @views u_q         = quarterlyAverage(u_t[burnin_macro+1:end, n], T_q)            
+                @views v_q         = quarterlyAverage(v_t, T_q) 
+                @views θ_q         = quarterlyAverage(θ_t[burnin_macro+1:end, n], T_q)  
                 # note that E[w_1] = w_0, so we approximate 
-                @views w1_q        = quarterlyAverage(w0_t[burnin_macro+1:end, n], T_q_macro; weights = w1_wgt[:,n])       
+                @views w1_q        = quarterlyAverage(w0_t[burnin_macro+1:end, n], T_q; weights = w1_wgt[:,n])       
 
                 # HP-filter the quarterly log unemployment series, nudge to avoid runtime error
                 lu_q_resid, _      = hp_filter(log.(max.(u_q, eps())), λ)   
@@ -146,7 +146,7 @@ function simulate(modd, shocks; u0 = 0.06, check_mult = false, smm = false, λ =
 
                 # Simulate endogenous ALP and wages
                 ly_q_resid, lw_q_resid = simulateWagesOutput(z_idx_macro[:,n], s_shocks_macro, jf_shocks_macro, η_shocks_macro, N_sim_alp_workers, 
-                                                T_sim_macro, burnin_macro, T_q_macro, s, f_z, y_z, hp_z, lw1_z, ψ; λ = λ)
+                                                T_sim_macro, burnin_macro, T_q, s, f_z, y_z, hp_z, lw1_z, ψ; λ = λ)
                 
                 # Moments
                 lx_q[:, :, n]      .= [ly_q_resid lu_q_resid lv_q_resid lθ_q_resid lw_q_resid]  

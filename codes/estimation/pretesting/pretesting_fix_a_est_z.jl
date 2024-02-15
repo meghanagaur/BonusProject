@@ -8,11 +8,13 @@ println(nprocs())
 # File location for saving jld output + slurm idx
 @everywhere cyc = 1.0
 file            = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
-fix_wages       = true
+fix_wages       = false
+pv              = true 
 
-if fix_wages 
-    file = file*"_fix_wages_est_z"
-end
+# Update file name
+file     = fix_wages ? file*"_fix_wages" : file 
+file     = pv ? file*"_pv" : file 
+file     = file*"_est_z"
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
@@ -21,18 +23,21 @@ end
 @everywhere begin
 
     # get moment targets and weight matrix
-    drop_mom = Dict(:dlw_dly => false, :std_Δlw => false) # drop micro wage moments
+    drop_mom = Dict(:dlw_dly => false, :std_Δlw => false, :alp_ρ => false, :alp_σ => false) # drop micro wage moments
     @unpack data_mom, mom_key, K, W = moment_targets(dlw1_du = -cyc; drop_mom = drop_mom)
 
     # Draw shocks
+    a                 = 1.0
     @unpack N_z, zbar = model()
-    ρ, σ_ϵ            = calibrateZ(; ρ_y =  data_mom[mom_key[:alp_ρ]], σ_y = data_mom[mom_key[:alp_σ]], N_z = N_z, zbar = z_bar)
+    ρ, σ_ϵ            = calibrateZ(; ρ_y =  data_mom[mom_key[:alp_ρ]], 
+                                     σ_y = data_mom[mom_key[:alp_σ]], N_z = N_z, zbar = zbar, a = a)
+    
     @unpack ι, P_z, z_ss_idx, ε, χ, γ, σ_η, hbar = model(;  ρ = ρ, σ_ϵ = σ_ϵ)
     shocks            = drawShocks(P_z; smm = true, fix_a = true, z0_idx = z_ss_idx)
 
     # Define the baseline values
     param_vals        = OrderedDict{Symbol, Real}([ 
-                        (:a, 1.0),           # effort 
+                        (:a, a),             # effort 
                         (:ε,   ε),           # ε
                         (:σ_η, σ_η),         # σ_η 
                         (:χ, χ),             # χ
@@ -73,11 +78,12 @@ end
     s            = SobolSeq(lb, ub)
     seq          = skip(s, 10000, exact = true)
     sob_seq      = reduce(hcat, next!(seq) for i = 1:I_max)
+
 end
 
 # Evaluate the objective function for each parameter vector
 @time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W; 
-                            smm = true, fix_a = true, fix_wages = false est_z = false), 1:I_max) 
+                                    fix_a = true, fix_wages = fix_wages, pv = pv), 1:I_max) 
 # Kill the processes
 rmprocs(workers())
 
@@ -103,4 +109,4 @@ IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 # Save the output
 save("../smm/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
-                            "W" => W, "data_mom" => data_mom, "fix_a" => true, "fix_wages" => fix_wages))
+                            "W" => W, "data_mom" => data_mom, "fix_a" => true, "fix_wages" => fix_wages, "pv" => pv))

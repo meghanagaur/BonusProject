@@ -1,6 +1,6 @@
 #!/bin/bash
 
-files="fix_a_bwc10_est_z fix_a_bwc10_pv_est_z fix_a_bwc10_fix_wages_est_z"
+files="baseline_est_z"
 
 for file in $files
 do
@@ -10,11 +10,11 @@ do
 
     # remove and create code files
     rm -f run-files/estimation_$file.jl
-    cp estimation.jl run-files/estimation_$file.jl
+    cp estimation_est_z.jl run-files/estimation_$file.jl
 
     # remove and create slurm files
     rm -f run-files/estimation_$file.slurm
-    cp estimation_fix_a.slurm run-files/estimation_$file.slurm
+    cp estimation_est_z.slurm run-files/estimation_$file.slurm
 
     # replace file name
     sed -i "s/filename/$file/" "run-files/estimation_$file.jl"

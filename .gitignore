@@ -2,26 +2,32 @@ references
 misc
 submission
 
+# figs
 codes/estimation-est-z/figs/
 codes/estimation-fernald/figs/
+codes/estimation/figs
 
-codes/estimation-est-z/jld/
-codes/estimation-fernald/jld/
-
+# jld
 codes/estimation-est-z/smm/jld/
 codes/estimation-fernald/smm/jld/
+codes/estimation/smm/jld 
 
+# run-files
 codes/estimation-est-z/smm/jld/run-files/
 codes/estimation-fernald/smm/jld/run-files/
+codes/estimation/smm/run-files/
 
+# old
 codes/extract-dwage-moments/
-
 codes/estimation-fernald-legacy/
 codes/estimation-est-z-legacy/
 
+# heatmaps
 codes/estimation-fernald/heatmaps/jld/
 codes/estimation-est-z/heatmaps/jld/
+codes estimation/heatmaps/jld/
 
+# logs
 codes/estimation-fernald/logs/
 codes/estimation-est-z/logs/
-
+codes/estimation/logs

@@ -13,8 +13,6 @@ N_string         = 50                                     # length of each worke
 algo             = :NLopt                                 # set to :OPTIM if using Optim
 
 # Options 
-smm       = true
-est_z     = true
 
 # Task number for job array
 idx = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
@@ -23,15 +21,15 @@ println("JLD FILE = ", file_str)
 
 # Load helper functions
 include("../../functions/smm_settings.jl")                # SMM inputs, settings, packages, etc.
+include("../../functions/simulation_est_z.jl")            # SMM inputs, settings, packages, etc.
 
 # Load the pretesting ouput. Use the "best" Sobol points for our starting points.
 @unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W = load(file_load) 
 
 ## Specifciations for the shocks in simulation
-@unpack P_z, p_z, z_ss_idx = model(ρ = param_vals[:ρ], σ_ϵ = param_vals[:σ_ϵ])
 
 # Load Shocks
-shocks  = drawShocksALP(P_z, p_z; smm = true, z0_idx = z_ss_idx)
+shocks  = drawShocksEstZ()
 
 # Define the NLopt optimization object
 if algo == :NLopt
@@ -42,7 +40,7 @@ if algo == :NLopt
     # Objective function
 
     # need to add dummy gradient: https://discourse.julialang.org/t/nlopt-forced-stop/47747/3
-    obj(x, dummy_gradient!)       = objFunction(x, param_vals, param_est, shocks, data_mom, W; smm = smm, est_z = est_z)[1]
+    obj(x, dummy_gradient!)       = objFunction(x, param_vals, param_est, shocks, data_mom, W; est_z = true)[1]
 
     # Bound constraints
     lower, upper                  = get_bounds(param_est, param_bounds)
@@ -100,7 +98,7 @@ println("Threads: ", Threads.nthreads())
 
 # Run the optimization code 
 @time output = tiktak(init_points, file_save, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
-                        opt_1 = opt_1, opt_2 = opt_2, smm = smm, est_z = est_z)
+                        opt_1 = opt_1, opt_2 = opt_2, est_z = true)
 
 # Print output 
 for i = 1:N_string

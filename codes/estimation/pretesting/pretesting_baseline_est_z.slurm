@@ -13,4 +13,4 @@
 module purge
 module load julia/1.6.1
 
-julia pretesting_baseline.jl
+julia pretesting_baseline_est_z.jl

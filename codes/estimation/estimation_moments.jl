@@ -127,11 +127,11 @@ println("UNTARGETED MOMENTS, UNCONDITIONAL")
 println("------------------------------------------------")
 
 println("dlw_dlp: \t"*string(round.(dlw_dlp, RoundNearestTiesAway, digits = 3)))
-println("dlw1_dlp: \t"*string(round.(dlw_dlp, RoundNearestTiesAway, digits = 3)))
-println("dlW_dlY: \t"*string(round.(dlW_dlY, RoundNearestTiesAway, digits = 3)))
+println("dlw1_dlp: \t"*string(round.(dlw1_dlp, RoundNearestTiesAway, digits = 3)))
+println("dlθ_dlz: \t"*string(round.(dlθ_dlz, RoundNearestTiesAway, digits = 3)))
 println("dlW_dlz: \t"*string(round.(dlW_dlz, RoundNearestTiesAway, digits = 3)))
 println("dlY_dlz: \t"*string(round.(dlY_dlz, RoundNearestTiesAway, digits = 3)))
-println("dlθ_dlz: \t"*string(round.(dlθ_dlz, RoundNearestTiesAway, digits = 3)))
+println("dlW_dlY: \t"*string(round.(dlW_dlY, RoundNearestTiesAway, digits = 3)))
 
 println("\nSTANDARD DEVIATION")
 println("------------------------------------------------")
@@ -336,7 +336,7 @@ plot!(zgrid[range_2], dJ_dz0[range_2], linecolor=:blue, label = "chi0 ", linesty
 plot!(zgrid[range_2], dJ_dz_H[range_2] , linecolor=:green, label = "hall", linestyle=:dashdot)
 
 JJ_EVT[z_ss_idx] - dJ_dz[z_ss_idx]     # C term
-JJ_EVT[z_ss_idx] - dJ_dz_H[z_ss_idx]     # C term
+JJ_EVT[z_ss_idx] - dJ_dz_H[z_ss_idx]   # C term
 JJ_EVT[z_ss_idx] - dJ_dz0[z_ss_idx]    # should be close to 0
 
 ## C term graphs

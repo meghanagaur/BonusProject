@@ -4,7 +4,7 @@ Guvenen et al (2019). Derivative-free local optimization.
 """
 function tiktak(init_points, file, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; test = false,
     I_min  = 100, max_iters = 80, crit_1 = 1e-4, crit_2 = 1e-8, opt_1 = nothing, opt_2  = nothing, switch_opt = 0.5, 
-    fix_a = false, fix_wages = false, est_z = false, pv = false)
+    fix_a = false, fix_wages = false, pv = false, est_z = false)
 
     JJ          = length(param_vals)         # total num params (fixed + estimating)
     J           = length(param_bounds)       # num params we are estimating

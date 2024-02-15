@@ -1,7 +1,7 @@
 """
 Simulate the model with fixed effort.
 """
-function simulateFixedEffort(modd, shocks; pv = true, u0 = 0.06, a = 1.0, λ = 10^5, sd_cut = 3.0, fix_wages = false, smm = false)
+function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut = 3.0, pv = true, fix_wages = false, smm = false)
 
     # Initialize moments to export (default = 0)
 
@@ -62,7 +62,6 @@ function simulateFixedEffort(modd, shocks; pv = true, u0 = 0.06, a = 1.0, λ = 1
 
         # Compute evolution of unemployment for the z_t path
         T              = T_sim_macro + burnin_macro
-        T_q            = Int(T_sim_macro/3)
         u_t            = zeros(T, N_sim_macro)
         u_t[1,:]      .= u0
         u_t_prod       = copy(u_t)
@@ -90,6 +89,9 @@ function simulateFixedEffort(modd, shocks; pv = true, u0 = 0.06, a = 1.0, λ = 1
 
         # UNTARGETED MOMENTS
         if smm == false 
+
+            # Quarterly simulation
+            T_q              = Int(T_sim_macro/3)
 
             # Initialize some series
             @views v_t        = θ_t[burnin_macro+1:end, :].*u_t[burnin_macro+1:end, :]
