@@ -15,11 +15,11 @@ xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
 ## Logistics
-cluster      = true  
-files        = ["fix_a_bwc10" "fix_a_bwc0543"]
-fix_wages    = true
-pv           = false  
-est_z        = false
+cluster      = false  
+files        = ["fix_a_bwc10"] #["fix_a_bwc10" "fix_a_bwc0543"]
+fix_wages    = false
+pv           = true  
+est_z        = true
 file_idx     = cluster ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]   
 file_str     = fix_wages ? file_str*"_fix_wages" : file_str 
