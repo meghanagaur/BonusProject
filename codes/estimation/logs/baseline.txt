@@ -1,8 +1,8 @@
-My SLURM_ARRAY_JOB_ID is 54329326.
+My SLURM_ARRAY_JOB_ID is 54336326.
 My SLURM_ARRAY_TASK_ID is 1
-Executing on the machine: della-h12n10
+Executing on the machine: della-h12n2
 File name: baseline
-14113.874218 seconds (873.69 G allocations: 18.428 TiB, 84.73% gc time, 0.03% compilation time)
+14807.784478 seconds (873.69 G allocations: 18.428 TiB, 82.34% gc time, 0.04% compilation time)
 Min fval: 	0.0069612788
 ------------------------------------------------
 ESTIMATED PARAMETERS
@@ -28,11 +28,11 @@ std_Δlw: 	0.064
 UNTARGETED MOMENTS, UNCONDITIONAL
 ------------------------------------------------
 dlw_dlp: 	0.023
-dlw1_dlp: 	0.023
-dlW_dlY: 	0.624
+dlw1_dlp: 	0.125
+dlθ_dlz: 	14.429
 dlW_dlz: 	0.439
 dlY_dlz: 	0.704
-dlθ_dlz: 	14.429
+dlW_dlY: 	0.624
 
 STANDARD DEVIATION
 ------------------------------------------------
