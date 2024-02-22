@@ -14,6 +14,7 @@ global data 	  = "${base}/data"
 * Sample period
 global start_year = 1951
 global end_year   = 2019
+global lambda 	  = 100000
 *******************************************************************************/
 * Load the Shimer replication data 
 import excel "${data}/raw/shimer-data.xls", sheet("Monthly Data") firstrow clear
@@ -63,7 +64,6 @@ destring year qtr, force replace
 gen yq  = yq(year, qtr)
 format %tq yq
 drop qtr date 
-
 order yq 
 sort yq 
 
@@ -72,21 +72,18 @@ merge 1:1 yq using `shimer'
 tab _merge 
 drop _merge 
 
-tsset yq 
-
-* HP filter the data 
+* Compute quarterly tightness using quarterly averages of unemployment and vacancies.
 rename hwol v_hwi 
 rename jolts v_jolts 
-
-* Compute quarterly tightness using quarterly averages of unemployment and vacancies.
 gen theta_hwi = v_hwi/unemp 
 
+* HP-filter the data
+tsset yq 
 foreach var in urate frate srate v_hwi v_jolts theta_hwi unemp alp {
 	
 	* Take logs and HP-filter
 	gen l`var'_sh                = log(`var')
-	tsfilter hp l`var'_hp_sh     = l`var'_sh, smooth(100000) 
-	tsfilter hp l`var'_hp1600_sh = l`var'_sh, smooth(1600) 
+	tsfilter hp l`var'_hp_sh     = l`var'_sh, smooth($lambda) 
 	drop `var'
 }
 
@@ -94,3 +91,6 @@ drop if missing(yq)
 
 * Save the data
 save "${data}/clean/shimer", replace
+
+
+

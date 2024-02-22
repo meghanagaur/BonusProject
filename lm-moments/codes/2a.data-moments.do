@@ -25,7 +25,12 @@ drop _merge
 merge 1:1 yq using "${data}/clean/shimer", keepusing (*sh*)
 tab year if _merge != 3
 drop _merge 
-	
+
+* Merge in the HM data 
+merge 1:1 yq using "${data}/clean/hm", keepusing (*hm*)
+tab year if _merge != 3
+drop _merge 
+		
 tsset yq 
 
 * Variable labels 
@@ -50,27 +55,50 @@ foreach var of varlist *unemp* *urate* {
 }
 
 foreach var of varlist *wage* {
+	
 	label var `var' "$ w $"
+	gen `var'_sh = `var'  
+	label var `var'_sh "$ w $"
 }
 
-
-foreach var of varlist *hwi* {
+foreach var of varlist *v_*hwi* {
 	label var `var' "$ v $"
 }
 
-* Standard deviation with lambda = 10^5 <- longer time period
+
+foreach var of varlist *theta* {
+	label var `var' "$ \theta $"
+}
+
+***** Standard deviation *****
 global vars 	   = "lalp_hp lunemp_hp lv_hwi_hp  ltheta_hwi_hp lwages_hp"
-global shimer_vars = "lalp_hp_sh lunemp_hp_sh lv_hwi_hp_sh ltheta_hwi_hp_sh"
+
 
 * 1951- 2019
 estpost tabstat $vars, statistics(sd) 
 esttab . using "${tables}/std.tex", replace label nostar booktabs not cells("lalp_hp(fmt(a3)) lunemp_hp(fmt(a3)) lv_hwi_hp(fmt(a3))  ltheta_hwi_hp(fmt(a3)) lwages_hp(fmt(a3))") noobs substitute("sd" "S.D." "lalp_hp" "$  p$" "lunemp_hp" "$ u $" "lv_hwi_hp" "$ v $" "ltheta_hwi_hp" "$ \theta $" "lwages_hp" "$ w $") nonumber compress  
 
 * Shimer data
-estpost tabstat $shimer_vars, statistics(sd) 
-esttab . using "${tables}/std_sh.tex", label replace nostar booktabs not cells("lalp_hp_sh(fmt(a3)) lunemp_hp_sh(fmt(a3)) lv_hwi_hp_sh(fmt(a3))  ltheta_hwi_hp_sh(fmt(a3))") noobs substitute("sd" "S.D." "lalp_hp_sh" "$  p$" "lunemp_hp_sh" "$ u $" "lv_hwi_hp_sh" "$ v $" "ltheta_hwi_hp_sh" "$ \theta $") nonumber compress  
 
-* Autocorrelations 
+global shimer_vars = ""
+foreach var of global vars {
+	global shimer_vars = "$shimer_vars `var'_sh"
+	replace `var'_sh   = . if year >= 2004
+}	
+
+estpost tabstat $shimer_vars, statistics(sd) 
+esttab . using "${tables}/std_sh.tex", label replace nostar booktabs not cells("lalp_hp_sh(fmt(a3)) lunemp_hp_sh(fmt(a3)) lv_hwi_hp_sh(fmt(a3))  ltheta_hwi_hp_sh(fmt(a3)) lwages_hp_sh(fmt(a3))") noobs substitute("sd" "S.D." "lalp_hp_sh" "$  p$" "lunemp_hp_sh" "$ u $" "lv_hwi_hp_sh" "$ v $" "ltheta_hwi_hp_sh" "$ \theta $" "lwages_hp_sh" "$ w $") nonumber compress  
+
+* HM data
+global hm_vars = ""
+foreach var of global vars {
+	global hm_vars = "$hm_vars `var'_hm"
+}	
+
+estpost tabstat $hm_vars, statistics(sd) 
+esttab . using "${tables}/std_hm.tex", label replace nostar booktabs not cells("lalp_hp_hm(fmt(a3)) lunemp_hp_hm(fmt(a3)) lv_hwi_hp_hm(fmt(a3))  ltheta_hwi_hp_hm(fmt(a3)) lwages_hp_hm(fmt(a3))") noobs substitute("sd" "S.D." "lalp_hp_hm" "$  p$" "lunemp_hp_hm" "$ u $" "lv_hwi_hp_hm" "$ v $" "ltheta_hwi_hp_hm" "$ \theta $" "lwages_hp_hm" "$ w $") nonumber compress  
+  
+***** Autocorrelations *****
 
 * 1951 - 2019
 local tables ""
@@ -99,6 +127,19 @@ foreach var of global shimer_vars {
 }
 esttab `tables_sh' using "${tables}/autocorr_sh.tex", unstack not compress replace label nonumbers booktabs nostar noobs
 
+* HM data
+local tables_hm ""
+foreach var of global hm_vars {
+	
+	gen l_`var' = l.`var'	
+	local lab: variable label `var'
+	label variable l_`var' "`lab' lag"
+	
+	eststo tab`var': estpost correlate `var' l_`var' 
+	local hm_vars = "`hm_vars' tab`var'"
+}
+esttab `hm_vars' using "${tables}/autocorr_hm.tex", unstack not compress replace label nonumbers booktabs nostar noobs
+
 drop l_*
 
 * Correlations 
@@ -111,5 +152,12 @@ esttab . using "${tables}/corr.tex", unstack not compress replace label nonumber
 estpost correlate $shimer_vars, matrix listwise
 esttab . using "${tables}/corr_sh.tex", unstack not compress replace label nonumbers booktabs nostar noobs
 
+* HM data
+estpost correlate $hm_vars, matrix listwise
+esttab . using "${tables}/corr_hm.tex", unstack not compress replace label nonumbers booktabs nostar noobs
+
 * Reg wages on ALP
 reg lwages_hp lalp_hp 
+reg lwages_hp_sh lalp_hp_sh
+reg lwages_hp_hm lalp_hp_hm
+

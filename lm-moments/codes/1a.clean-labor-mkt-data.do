@@ -14,6 +14,7 @@ global data 	  = "${base}/data"
 * Sample period
 global start_year = 1951
 global end_year   = 2019
+global lambda 	  = 100000
 *******************************************************************************/
 if $download == 1 {
 
@@ -93,29 +94,27 @@ gen theta_hwi		 = v_hwi/unemp
 export delimited "${data}/clean/lm_monthly.csv", replace
 
 * Quarterly date
-gen qdate = qofd(dofm(mdate))
-format %tq qdate
+gen yq = qofd(dofm(mdate))
+format %tq yq
 
 * Only one month of data in 2000
 replace v_jolts = . if year(mdate) == 2000
 
 * Take quarterly averages
-collapse (mean) alp urate frate srate unemp v_jolts v_hwi wages, by(year qdate)
+collapse (mean) alp urate frate srate unemp v_jolts v_hwi wages, by(year yq)
 
 * Generate quarterly tightness using quarterly averages of v and u
 gen theta_jolts		 = v_jolts/unemp
 gen theta_hwi		 = v_hwi/unemp
 
-rename qdate yq
+* HP-filter the data
 tsset yq 
 
-* HP-filter the data
 foreach var of varlist alp urate frate srate v_* theta_* unemp wages {
 	
 	* Take logs and HP-filter
 	gen l`var'                = log(`var')
-	tsfilter hp l`var'_hp     = l`var', smooth(100000)
-	tsfilter hp l`var'_hp1600 = l`var', smooth(1600) 
+	tsfilter hp l`var'_hp     = l`var', smooth($lambda)
 	drop `var'
 }
 
