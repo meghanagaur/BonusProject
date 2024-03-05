@@ -8,7 +8,7 @@ macro drop _all
 * Set local director
 cd "/Users/meghanagaur/BonusProject/lm-moments/"
 global base       = c(pwd)
-global download   = 0
+global download   = 1
 global data 	  = "${base}/data"
 
 * Sample period
@@ -21,7 +21,7 @@ if $download == 1 {
 
 	* Download monthly, SA data from FRED (all in thousands)
 	* Note: COMPRNFB and OPHNFB are quarterly 
-	import fred UEMPLT5 CE16OV UNEMPLOY JTSJOL UNRATE AHETPI COMPRNFB OPHNFB, clear
+	import fred UEMPLT5 CE16OV UNEMPLOY JTSJOL UNRATE AHETPI COMPRNFB OPHNFB GDPC1, clear
 	
 	* Rename variables 
 	rename UEMPLT5 st_unemp
@@ -31,7 +31,8 @@ if $download == 1 {
 	rename UNRATE urate 
 	rename COMPRNFB wages
 	rename OPHNFB alp
-
+	rename GDPC1 gdp 
+	
 	* Monthly date
 	gen mdate = mofd(daten)
 	format mdate %tm
@@ -101,7 +102,7 @@ format %tq yq
 replace v_jolts = . if year(mdate) == 2000
 
 * Take quarterly averages
-collapse (mean) alp urate frate srate unemp v_jolts v_hwi wages, by(year yq)
+collapse (mean) alp urate frate srate unemp v_jolts v_hwi wages gdp, by(year yq)
 
 * Generate quarterly tightness using quarterly averages of v and u
 gen theta_jolts		 = v_jolts/unemp
@@ -110,7 +111,7 @@ gen theta_hwi		 = v_hwi/unemp
 * HP-filter the data
 tsset yq 
 
-foreach var of varlist alp urate frate srate v_* theta_* unemp wages {
+foreach var of varlist alp urate frate srate v_* theta_* unemp wages gdp {
 	
 	* Take logs and HP-filter
 	gen l`var'                = log(`var')
