@@ -85,34 +85,48 @@ codes
 
 \begin_deeper
 \begin_layout Enumerate
-estimation-alp
+
+\series bold
+estimation-alp-legacy
+\series default
+ implements the internal calibration of ALP that is currently in the main
+ text
 \end_layout
 
-\begin_deeper
 \begin_layout Enumerate
-internal calibration of ALP
-\end_layout
 
-\end_deeper
-\begin_layout Enumerate
+\series bold
 estimation
+\series default
+ contains all of the codes to solve, simulate, and calibrate the dynamic
+ EGSS model
 \end_layout
 
 \begin_deeper
 \begin_layout Enumerate
-use 
+Model can be calibrateed to match either the 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
 \begin_inset Formula $z_{t}$
 \end_inset
 
- process that matches Fernald utilization-adjusted TFP
+ process that matches the autocorrelation and volatility of the quarterly
+ Fernald utilization-adjusted TFP series
 \end_layout
 
+\begin_layout Enumerate
+autocorrelation and volatility of quarterly output or output/per worker
+\end_layout
+
+\end_deeper
 \begin_layout Enumerate
 estimation_moments.jl performs post-estimation analysis
 \end_layout
 
 \begin_layout Enumerate
-plot_bwc_eps.jl produces plot for the BWC share as a function of epsilon
+plot_bwc_eps.jl produces the plot for the BWC share as a function of epsilon
 \end_layout
 
 \begin_layout Enumerate
@@ -144,7 +158,7 @@ smm
 \series bold
 functions
 \series default
-: main functions
+: main functions for solving and simulating the model
 \end_layout
 
 \begin_layout Enumerate
@@ -170,7 +184,18 @@ lm-moments
 
 \begin_deeper
 \begin_layout Enumerate
-stata code to get labor market series from FRED
+stata code to pull and analyze series from FRED
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+static-model
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+solve the static model and produce figures for the static model section
+ in the paper 
 \end_layout
 
 \end_deeper

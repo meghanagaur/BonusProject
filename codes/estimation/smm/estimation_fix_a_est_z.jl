@@ -21,15 +21,12 @@ println("JLD FILE = ", file_str)
 
 # Load helper functions
 include("../../functions/smm_settings.jl")                # SMM inputs, settings, packages, etc.
-include("../../functions/simulation_est_z.jl")            # SMM inputs, settings, packages, etc.
 
 # Load the pretesting ouput. Use the "best" Sobol points for our starting points.
-@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W, output_target = load(file_load) 
-
-## Specifciations for the shocks in simulation
+@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W, fix_a, fix_wages, pv, output_target = load(file_load) 
 
 # Load Shocks
-shocks  = drawShocksEstZ()
+shocks  = drawShocksEstZ(; fix_a = fix_a)
 
 # Define the NLopt optimization object
 if algo == :NLopt
@@ -39,8 +36,9 @@ if algo == :NLopt
 
     # Objective function
 
-    # need to add dummy gradient: https://discourse.julialang.org/t/nlopt-forced-stop/47747/3
-    obj(x, dummy_gradient!)       = objFunction(x, param_vals, param_est, shocks, data_mom, W; est_z = true)[1]
+    # add dummy gradient: https://discourse.julialang.org/t/nlopt-forced-stop/47747/3
+    obj(x, dummy_gradient!)       = objFunction(x, param_vals, param_est, shocks, data_mom, W; 
+                                    smm = true, est_z = est_z, output_target = output_target, pv = pv, fix_a = fix_a, fix_wages = fix_wages)[1]
 
     # Bound constraints
     lower, upper                  = get_bounds(param_est, param_bounds)
@@ -98,7 +96,8 @@ println("Threads: ", Threads.nthreads())
 
 # Run the optimization code 
 @time output = tiktak(init_points, file_save, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
-                        opt_1 = opt_1, opt_2 = opt_2, smm = true, est_z = true, output_target = output_target)
+                        opt_1 = opt_1, opt_2 = opt_2, smm = true, est_z = est_z, output_target = output_target,
+                        fix_a = fix_a, fix_wages = fix_wages, pv = pv)
 
 # Print output 
 for i = 1:N_string

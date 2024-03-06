@@ -64,39 +64,17 @@ modd                       = model(σ_η = σ_η, χ = χ, γ = γ, hbar = hbar,
 shocks                     = drawShocks(modd.P_z; smm = smm, z0_idx = modd.z_ss_idx)
 
 # Compute simulated model moments 
-@time output            = simulate(modd, shocks; check_mult = false, smm = smm, λ = λ, sd_cut = 3.0) # get output
+@time output            = simulate(modd, shocks; smm = smm, λ = λ, sd_cut = 3.0) # get output
 sol                     = getModel(modd)
 @unpack a_z, θ_z, W, Y  = sol
 a_z                     = a_z[:, modd.z_ss_idx]
-
-#= Check for multiplicity roots
-println("Checking for multiplicity of roots..")
-
-a_min = 10^-8
-a_max = 10
-
-@unpack ψ, ε, q, κ, hp, σ_η, hbar = modd
-a_gap(x, z) = x - ((z*x/sol.w_0 - (ψ/ε)*(hp(x)*σ_η)^2)/hbar)^(ε/(1+ε))
-
-p1 = plot()
-p2 = plot()
-for (iz,z) in enumerate(modd.zgrid)
-    println(roots( x -> a_gap(x, z)  ,  a_min..a_max))
-    plot!(p1, x -> a_gap(x, z) , 0, 10^-3)
-    plot!(p2, x -> a_gap(x, z), a_min, 2.0)
-end
-
-plot(p1, p2, layout = (1,2), size = (800,400), title = "Implicit Effort Gap", legend=:false)
-savefig(file_save*"effort_error.pdf")
-=#
 
 # Unpack parameters
 @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, 
         rho_lx, std_lx, corr_lx, dlw1_dlp, dlw_dlp, 
         dlW_dlY, dlY_dlz, dlW_dlz, dlθ_dlz, macro_vars = output
 
-# CHANGE ROUNDING MODE TO ROUND NEAREST AWAY 
-
+# Print objective function value
 println("Min fval: \t"*string(round(minimum(est_output[:,1]), RoundNearestTiesAway, digits = 10 )) )
 
 # Estimated parameters
@@ -187,13 +165,13 @@ bonus_chi0 = vary_z0(modd_chi0)
 hall         = solveHall(modd_big, bonus.Y, bonus.W)
 
 # Plot labels
-rigid      = "Rigid Wage: fixed w and a"
-fip        = "Incentive Pay: variable w and a"
-ip         = "Incentive Pay, setting "*L"\chi = 0"
-minz_idx   = max( findfirst(x -> x >=  -0.05, logz), findfirst(x -> x > 10^-8, bonus_chi0.θ))
-maxz_idx   = findlast(x -> x <=  0.05, logz)
-maxz_idx   = isnothing(maxz_idx) ? N_vary_z : maxz_idx
-range_1    = minz_idx:maxz_idx
+rigid        = "Rigid Wage: fixed w and a"
+fip          = "Incentive Pay: variable w and a"
+ip           = "Incentive Pay, setting "*L"\chi = 0"
+minz_idx     = max( findfirst(x -> x >=  -0.05, logz), findfirst(x -> x > 10^-8, bonus_chi0.θ))
+maxz_idx     = findlast(x -> x <=  0.05, logz)
+maxz_idx     = isnothing(maxz_idx) ? N_vary_z : maxz_idx
+range_1      = minz_idx:maxz_idx
 
 # Compute some numerical derivatives
 dlY_dlz      = slopeFD(log.(max.(eps(), bonus.Y)), logz; diff = "central")

@@ -19,11 +19,11 @@ std_Δlw      = 1st moment (st dev of wage growth)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
 dlw_dly      = 3rd moment (dlw/dly)
 u_ss         = 4th moment (SS unemployment rate)
-alp_ρ        = 5th moment (persistence of ALP)
-alp_σ        = 6th moment (std of ALP)
+y_ρ         = 5th moment (persistence of output)
+y_σ         = 6th moment (std of output)
 """
 function objFunction(xx, param_vals, param_est, shocks, data_mom, W; smm = true,
-                     fix_a = false, fix_wages = false, pv = false, est_z = false)
+                     fix_a = false, fix_wages = false, pv = false, est_z = false, output_target = "alp")
 
     # Get the relevant parameters
     Params =  OrderedDict{Symbol, Float64}()
@@ -40,21 +40,25 @@ function objFunction(xx, param_vals, param_est, shocks, data_mom, W; smm = true,
 
     # Simulate the model and compute moments
     if fix_a == true 
-        out        = simulateFixedEffort(baseline, shocks; smm = smm, fix_wages = fix_wages, pv = pv, a = Params[:a])
-    elseif est_z == false
-        out        = simulate(baseline, shocks; smm = smm)
-    elseif est_z == true
-        out        = simulateALP(baseline, shocks; smm = smm)
+
+            out = simulateFixedEffort(baseline, shocks; smm = smm, fix_wages = fix_wages, pv = pv, 
+                    a = Params[:a], est_z = est_z, output_target = output_target)
+
+    elseif fix_a == false
+
+        if est_z == false
+            out        = simulate(baseline, shocks; smm = smm)
+        
+        elseif est_z == true
+            out        = simulateEstZ(baseline, shock; output_target = output_target)
+        end
+
     end
 
     # Get moments
-    @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, flag, flag_IR, IR_err = out
-    if est_z == false
-        alp_ρ = 0
-        alp_σ = 0
-    end
+    @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, y_ρ, y_σ, flag, flag_IR, IR_err = out
 
-    mod_mom    = [std_Δlw, dlw1_du, dlw_dly, u_ss, alp_ρ, alp_σ]
+    mod_mom    = [std_Δlw, dlw1_du, dlw_dly, u_ss, y_ρ, y_σ]
 
     # Compute objective function
     d          = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
@@ -83,18 +87,18 @@ W            = weight matrix for SMM
 σ_η          = 2nd param
 χ            = 3rd param
 γ            = 4th param
-ρ            = 6th param
-σ_ϵ          = 7th param
+ρ            = 5th param
+σ_ϵ          = 6th param
     ORDERING OF MOMENTS
 std_Δlw      = 1st moment (st dev of wage growth)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
 dlw_dly      = 3rd moment (dlw/dly)
 u_ss         = 4th moment (SS unemployment rate)
-alp_ρ        = 5th moment (ρ of ALP)
-alp_σ        = 6th moment (σ of ALP)
+y_ρ          = 5th moment (persistence of output)
+y_σ          = 6th moment (std of output)
 """
 function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, data_mom, W; 
-            smm = true, fix_a = false, fix_wages = false, pv = false, est_z = false)
+            smm = true, fix_a = false, fix_wages = false, pv = false, est_z = false, output_target = "alp")
 
     Params =  OrderedDict{Symbol, Float64}()
     for (k, v) in param_vals
@@ -111,21 +115,24 @@ function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, dat
 
     # Simulate the model and compute moments
     if fix_a == true 
-        out        = simulateFixedEffort(baseline, shocks; smm = smm, fix_wages = fix_wages, pv = pv, a = Params[:a])
-    elseif est_z == false
-        out        = simulate(baseline, shocks; smm = smm)
-    elseif est_z == true
-        out        = simulateALP(baseline, shocks; smm = smm)
+
+        out = simulateFixedEffort(baseline, shocks; smm = smm, fix_wages = fix_wages, pv = pv, 
+                a = Params[:a], est_z = est_z, output_target = output_target)
+
+    elseif fix_a == false
+
+        if est_z == false
+            out        = simulate(baseline, shocks; smm = smm)
+        
+        elseif est_z == true
+            out        = simulateEstZ(baseline, shock; output_target = output_target)
+        end
+
     end
 
     # Get moments
-    @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, flag, flag_IR, IR_err = out
-    if est_z == false
-        alp_ρ = 0
-        alp_σ = 0
-    end
-    
-    mod_mom    = [std_Δlw, dlw1_du, dlw_dly, u_ss, alp_ρ, alp_σ]
+    @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, y_ρ, y_σ, flag, flag_IR, IR_err = out
+    mod_mom    = [std_Δlw, dlw1_du, dlw_dly, u_ss, y_ρ, y_σ]
 
     # Compute objective function
     d          = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences

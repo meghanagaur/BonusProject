@@ -8,36 +8,32 @@ println(nprocs())
 # File location for saving jld output + slurm idx
 @everywhere cyc = 1.0
 file            = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
-fix_wages       = false
-pv              = true 
+fix_wages       = true
+pv              = true  # only relevant when fix_wages is false
+output_target   = "gdp" # "alp", can be anything if est_z = false 
 
 # Update file name
 file     = fix_wages ? file*"_fix_wages" : file 
-file     = pv ? file*"_pv" : file 
-file     = file*"_est_z"
+if fix_wages == false   
+    file     = pv ? file*"_pv" : file 
+end
+file            = file*"_est_z"
+file            = file*"_"*output_target
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
-@everywhere include("../functions/calibrate_z.jl") 
 
 @everywhere begin
 
     # get moment targets and weight matrix
-    drop_mom = Dict(:dlw_dly => false, :std_Δlw => false, :alp_ρ => false, :alp_σ => false) # drop micro wage moments
-    @unpack data_mom, mom_key, K, W = moment_targets(dlw1_du = -cyc; drop_mom = drop_mom)
+    drop_mom = Dict(:dlw_dly => false, :std_Δlw => false)
 
-    # Draw shocks
-    a                 = 1.0
-    @unpack N_z, zbar = model()
-    ρ, σ_ϵ            = calibrateZ(; ρ_y =  data_mom[mom_key[:alp_ρ]], 
-                                     σ_y = data_mom[mom_key[:alp_σ]], N_z = N_z, zbar = zbar, a = a)
-    
-    @unpack ι, P_z, z_ss_idx, ε, χ, γ, σ_η, hbar = model(;  ρ = ρ, σ_ϵ = σ_ϵ)
-    shocks            = drawShocks(P_z; smm = true, fix_a = true, z0_idx = z_ss_idx)
+    @unpack data_mom, mom_key, K, W = moment_targets(dlw1_du = -cyc; drop_mom = drop_mom, output_target = output_target)
 
     # Define the baseline values
+    @unpack ρ, σ_ϵ, ι, P_z, z_ss_idx, ε, χ, γ, σ_η, hbar = model()
     param_vals        = OrderedDict{Symbol, Real}([ 
-                        (:a, a),             # effort 
+                        (:a, 1.0),           # effort 
                         (:ε,   ε),           # ε
                         (:σ_η, σ_η),         # σ_η 
                         (:χ, χ),             # χ
@@ -47,8 +43,11 @@ file     = file*"_est_z"
                         (:σ_ϵ, σ_ϵ),         # σ_ϵ
                         (:ι, ι) ])           # ι
 
-    # Parameters we will fix (if any) in: ε, σ_η, χ, γ
-    params_fix   = [:hbar, :ε, :σ_η, :ρ, :σ_ϵ] 
+    # Draw shocks
+    shocks            = drawShocksEstZ(; fix_a = true)  
+
+    # Parameters we will fix (if any) in: ε, σ_η, χ, γ, ρ, σ_ϵ
+    params_fix   = [:hbar, :ε, :σ_η] 
     param_bounds = get_param_bounds()
     for p in params_fix
         delete!(param_bounds, p)
@@ -66,7 +65,7 @@ file     = file*"_est_z"
     end
 
     # Sample I Sobol vectors from the parameter space
-    I_max        = 100^2
+    I_max        = Int64(2*10^4)
     lb           = zeros(J)
     ub           = zeros(J)
 
@@ -83,7 +82,8 @@ end
 
 # Evaluate the objective function for each parameter vector
 @time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W; 
-                                    fix_a = true, fix_wages = fix_wages, pv = pv), 1:I_max) 
+                fix_a = true, fix_wages = fix_wages, pv = pv, est_z = true, output_target = output_target), 1:I_max) 
+
 # Kill the processes
 rmprocs(workers())
 
@@ -109,4 +109,5 @@ IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 # Save the output
 save("../smm/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
-                            "W" => W, "data_mom" => data_mom, "fix_a" => true, "fix_wages" => fix_wages, "pv" => pv))
+                            "W" => W, "data_mom" => data_mom, "fix_a" => true, "fix_wages" => fix_wages, "pv" => pv, 
+                            "est_z" => true, "output_target" => output_target))

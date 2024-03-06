@@ -83,3 +83,14 @@ function quarterlyAverage(x_t, T_q; weights = nothing)
         return [sum(x_t[(t_q*3 - 2):t_q*3].*weights[(t_q*3 - 2):t_q*3]) for t_q = 1:T_q]./total
     end
 end
+
+"""
+Return quarterly total of monthly series x_t, length T_q
+"""
+function quarterlyTotal(x_t, T_q; weights = nothing)
+    if isnothing(weights)
+        return [sum(x_t[(t_q*3 - 2):t_q*3]) for t_q = 1:T_q] 
+    else
+        return [sum(x_t[(t_q*3 - 2):t_q*3].*weights[(t_q*3 - 2):t_q*3]) for t_q = 1:T_q]
+    end
+end

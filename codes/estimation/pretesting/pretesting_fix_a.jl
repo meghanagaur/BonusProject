@@ -6,14 +6,16 @@ addprocs(SlurmManager())
 println(nprocs())
 
 # File location for saving jld output + slurm idx
-@everywhere cyc = 0.543
+@everywhere cyc = 1.0
 file            = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
 fix_wages       = true
-pv              = true 
+pv              = true  # only relevant when fix_wages is false
 
 # Update file name
-file = fix_wages ? file*"_fix_wages" : file
-file = pv ? file*"_pv" : file
+file     = fix_wages ? file*"_fix_wages" : file 
+if fix_wages == false   
+    file     = pv ? file*"_pv" : file 
+end
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
@@ -21,7 +23,7 @@ file = pv ? file*"_pv" : file
 @everywhere begin
 
     # get moment targets and weight matrix
-    drop_mom = Dict(:dlw_dly => false, :std_Δlw => false, :alp_ρ => false, :alp_σ => false) 
+    drop_mom = Dict(:dlw_dly => false, :std_Δlw => false, :y_ρ => false, :y_σ => false) 
     @unpack data_mom, mom_key, K, W = moment_targets(dlw1_du = -cyc; drop_mom = drop_mom)
 
     # Define the baseline values

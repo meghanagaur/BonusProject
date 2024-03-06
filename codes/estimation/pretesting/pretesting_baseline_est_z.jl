@@ -5,16 +5,17 @@ cd(dirname(@__FILE__))
 addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
-file  = "pretesting_baseline_est_z" 
+file            = "pretesting_baseline_est_z" 
+output_target   = "gdp" # "alp"
+file            = file*"_"*output_target
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
-@everywhere include("../functions/simulation_est_z.jl")            
 
 @everywhere begin
 
     # get moment targets and weight matrix
-    @unpack data_mom, mom_key, K, W = moment_targets()
+    @unpack data_mom, mom_key, K, W = moment_targets(; output_target = output_target)
 
     # Define the baseline values
     
@@ -32,9 +33,9 @@ file  = "pretesting_baseline_est_z"
                         (:ι, ι) ])           # ι
 
     # Specifciations for the shocks in simulation
-    shocks                  = drawShocksALP()
+    shocks           = drawShocksEstZ()
 
-    # Parameters we will fix (if any) in ε, σ_η, χ, γ 
+    # Parameters we will fix (if any) in ε, σ_η, χ, γ, ρ, σ_ϵ
     params_fix   = [:hbar] 
     param_bounds = get_param_bounds()
     for p in params_fix
@@ -71,7 +72,7 @@ end
 
 # Evaluate the objective function for each parameter vector
 @time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W; 
-                            smm = true, fix_a = false, est_z = true), 1:I_max) 
+                            smm = true, fix_a = false, est_z = true, output = output_target), 1:I_max) 
 
 # Kill the processes
 rmprocs(workers())
@@ -98,4 +99,4 @@ IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 # Save the output
 save("../smm/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
-                            "W" => W, "data_mom" => data_mom, "fix_a" => false, "est_z" => true))
+                            "W" => W, "data_mom" => data_mom, "fix_a" => false, "est_z" => true, "output_target" => output_target))
