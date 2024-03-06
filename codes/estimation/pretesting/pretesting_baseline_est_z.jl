@@ -72,7 +72,7 @@ end
 
 # Evaluate the objective function for each parameter vector
 @time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W; 
-                            smm = true, fix_a = false, est_z = true, output = output_target), 1:I_max) 
+                            smm = true, fix_a = false, est_z = true, output_target = output_target), 1:I_max) 
 
 # Kill the processes
 rmprocs(workers())
