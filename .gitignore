@@ -1,9 +1,10 @@
 references
 misc
 submission
+codes/misc-tests/
 codes/estimation-alp/
 codes/estimation-alp-legacy/
-old
+codes/old
 
 # figs
 codes/estimation-est-z/figs/
