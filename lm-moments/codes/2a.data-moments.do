@@ -5,13 +5,15 @@ clear all
 set more off 
 macro drop _all
 
-* Set local director
+* Set local directory
 cd "/Users/meghanagaur/BonusProject/lm-moments/"
 global base       = c(pwd)
 global download   = 1
 global data 	  = "${base}/data"
 global tables 	  = "${base}/tables"
 
+* Formatting 
+global fmt fmt(%12.3f) 
 *******************************************************************************/
 * Load tightness and wage data 
 use "$data/clean/lm_quarterly", clear
@@ -34,6 +36,10 @@ drop _merge
 tsset yq 
 
 * Variable labels 
+foreach var of varlist *gdp* {
+	label var `var' "$ y $"
+}
+
 foreach var of varlist *theta* {
 	label var `var' "$\theta$"
 }
@@ -71,32 +77,36 @@ foreach var of varlist *theta* {
 }
 
 ***** Standard deviation *****
-global vars 	   = "lalp_hp lunemp_hp lv_hwi_hp  ltheta_hwi_hp lwages_hp"
+global vars 	   = "lgdp_hp lalp_hp lunemp_hp lv_hwi_hp ltheta_hwi_hp lwages_hp"
 
 
 * 1951- 2019
 estpost tabstat $vars, statistics(sd) 
-esttab . using "${tables}/std.tex", replace label nostar booktabs not cells("lalp_hp(fmt(a3)) lunemp_hp(fmt(a3)) lv_hwi_hp(fmt(a3))  ltheta_hwi_hp(fmt(a3)) lwages_hp(fmt(a3))") noobs substitute("sd" "S.D." "lalp_hp" "$  p$" "lunemp_hp" "$ u $" "lv_hwi_hp" "$ v $" "ltheta_hwi_hp" "$ \theta $" "lwages_hp" "$ w $") nonumber compress  
+esttab . using "${tables}/std.tex", replace label nostar booktabs not cells("lgdp_hp($fmt) lalp_hp($fmt) lunemp_hp($fmt) lv_hwi_hp($fmt)  ltheta_hwi_hp($fmt) lwages_hp($fmt)") noobs substitute("sd" "S.D." "lgdp_hp" "$  y $" "lalp_hp" "$  p$" "lunemp_hp" "$ u $" "lv_hwi_hp" "$ v $" "ltheta_hwi_hp" "$ \theta $" "lwages_hp" "$ w $") nonumber compress  
 
 * Shimer data
 
 global shimer_vars = ""
 foreach var of global vars {
-	global shimer_vars = "$shimer_vars `var'_sh"
-	replace `var'_sh   = . if year >= 2004
+	if "`var'" != "lgdp_hp" {
+		global shimer_vars = "$shimer_vars `var'_sh"
+		replace `var'_sh   = . if year >= 2004
+	}
 }	
 
 estpost tabstat $shimer_vars, statistics(sd) 
-esttab . using "${tables}/std_sh.tex", label replace nostar booktabs not cells("lalp_hp_sh(fmt(a3)) lunemp_hp_sh(fmt(a3)) lv_hwi_hp_sh(fmt(a3))  ltheta_hwi_hp_sh(fmt(a3)) lwages_hp_sh(fmt(a3))") noobs substitute("sd" "S.D." "lalp_hp_sh" "$  p$" "lunemp_hp_sh" "$ u $" "lv_hwi_hp_sh" "$ v $" "ltheta_hwi_hp_sh" "$ \theta $" "lwages_hp_sh" "$ w $") nonumber compress  
+esttab . using "${tables}/std_sh.tex", label replace nostar booktabs not cells("lalp_hp_sh($fmt) lunemp_hp_sh($fmt) lv_hwi_hp_sh($fmt)  ltheta_hwi_hp_sh($fmt) lwages_hp_sh($fmt)") noobs substitute("sd" "S.D." "lalp_hp_sh" "$  p$" "lunemp_hp_sh" "$ u $" "lv_hwi_hp_sh" "$ v $" "ltheta_hwi_hp_sh" "$ \theta $" "lwages_hp_sh" "$ w $") nonumber compress  
 
 * HM data
 global hm_vars = ""
 foreach var of global vars {
-	global hm_vars = "$hm_vars `var'_hm"
+	if "`var'" != "lgdp_hp" {
+		global hm_vars = "$hm_vars `var'_hm"
+	}
 }	
 
 estpost tabstat $hm_vars, statistics(sd) 
-esttab . using "${tables}/std_hm.tex", label replace nostar booktabs not cells("lalp_hp_hm(fmt(a3)) lunemp_hp_hm(fmt(a3)) lv_hwi_hp_hm(fmt(a3))  ltheta_hwi_hp_hm(fmt(a3)) lwages_hp_hm(fmt(a3))") noobs substitute("sd" "S.D." "lalp_hp_hm" "$  p$" "lunemp_hp_hm" "$ u $" "lv_hwi_hp_hm" "$ v $" "ltheta_hwi_hp_hm" "$ \theta $" "lwages_hp_hm" "$ w $") nonumber compress  
+esttab . using "${tables}/std_hm.tex", label replace nostar booktabs not cells("lalp_hp_hm($fmt) lunemp_hp_hm($fmt) lv_hwi_hp_hm($fmt)  ltheta_hwi_hp_hm($fmt) lwages_hp_hm($fmt)") noobs substitute("sd" "S.D." "lalp_hp_hm" "$  p$" "lunemp_hp_hm" "$ u $" "lv_hwi_hp_hm" "$ v $" "ltheta_hwi_hp_hm" "$ \theta $" "lwages_hp_hm" "$ w $") nonumber compress  
   
 ***** Autocorrelations *****
 
@@ -145,16 +155,16 @@ drop l_*
 * Correlations 
 
 * 1951 - 2019
-estpost correlate $vars, matrix 
-esttab . using "${tables}/corr.tex", unstack not compress replace label nonumbers booktabs nostar noobs
+estpost correlate $vars, matrix  
+esttab . using "${tables}/corr.tex", unstack not compress replace label nonumbers booktabs nostar noobs cells(b($fmt))  
 
 * Shimer data
 estpost correlate $shimer_vars, matrix listwise
-esttab . using "${tables}/corr_sh.tex", unstack not compress replace label nonumbers booktabs nostar noobs
+esttab . using "${tables}/corr_sh.tex", unstack not compress replace label nonumbers booktabs nostar noobs cells(b($fmt))  
 
 * HM data
-estpost correlate $hm_vars, matrix listwise
-esttab . using "${tables}/corr_hm.tex", unstack not compress replace label nonumbers booktabs nostar noobs
+estpost correlate $hm_vars, matrix listwise 
+esttab . using "${tables}/corr_hm.tex", unstack not compress replace label nonumbers booktabs nostar noobs cells(b($fmt))  
 
 * Reg wages on ALP
 reg lwages_hp lalp_hp 

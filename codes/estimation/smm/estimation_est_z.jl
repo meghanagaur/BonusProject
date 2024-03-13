@@ -24,7 +24,7 @@ include("../../functions/smm_settings.jl")                # SMM inputs, settings
 include("../../functions/simulation_est_z.jl")            # SMM inputs, settings, packages, etc.
 
 # Load the pretesting ouput. Use the "best" Sobol points for our starting points.
-@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W, output_target = load(file_load) 
+@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W = load(file_load) 
 
 ## Specifciations for the shocks in simulation
 
@@ -40,7 +40,7 @@ if algo == :NLopt
     # Objective function
 
     # need to add dummy gradient: https://discourse.julialang.org/t/nlopt-forced-stop/47747/3
-    obj(x, dummy_gradient!)       = objFunction(x, param_vals, param_est, shocks, data_mom, W; est_z = true)[1]
+    obj(x, dummy_gradient!)       = objFunction(x, param_vals, param_est, shocks, data_mom, W; smm = true, est_z = true)[1]
 
     # Bound constraints
     lower, upper                  = get_bounds(param_est, param_bounds)
@@ -60,9 +60,9 @@ if algo == :NLopt
     if !isnothing(opt_2)
         opt_2.min_objective       = obj
         # tolerance and time settings 
-        opt_2.stopval             = 1e-5
-        opt_2.ftol_rel            = 1e-8
-        opt_2.ftol_abs            = 1e-8
+        opt_2.stopval             = 1e-4
+        opt_2.ftol_rel            = 1e-7
+        opt_2.ftol_abs            = 1e-7
         opt_2.xtol_rel            = 0.0  
         opt_2.maxtime             = (60*60)*1.5
         opt_2.lower_bounds        = lower 
@@ -98,7 +98,7 @@ println("Threads: ", Threads.nthreads())
 
 # Run the optimization code 
 @time output = tiktak(init_points, file_save, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
-                        opt_1 = opt_1, opt_2 = opt_2, smm = true, est_z = true, output_target = output_target)
+                        opt_1 = opt_1, opt_2 = opt_2, est_z = true)
 
 # Print output 
 for i = 1:N_string

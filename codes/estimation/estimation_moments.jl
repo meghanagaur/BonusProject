@@ -1,5 +1,4 @@
 # Produce main figures/moments for the paper
-
 cd(dirname(@__FILE__))
 
 # turn off for cluster
@@ -14,29 +13,26 @@ Plots; gr(border = :box, grid = true, minorgrid = true, gridalpha=0.2,
 xguidefontsize = 13, yguidefontsize = 13, xtickfontsize=10, ytickfontsize=10,
 linewidth = 2, gridstyle = :dash, gridlinewidth = 1.2, margin = 10* Plots.px, legendfontsize = 12)
 
-## Logistics
-files        = ["baseline" "baseline_est_z"]
-cluster      = false        
+# Logistics
+files        = ["baseline_est_z_gdp"]
+cluster       = Sys.isapple() ? false : true
+
+# Numerical options
+λ             = 10^5                     # smoothing parameter for HP filter
+smm           = cluster ? false : true   # keep at false
+N_vary_z      = cluster ? 101 : 51       # number of gridpoints when taking numerical derivatives   
+
+# Set up file names
 file_idx     = cluster ? parse(Int64, ENV["SLURM_ARRAY_TASK_ID"]) : 1
 file_str     = files[file_idx]                              
-file_pre     = "smm/jld-draft/pretesting_"*file_str*".jld2"   # pretesting data location
-file_est     = "smm/jld-draft/estimation_"*file_str*".txt"    # estimation output location
+file_pre     = "smm/jld/pretesting_"*file_str*".jld2"   # pretesting data location
+file_est     = "smm/jld/estimation_"*file_str*".txt"    # estimation output location
 file_save    = "figs/vary-z0/"*file_str*"/"                      # file to-save 
 λ            = 10^5                                              # smoothing parameter for HP filter
 
 # Make directory for figures
 mkpath(file_save)
 println("File name: "*file_str)
-
-# Settings for simulation
-if cluster == false
-    # number of gridpoints when taking numerical derivatives
-    N_vary_z                 = 51           
-    smm                      = true
-else
-    N_vary_z                 = 101           
-    smm                      = false
-end
 
 # Load output
 est_output = readdlm(file_est, ',', Float64) # estimation output       

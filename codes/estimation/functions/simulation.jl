@@ -4,7 +4,7 @@ Solve the model with infinite horizon contract. Solve
 for θ and Y on every point in the productivity grid.
 Then, compute the effort optimal effort a and wage w,
 as a(z|z_0) and w(z|z_0). u0 = initial unemployment rate.
-λ       = HP filtering parameter.
+λ = HP filtering parameter.
 """
 function simulate(modd, shocks; u0 = 0.06, sd_cut = 3, smm = false, λ = 10^5)
     
@@ -150,8 +150,8 @@ function simulate(modd, shocks; u0 = 0.06, sd_cut = 3, smm = false, λ = 10^5)
                 
                 # Collect moments
                 lx_q[:, :, n]      .= [lgdp_q_resid lalp_q_resid lu_q_resid lv_q_resid lθ_q_resid lw_q_resid]  
-                dlw_dlp_n[n]        = cov(lw_q_resid, ly_q_resid)/max(eps(), var(ly_q_resid))
-                dlw1_dlp_n[n]       = cov(lw1_q_resid, ly_q_resid)/max(eps(), var(ly_q_resid))
+                dlw_dlp_n[n]        = cov(lw_q_resid, lalp_q_resid)/max(eps(), var(lalp_q_resid))
+                dlw1_dlp_n[n]       = cov(lw1_q_resid, lalp_q_resid)/max(eps(), var(lalp_q_resid))
 
             end
 
@@ -188,7 +188,8 @@ function simulate(modd, shocks; u0 = 0.06, sd_cut = 3, smm = false, λ = 10^5)
         
     end
 
-    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, y_ρ = 0.0, y_σ = 0.0,
+    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, 
+            y_ρ = rho_lx[1], y_σ = std_lx[1], p_ρ = rho_lx[2], p_σ = std_lx[2],
             rho_lx = rho_lx, std_lx = std_lx, corr_lx = corr_lx, dlθ_dlz = dlθ_dlz, dlw_dlp = dlw_dlp, 
             dlw1_dlp = dlw1_dlp, dlW_dlz = dlW_dlz, dlY_dlz = dlY_dlz, dlW_dlY = dlW_dlY,
             macro_vars = macro_vars, flag = flag, flag_IR = flag_IR, IR_err = IR_err)
@@ -203,8 +204,8 @@ N_sim_micro             = number of workers for micro wage moments
 N_sim_macro             = number of sequences to avg across for macro moments
 N_sim_macro_workers     = number of workers for macro wage/output moments
 """
-function drawShocks(P_z; z0_idx = 0, T_sim = 828, burnin = 500, 
-    N_sim_micro = 5*10^4, N_sim_macro = 10^4, N_sim_macro_workers = 10^4, 
+function drawShocks(P_z; z0_idx = 0, T_sim = 828, burnin = 250, 
+    N_sim_micro = 10^4, N_sim_macro = 10^4, N_sim_macro_workers = 10^4, 
     smm = false, fix_a = false, set_seed = true, seed = 512)
 
     if set_seed == true
@@ -246,7 +247,6 @@ function drawShocks(P_z; z0_idx = 0, T_sim = 828, burnin = 500,
         η_shocks_macro = 0
     end
 
-    # Don't pass in η shocks
     return (z_idx = z_idx, N_sim_micro = N_sim_micro, T_sim = T_sim, burnin = burnin,
             s_shocks_micro = s_shocks_micro, jf_shocks_micro = jf_shocks_micro, η_shocks_micro = η_shocks_micro,
             N_sim_macro = N_sim_macro, N_sim_macro_workers = N_sim_macro_workers,

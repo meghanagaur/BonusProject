@@ -4,11 +4,9 @@ Solve the model with infinite horizon contract. Solve
 for θ and Y on every point in the productivity grid.
 Then, compute the effort optimal effort a and wage w,
 as a(z|z_0) and w(z|z_0). u0 = initial unemployment rate.
-λ       = HP filtering parameter.
-output  = "gdp" or "alp"
-
+λ = HP filtering parameter.
 """
-function simulateEstZ(modd, shocks; u0 = 0.06, output_target = "gdp", check_mult = false, λ = 10^5, sd_cut = 3.0)
+function simulateEstZ(modd, shocks; u0 = 0.06, check_mult = false, λ = 10^5, sd_cut = 3.0)
     
     # Initialize moments to export (default = 0)
     
@@ -17,14 +15,17 @@ function simulateEstZ(modd, shocks; u0 = 0.06, output_target = "gdp", check_mult
     dlw1_du   = 0.0  # d log w_1 / d u
     dlw_dly   = 0.0  # passthrough: d log w_it / d log y_it
     u_ss      = 0.0  # stochastic mean of unemployment  
-    y_ρ       = 0.0  # autocorrelation of quarterly output
-    y_σ       = 0.0  # st dev of quarterly output
+    y_ρ       = 0.0  # autocorrelation of quarterly GDP
+    y_σ       = 0.0  # st dev of quarterly GDP
+    p_ρ       = 0.0  # autocorrelation of quarterly ALP
+    p_σ       = 0.0  # st dev of quarterly ALP
+    dlw_dlp   = 0.0  # elasticity of wages with respect to productivity 
 
     # Get all of the relevant parameters, functions for the model
     @unpack hp, zgrid, logz, N_z, P_z, p_z, ψ, f, s, σ_η, χ, γ, hbar, ε, z_ss_idx, ρ, σ_ϵ = modd 
 
     # Generate model objects for every point on zgrid:
-     @unpack θ_z, f_z, hp_z, y_z, lw1_z, pt_z, W, Y, flag_z, flag_IR_z, err_IR_z = getModel(modd; check_mult = check_mult) 
+    @unpack θ_z, f_z, hp_z, y_z, lw1_z, pt_z, W, Y, flag_z, flag_IR_z, err_IR_z = getModel(modd; check_mult = check_mult) 
 
     # Composite flag; truncate simulation and only penalize IR flags for log z values within XX standard deviations of μ_z 
     σ_z     = σ_ϵ/sqrt(1 - ρ^2)
@@ -47,8 +48,8 @@ function simulateEstZ(modd, shocks; u0 = 0.06, output_target = "gdp", check_mult
         z_idx    = min.(max.(z_idx, idx_1), idx_2)  
 
         # Simulate annual wage changes, passthrough, and output
-        @unpack std_Δlw, dlw_dly, y_ρ, y_σ = simulateWagesOutputEstZ(N_sim_micro, T_sim, burnin, z_idx[:,1], 
-            s_shocks, jf_shocks, η_shocks, s, f_z, y_z, hp_z, pt_z, ψ, σ_η; λ = λ, output_target = output_target)
+        @unpack std_Δlw, dlw_dly, y_ρ, y_σ, p_ρ, p_σ, dlw_dlp = simulateWagesOutputEstZ(N_sim_micro, T_sim, burnin, z_idx[:,1], 
+            s_shocks, jf_shocks, η_shocks, s, f_z, y_z, hp_z, pt_z, ψ, σ_η; λ = λ)
 
         # Other macro moments 
         @views lw1_t   = lw1_z[z_idx]     # E[log w_1 | z_t] series
@@ -87,8 +88,9 @@ function simulateEstZ(modd, shocks; u0 = 0.06, output_target = "gdp", check_mult
     IR_err = sqrt(sum((err_IR_z[idx_1:idx_2]).^2))
 
     # Export the simulation results
-    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, y_ρ = y_ρ, 
-            y_σ = y_σ, flag = flag, flag_IR = flag_IR, IR_err = IR_err)
+    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, 
+            y_ρ = y_ρ, y_σ = y_σ, p_ρ = p_ρ, p_σ = p_σ, dlw_dlp = dlw_dlp, 
+            flag = flag, flag_IR = flag_IR, IR_err = IR_err)
     
 end
 
@@ -99,7 +101,7 @@ T_sim                   = mum periods for micro wage moments
 burnin                  = length burn-in for micro moments
 N_sim_macro             = num of seq to avg across for macro moments
 """
-function drawShocksEstZ(; N_sim_micro = 2*10^4, T_sim = 1200, burnin = 250,
+function drawShocksEstZ(; N_sim_micro = 10^4, T_sim = 828, burnin = 250,
     N_sim_macro = 10^4, fix_a = false, set_seed = true, seed = 512)
 
     if set_seed == true
@@ -131,7 +133,7 @@ Simulate average labor productivity a*z for N_sim x T_sim jobs,
 ignoring η shocks (iid). HP-filter log average output with smoothing parameter λ.
 """
 function simulateWagesOutputEstZ(N_sim, T_sim, burnin, z_idx, s_shocks, jf_shocks, η_shocks, 
-                                s, f_z, y_z, hp_z, pt_z, ψ, σ_η; λ = 10^5, output_target = "gdp")
+                                s, f_z, y_z, hp_z, pt_z, ψ, σ_η; λ = 10^5)
 
     # Active jobs
     T          = T_sim + burnin
@@ -242,7 +244,6 @@ function simulateWagesOutputEstZ(N_sim, T_sim, burnin, z_idx, s_shocks, jf_shock
                 dlw_s                              = [lw_n[t+12] - lw_n[t] for t = t0:12:t2]
                 dlw[idx:idx+length(dlw_s)-1, n]   .= dlw_s
             end
-
         end
 
     end
@@ -251,9 +252,11 @@ function simulateWagesOutputEstZ(N_sim, T_sim, burnin, z_idx, s_shocks, jf_shock
     @views Δlw     = dlw[isnan.(dlw).==0]
     std_Δlw        = isempty(Δlw) ? NaN : std(Δlw) 
 
-    # Construct quarterly measures
+    # Construct quarterly series
     T_q            = Int(T_sim/3)
-    ly_q           = zeros(T_q)                                      
+    lp_q           = zeros(T_q)                                      
+    ly_q           = zeros(T_q)    
+    lw_q           = zeros(T_q)                                  
 
     # Compute quarterly output series average
     @views @inbounds for t = 1:T_q
@@ -261,25 +264,33 @@ function simulateWagesOutputEstZ(N_sim, T_sim, burnin, z_idx, s_shocks, jf_shock
         t_q        = t*3
         y_i        = vec(y_m[:, burnin+1:end][:, (t_q - 2):t_q])       # output of all workers
         emp        = vec(active[:, burnin+1:end][:, (t_q - 2):t_q])    # workers that were producing 
+        w_i        = vec(lw_pb[:, (t_q - 2):t_q])                      # wages of all workers
 
-        # total output across all people
-        if output_target == "gdp"
-            ly_q[t]    = log.(max(sum(y_i), eps()))   
-        # avg output/worker (averaged across workers/hours in the quarter)
-        elseif output_target == "alp"
-            ly_q[t]    = log.(max(mean(y_i[emp.==1]), eps()))           
-        end
+        # total output across all people (GDP)
+        ly_q[t]      = log.(max(sum(y_i), eps()))   
+        # avg output/worker, averaged across workers/hours in the quarter (ALP)
+        lp_q[t]      = log.(max(mean(y_i[emp.==1]), eps()))       
+        # average wages    
+        lw_q[t]      = log.(max(mean(w_i[emp.==1]), eps()))   
 
     end
 
-    # HP-filter the quarterly log output and unemployment series
+    # HP-filter the quarterly logged series
     ly_q_resid, _ = hp_filter(ly_q, λ)
+    lp_q_resid, _ = hp_filter(lp_q, λ)
+    lw_q_resid, _ = hp_filter(lw_q, λ)
 
-    # Compute standard deviation of output
+    # Compute elasticity of wages with respect to ALP
+    dlw_dlp = cov(lw_q_resid, lp_q_resid)/max(eps(), var(lp_q_resid)) 
+
+    # Compute standard deviation and persistence of ALP
+    p_ρ  = first(autocor(lp_q_resid, [1]))
+    p_σ  = std(lp_q_resid)
+
+    # Compute standard deviation and persistence of GDP
+    y_ρ  = first(autocor(ly_q_resid, [1]))
     y_σ  = std(ly_q_resid)
 
-    # Compute persistence of output
-    y_ρ  = first(autocor(ly_q_resid, [1]))
-
-    return (y_ρ = y_ρ, y_σ = y_σ, std_Δlw = std_Δlw, dlw_dly = avg_pt)
+    return (y_ρ = y_ρ, y_σ = y_σ, p_ρ = p_ρ, p_σ = p_σ,
+            std_Δlw = std_Δlw, dlw_dly = avg_pt, dlw_dlp = dlw_dlp)
 end

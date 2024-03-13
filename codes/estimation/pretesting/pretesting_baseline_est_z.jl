@@ -5,9 +5,13 @@ cd(dirname(@__FILE__))
 addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
-file            = "pretesting_baseline_est_z" 
-output_target   = "gdp" # "alp"
-file            = file*"_"*output_target
+file                        = "pretesting_baseline_est_z" 
+@everywhere hm              = false
+@everywhere output_target   = "gdp" # "alp"
+
+# Update file name
+file                        = file*"_"*output_target
+file                        = hm ? file*"_hm" : file 
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
@@ -15,7 +19,22 @@ file            = file*"_"*output_target
 @everywhere begin
 
     # get moment targets and weight matrix
-    @unpack data_mom, mom_key, K, W = moment_targets(; output_target = output_target)
+    est_mom = Dict(:std_Δlw => true, :dlw1_du => true, 
+                   :dlw_dly => true, :u_ss => true) 
+
+    if hm == true
+        est_mom[:dlw_dlp] = true
+        est_mom[:dlw1_du] = false
+    end
+    if output_target == "gdp"
+        est_mom[:y_ρ] = true 
+        est_mom[:y_σ] = true 
+    elseif output_target == "alp"
+        est_mom[:p_ρ] = true 
+        est_mom[:p_σ] = true 
+    end
+
+    @unpack data_mom, mom_key, K, W = moment_targets(; est_mom = est_mom)
 
     # Define the baseline values
     
@@ -72,7 +91,7 @@ end
 
 # Evaluate the objective function for each parameter vector
 @time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W; 
-                            smm = true, fix_a = false, est_z = true, output_target = output_target), 1:I_max) 
+                            smm = true, fix_a = false, est_z = true), 1:I_max) 
 
 # Kill the processes
 rmprocs(workers())
@@ -99,4 +118,4 @@ IR_err  = reduce(hcat, out_new[i][5] for i = 1:N)
 # Save the output
 save("../smm/jld/"*file*".jld2",  Dict("moms" => moms, "fvals" => fvals, "mom_key" => mom_key, "param_est" => param_est, "param_vals" => param_vals, 
                             "param_bounds" => param_bounds, "pars" => pars, "IR_flag" => IR_flag, "IR_err" => IR_err, "J" => J, "K" => K,
-                            "W" => W, "data_mom" => data_mom, "fix_a" => false, "est_z" => true, "output_target" => output_target))
+                            "W" => W, "data_mom" => data_mom, "fix_a" => false, "est_z" => true, "output_target" => output_target, "hm" => hm))

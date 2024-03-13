@@ -23,8 +23,8 @@ end
 @everywhere begin
 
     # get moment targets and weight matrix
-    drop_mom = Dict(:dlw_dly => false, :std_Δlw => false, :y_ρ => false, :y_σ => false) 
-    @unpack data_mom, mom_key, K, W = moment_targets(dlw1_du = -cyc; drop_mom = drop_mom)
+    est_mom = Dict(:dlw1_du => true, :u_ss => true) 
+    @unpack data_mom, mom_key, K, W = moment_targets(dlw1_du = -cyc; est_mom = est_mom)
 
     # Define the baseline values
     @unpack ρ, σ_ϵ, ι, P_z, z_ss_idx, ε, χ, γ, σ_η, hbar = model()

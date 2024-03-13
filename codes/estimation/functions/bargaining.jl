@@ -2,8 +2,7 @@
 Simulate the model with fixed effort.
 """
 function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut = 3.0, 
-                            pv = true, fix_wages = false, smm = false, 
-                            est_z = false, output_target = "gdp")
+                            pv = true, fix_wages = false, smm = false, est_z = false)
 
     # Initialize moments to export (default = 0)
 
@@ -12,8 +11,11 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut
     dlw1_du      = 0.0  # d log w_1 / d u
     dlw_dly      = 0.0  # passthrough: d log w_it / d log y_it
     u_ss         = 0.0  # stochastic mean of unemployment  
-    y_ρ          = 0.0  # autocorrelation of quarterly output
-    y_σ          = 0.0  # st dev of quarterly output
+    y_ρ          = 0.0  # autocorrelation of quarterly GDP
+    y_σ          = 0.0  # st dev of quarterly GDP
+    p_ρ          = 0.0  # autocorrelation of quarterly ALP
+    p_σ          = 0.0  # st dev of quarterly ALP
+    dlw_dlp      = 0.0  # averages wages/output (quarterly)
 
     # Untargeted simulated moments (quarterly)
     macro_vars   = [:y, :p, :u, :v, :θ, :w]
@@ -23,7 +25,6 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut
     corr_lx      = zeros(N_macro_vars, N_macro_vars)
     
     # Additional cyclicality measures (quarterly)
-    dlw_dlp      = 0.0  # averages wages/output (quarterly)
     dlw1_dlp     = 0.0  # averages new hire wages/output (quarterly)
     dlW_dlY      = 0.0  # present value wages/output (monthly)
     dlW_dlz      = 0.0  # present value wages (monthly)
@@ -68,8 +69,10 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut
 
         # Bootstrap across N_sim_macro simulations
         dlw1_du_n      = zeros(N_sim_macro)                  # cyclicality of new hire wages (monthly)
-        y_σ_n          = est_z ? zeros(N_sim_macro) : 0.0    # output volatility
-        y_ρ_n          = est_z ? zeros(N_sim_macro) : 0.0    # autocorrelation
+        y_ρ_n          = est_z ? zeros(N_sim_macro) : 0.0    # autocorrelation of GDP
+        y_σ_n          = est_z ? zeros(N_sim_macro) : 0.0    # output volatility of GDP
+        p_ρ_n          = est_z ? zeros(N_sim_macro) : 0.0    # autocorrelation of ALP
+        p_σ_n          = est_z ? zeros(N_sim_macro) : 0.0    # output volatility of ALP
 
         # Compute evolution of unemployment for the z_t path
         T              = T_sim + burnin
@@ -96,23 +99,23 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut
         if est_z == true 
             Threads.@threads for n = 1:N_sim_macro
 
-                    if output_target == "gdp"
-                        # Total output (GDP)
-                        @views y_q            = quarterlyTotal(y_t[burnin+1:end, n], T_q; weights = emp_wgt[:,n]) 
-                        ly_q_resid, _         = hp_filter(log.(max.(y_q, eps())), λ)  
-                  
-                    elseif output_target == "alp"
-                        # Average output/worker
-                        @views y_q            = quarterlyAverage(y_t[burnin+1:end, n], T_q; weights = emp_wgt[:,n])    
-                        ly_q_resid, _         = hp_filter(log.(max.(y_q, eps())), λ)  
-                    end
+                # Total output (GDP)
+                ly_q            = quarterlyTotal(y_t[burnin+1:end, n], T_q; weights = emp_wgt[:,n]) 
+                ly_q_resid, _   = hp_filter(log.(max.(ly_q, eps())), λ)  
+            
+                # Average output/worker (ALP)
+                @views lp_q     = quarterlyAverage(y_t[burnin+1:end, n], T_q; weights = emp_wgt[:,n])    
+                lp_q_resid, _   = hp_filter(log.(max.(lp_q, eps())), λ)  
+            
+                # Autocorrelation and standard deviation of GDP
+                y_ρ_n[n]  = first(autocor(ly_q_resid, [1]))
+                y_σ_n[n]  = std(ly_q_resid)
 
-                    # Compute standard deviation of output
-                    y_σ_n[n]  = std(ly_q_resid)
+                # Autocorrelation and standard deviation of ALP
+                p_ρ_n[n]  = first(autocor(lp_q_resid, [1]))
+                p_σ_n[n]  = std(lp_q_resid)
 
-                    # Compute autocorrelation of output
-                    y_ρ_n[n]  = first(autocor(ly_q_resid, [1]))
-                end
+            end
     
         end
         
@@ -127,12 +130,14 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut
         # Ouptut autocorrelation and standard deviation
         y_ρ = mean(y_ρ_n)
         y_σ = mean(y_σ_n)
+        p_ρ = mean(p_ρ_n)
+        p_σ = mean(p_σ_n)
 
         # UNTARGETED MOMENTS
         if smm == false 
 
             # Unpack additional shocks for macro wage/output moments
-            @unpack s_shocks_micro, jf_shocks_micro, N_sim_macro_workers, s_shocks_macro, jf_shocks_macro = shocks
+            @unpack N_sim_micro, s_shocks_micro, jf_shocks_micro, N_sim_macro_workers, s_shocks_macro, jf_shocks_macro = shocks
 
             # Initialize some series
             @views v_t        = θ_t[burnin+1:end, :].*u_t[burnin+1:end, :]
@@ -241,9 +246,11 @@ function simulateFixedEffort(modd, shocks; u0 = 0.06, a = 1.0, λ = 10^5, sd_cut
 
     end
 
-    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, y_ρ = y_ρ, y_σ = y_σ,
-            rho_lx = rho_lx, std_lx = std_lx, corr_lx = corr_lx, dlθ_dlz = dlθ_dlz, dlw_dlp = dlw_dlp, 
-            dlw1_dlp = dlw1_dlp, dlW_dlz = dlW_dlz, dlY_dlz = dlY_dlz, dlW_dlY = dlW_dlY,
+    return (std_Δlw = std_Δlw, dlw1_du = dlw1_du, dlw_dly = dlw_dly, u_ss = u_ss, 
+            y_ρ = y_ρ, y_σ = y_σ, p_ρ = p_ρ, p_σ = p_σ,
+            rho_lx = rho_lx, std_lx = std_lx, corr_lx = corr_lx, 
+            dlθ_dlz = dlθ_dlz, dlw_dlp = dlw_dlp, dlw1_dlp = dlw1_dlp, 
+            dlW_dlz = dlW_dlz, dlY_dlz = dlY_dlz, dlW_dlY = dlW_dlY,
             macro_vars = macro_vars, flag = flag, flag_IR = flag_IR, IR_err = IR_err)
 end
 

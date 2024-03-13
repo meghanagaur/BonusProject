@@ -23,7 +23,7 @@ println("JLD FILE = ", file_str)
 include("../../functions/smm_settings.jl")                # SMM inputs, settings, packages, etc.
 
 # Load the pretesting ouput. Use the "best" Sobol points for our starting points.
-@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W, fix_a, fix_wages, pv, output_target = load(file_load) 
+@unpack moms, fvals, pars, mom_key, param_bounds, param_est, param_vals, data_mom, J, K, W, fix_a, fix_wages, pv, est_z, output_target = load(file_load) 
 
 # Load Shocks
 shocks  = drawShocksEstZ(; fix_a = fix_a)
@@ -38,7 +38,7 @@ if algo == :NLopt
 
     # add dummy gradient: https://discourse.julialang.org/t/nlopt-forced-stop/47747/3
     obj(x, dummy_gradient!)       = objFunction(x, param_vals, param_est, shocks, data_mom, W; 
-                                    smm = true, est_z = est_z, output_target = output_target, pv = pv, fix_a = fix_a, fix_wages = fix_wages)[1]
+                                    smm = true, est_z = est_z, pv = pv, fix_a = fix_a, fix_wages = fix_wages)[1]
 
     # Bound constraints
     lower, upper                  = get_bounds(param_est, param_bounds)
@@ -58,9 +58,9 @@ if algo == :NLopt
     if !isnothing(opt_2)
         opt_2.min_objective       = obj
         # tolerance and time settings 
-        opt_2.stopval             = 1e-5
-        opt_2.ftol_rel            = 1e-8
-        opt_2.ftol_abs            = 1e-8
+        opt_2.stopval             = 1e-4
+        opt_2.ftol_rel            = 1e-7
+        opt_2.ftol_abs            = 1e-7
         opt_2.xtol_rel            = 0.0  
         opt_2.maxtime             = (60*60)*1.5
         opt_2.lower_bounds        = lower 
@@ -96,7 +96,7 @@ println("Threads: ", Threads.nthreads())
 
 # Run the optimization code 
 @time output = tiktak(init_points, file_save, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
-                        opt_1 = opt_1, opt_2 = opt_2, smm = true, est_z = est_z, output_target = output_target,
+                        opt_1 = opt_1, opt_2 = opt_2, est_z = est_z,
                         fix_a = fix_a, fix_wages = fix_wages, pv = pv)
 
 # Print output 

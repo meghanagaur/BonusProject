@@ -6,19 +6,19 @@ addprocs(SlurmManager())
 println(nprocs())
 
 # File location for saving jld output + slurm idx
-@everywhere cyc = 1.0
-file            = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
-fix_wages       = true
-pv              = true  # only relevant when fix_wages is false
-output_target   = "gdp" # "alp", can be anything if est_z = false 
+@everywhere cyc             = 1.0
+file                        = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
+fix_wages                   = true
+pv                          = true        
+@everywhere hm              = false
+@everywhere output_target   = "gdp" # "alp", can be anything if est_z = false 
 
 # Update file name
-file     = fix_wages ? file*"_fix_wages" : file 
-if fix_wages == false   
-    file     = pv ? file*"_pv" : file 
-end
+file            = fix_wages ? file*"_fix_wages" : file 
+file            = pv ? file*"_pv" : file 
 file            = file*"_est_z"
 file            = file*"_"*output_target
+file            = hm ? file*"_hm" : file 
 
 # Load SMM inputs, settings, packages, etc.
 @everywhere include("../functions/smm_settings.jl") 
@@ -26,9 +26,21 @@ file            = file*"_"*output_target
 @everywhere begin
 
     # get moment targets and weight matrix
-    drop_mom = Dict(:dlw_dly => false, :std_Δlw => false)
+    est_mom = Dict(:dlw1_du => true, :u_ss => true) 
 
-    @unpack data_mom, mom_key, K, W = moment_targets(dlw1_du = -cyc; drop_mom = drop_mom, output_target = output_target)
+    if hm == true
+        est_mom[:dlw_dlp] = true
+        est_mom[:dlw1_du] = false
+    end
+    if output_target == "gdp"
+        est_mom[:y_ρ] = true 
+        est_mom[:y_σ] = true 
+    elseif output_target == "alp"
+        est_mom[:p_ρ] = true 
+        est_mom[:p_σ] = true 
+    end
+
+    @unpack data_mom, mom_key, K, W = moment_targets(dlw1_du = -cyc; est_mom = est_mom)
 
     # Define the baseline values
     @unpack ρ, σ_ϵ, ι, P_z, z_ss_idx, ε, χ, γ, σ_η, hbar = model()
@@ -82,7 +94,7 @@ end
 
 # Evaluate the objective function for each parameter vector
 @time output = pmap(i -> objFunction(sob_seq[:,i], param_vals, param_est, shocks, data_mom, W; 
-                fix_a = true, fix_wages = fix_wages, pv = pv, est_z = true, output_target = output_target), 1:I_max) 
+                fix_a = true, fix_wages = fix_wages, pv = pv, est_z = true), 1:I_max) 
 
 # Kill the processes
 rmprocs(workers())

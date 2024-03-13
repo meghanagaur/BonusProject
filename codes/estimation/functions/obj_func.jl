@@ -19,11 +19,13 @@ std_Δlw      = 1st moment (st dev of wage growth)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
 dlw_dly      = 3rd moment (dlw/dly)
 u_ss         = 4th moment (SS unemployment rate)
-y_ρ         = 5th moment (persistence of output)
-y_σ         = 6th moment (std of output)
+p_ρ          = 5th moment (persistence of alp)
+p_σ          = 6th moment (std of alp)
+y_ρ          = 7th moment (persistence of gdp)
+y_σ          = 8th moment (std of gdp)
 """
 function objFunction(xx, param_vals, param_est, shocks, data_mom, W; smm = true,
-                     fix_a = false, fix_wages = false, pv = false, est_z = false, output_target = "alp")
+                     fix_a = false, fix_wages = false, pv = false, est_z = false)
 
     # Get the relevant parameters
     Params =  OrderedDict{Symbol, Float64}()
@@ -41,24 +43,23 @@ function objFunction(xx, param_vals, param_est, shocks, data_mom, W; smm = true,
     # Simulate the model and compute moments
     if fix_a == true 
 
-            out = simulateFixedEffort(baseline, shocks; smm = smm, fix_wages = fix_wages, pv = pv, 
-                    a = Params[:a], est_z = est_z, output_target = output_target)
+            out = simulateFixedEffort(baseline, shocks; 
+                    smm = smm, fix_wages = fix_wages, pv = pv, a = Params[:a], est_z = est_z)
 
     elseif fix_a == false
 
         if est_z == false
             out        = simulate(baseline, shocks; smm = smm)
-        
         elseif est_z == true
-            out        = simulateEstZ(baseline, shock; output_target = output_target)
+            out        = simulateEstZ(baseline, shocks)
         end
 
     end
 
     # Get moments
-    @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, y_ρ, y_σ, flag, flag_IR, IR_err = out
+    @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, p_ρ, p_σ, y_ρ, y_σ, dlw_dlp, flag, flag_IR, IR_err = out
 
-    mod_mom    = [std_Δlw, dlw1_du, dlw_dly, u_ss, y_ρ, y_σ]
+    mod_mom    = [std_Δlw, dlw1_du, dlw_dly, u_ss, p_ρ, p_σ, y_ρ, y_σ, dlw_dlp]
 
     # Compute objective function
     d          = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences
@@ -94,11 +95,13 @@ std_Δlw      = 1st moment (st dev of wage growth)
 dlw1_du      = 2nd moment (dlog w_1 / d u)
 dlw_dly      = 3rd moment (dlw/dly)
 u_ss         = 4th moment (SS unemployment rate)
-y_ρ          = 5th moment (persistence of output)
-y_σ          = 6th moment (std of output)
+p_ρ          = 5th moment (persistence of alp)
+p_σ          = 6th moment (std of alp)
+y_ρ          = 7th moment (persistence of gdp)
+y_σ          = 8th moment (std of gdp)
 """
 function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, data_mom, W; 
-            smm = true, fix_a = false, fix_wages = false, pv = false, est_z = false, output_target = "alp")
+            smm = true, fix_a = false, fix_wages = false, pv = false, est_z = false)
 
     Params =  OrderedDict{Symbol, Float64}()
     for (k, v) in param_vals
@@ -117,22 +120,21 @@ function objFunction_WB(xx, x0, param_bounds, param_vals, param_est, shocks, dat
     if fix_a == true 
 
         out = simulateFixedEffort(baseline, shocks; smm = smm, fix_wages = fix_wages, pv = pv, 
-                a = Params[:a], est_z = est_z, output_target = output_target)
+                a = Params[:a], est_z = est_z)
 
     elseif fix_a == false
 
         if est_z == false
             out        = simulate(baseline, shocks; smm = smm)
-        
         elseif est_z == true
-            out        = simulateEstZ(baseline, shock; output_target = output_target)
+            out        = simulateEstZ(baseline, shocks)
         end
 
     end
 
     # Get moments
-    @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, y_ρ, y_σ, flag, flag_IR, IR_err = out
-    mod_mom    = [std_Δlw, dlw1_du, dlw_dly, u_ss, y_ρ, y_σ]
+    @unpack std_Δlw, dlw1_du, dlw_dly, u_ss, p_ρ, p_σ, y_ρ, y_σ, dlw_dlp, flag, flag_IR, IR_err = out
+    mod_mom    = [std_Δlw, dlw1_du, dlw_dly, u_ss, p_ρ, p_σ, y_ρ, y_σ, dlw_dlp]
 
     # Compute objective function
     d          = (mod_mom - data_mom)./abs.(data_mom) #0.5(abs.(mod_mom) + abs.(data_mom)) # arc % differences

@@ -38,7 +38,7 @@ if algo == :NLopt
     # Objective function
 
     # need to add dummy gradient: https://discourse.julialang.org/t/nlopt-forced-stop/47747/3
-    obj(x, dummy_gradient!)       = objFunction(x, param_vals, param_est, shocks, data_mom, W; smm = true, fix_a = false, fix_wages = false, est_z = false)[1]
+    obj(x, dummy_gradient!)       = objFunction(x, param_vals, param_est, shocks, data_mom, W)[1]
 
     # Bound constraints
     lower, upper                  = get_bounds(param_est, param_bounds)
@@ -58,9 +58,9 @@ if algo == :NLopt
     if !isnothing(opt_2)
         opt_2.min_objective       = obj
         # tolerance and time settings 
-        opt_2.stopval             = 1e-5
-        opt_2.ftol_rel            = 1e-8
-        opt_2.ftol_abs            = 1e-8
+        opt_2.stopval             = 1e-4
+        opt_2.ftol_rel            = 1e-7
+        opt_2.ftol_abs            = 1e-7
         opt_2.xtol_rel            = 0.0  
         opt_2.maxtime             = (60*60)*1.5
         opt_2.lower_bounds        = lower 
@@ -96,7 +96,7 @@ println("Threads: ", Threads.nthreads())
 
 # Run the optimization code 
 @time output = tiktak(init_points, file_save, param_bounds, param_vals, param_est, shocks, data_mom, W, I_max; 
-                        opt_1 = opt_1, opt_2 = opt_2, fix_a = false, fix_wages = false, est_z = false)
+                        opt_1 = opt_1, opt_2 = opt_2)
 
 # Print output 
 for i = 1:N_string

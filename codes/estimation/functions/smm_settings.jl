@@ -25,15 +25,8 @@ Use the identity weight matrix.
 K = number of targeted moments.
 """
 function moment_targets(; std_Δlw = 0.064, dlw1_du = -1.000, dlw_dly = 0.039, u_ss = 0.06, 
-                          alp_ρ = 0.89, alp_σ = 0.017, gdp_ρ = 0.94, gdp_σ = 0.024, drop_mom = nothing, output_target = "alp")
-
-    if output_target == "alp"
-        y_ρ = alp_ρ
-        y_σ = alp_σ
-    elseif output_target == "gdp"
-        y_ρ = gdp_ρ
-        y_σ = gdp_σ
-    end
+                          p_ρ = 0.886, p_σ = 0.0167, y_ρ = 0.938, y_σ = 0.0244, dlw_dlp = 0.449, 
+                          est_mom = Dict(:std_Δlw => true, :dlw1_du => true, :dlw_dly => true, :u_ss => true))
     
     # ordering of the moments
     mom_key       = OrderedDict{Symbol, Int64}([   
@@ -41,20 +34,23 @@ function moment_targets(; std_Δlw = 0.064, dlw1_du = -1.000, dlw_dly = 0.039, u
                             (:dlw1_du, 2),
                             (:dlw_dly, 3),
                             (:u_ss,    4),
-                            (:y_ρ,     5), 
-                            (:y_σ,     6) ]) 
+                            (:p_ρ,     5), 
+                            (:p_σ,     6),
+                            (:y_ρ,     7), 
+                            (:y_σ,     8),
+                            (:dlw_dlp, 9) ]) 
 
     # vector of moments
-    data_mom      = [std_Δlw, dlw1_du, dlw_dly, u_ss, y_ρ, y_σ]   
-    W             = Matrix(1.0I, length(data_mom), length(data_mom)) 
+    data_mom      = [std_Δlw, dlw1_du, dlw_dly, u_ss, p_ρ, p_σ, y_ρ, y_σ, dlw_dlp]   
+    W             = zeros(length(data_mom), length(data_mom)) 
     
-    if !isnothing(drop_mom)
-        for (k,v) in mom_key
-            if haskey(drop_mom, k)
-                W[v,v] = 0
-            end
+    # fill out weight matrix
+    for (k,v) in mom_key
+        if haskey(est_mom, k)
+            W[v,v] = 1.0
         end
     end
+    
 
     K  = Int64(sum(diag(W)))
 
@@ -69,8 +65,8 @@ function get_param_bounds(; ε_lb = 0.3, ε_ub = 3.0)
     # parameter bounds
     return OrderedDict{Symbol, Array{Real,1}}([ 
                         (:ε,  [ε_lb, ε_ub]),        # ε
-                        (:σ_η, [0.2, 0.5]),         # σ_η 
-                        (:χ, [0.0, 1.0]),           # χ  
+                        (:σ_η, [0.3, 0.7]),         # σ_η 
+                        (:χ, [0.1, 0.9]),           # χ  
                         (:γ, [0.2, 0.8]),           # γ
                         (:ρ, [0.9, 0.999]),         # ρ
                         (:σ_ϵ, [0.0001, 0.01]) ])   # σ_ϵ

@@ -13,8 +13,8 @@ file  = "pretesting_baseline"
 @everywhere begin
 
     # get moment targets and weight matrix
-    drop_mom = Dict(:y_ρ => false, :y_σ => false) 
-    @unpack data_mom, mom_key, K, W = moment_targets(drop_mom = drop_mom)
+    est_mom = Dict(:std_Δlw => true, :dlw1_du => true, :dlw_dly => true, :u_ss => true) 
+    @unpack data_mom, mom_key, K, W = moment_targets(; est_mom = mom)
 
     # Define the baseline values
     

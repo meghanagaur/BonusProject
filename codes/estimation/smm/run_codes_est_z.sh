@@ -1,6 +1,6 @@
 #!/bin/bash
 
-files="baseline_est_z"
+files="baseline_est_z_gdp"
 
 for file in $files
 do
