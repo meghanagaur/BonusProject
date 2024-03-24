@@ -25,7 +25,7 @@ Use the identity weight matrix.
 K = number of targeted moments.
 """
 function moment_targets(; std_Δlw = 0.064, dlw1_du = -1.000, dlw_dly = 0.039, u_ss = 0.06, 
-                          p_ρ = 0.886, p_σ = 0.0167, y_ρ = 0.938, y_σ = 0.0244, dlw_dlp = 0.449, 
+                          p_ρ = 0.886, p_σ = 0.0167, y_ρ = 0.938, y_σ = 0.0244, dlw_dlp = 0.449,  
                           est_mom = Dict(:std_Δlw => true, :dlw1_du => true, :dlw_dly => true, :u_ss => true))
     
     # ordering of the moments
@@ -46,12 +46,12 @@ function moment_targets(; std_Δlw = 0.064, dlw1_du = -1.000, dlw_dly = 0.039, u
     
     # fill out weight matrix
     for (k,v) in mom_key
-        if haskey(est_mom, k)
+        if haskey(est_mom, k) && est_mom[k] == true
             W[v,v] = 1.0
         end
-    end
-    
+    end 
 
+    # number of parameters to estimate
     K  = Int64(sum(diag(W)))
 
     return (data_mom = data_mom, mom_key = mom_key, K = K, W = W)

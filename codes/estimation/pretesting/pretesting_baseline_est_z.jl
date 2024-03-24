@@ -6,8 +6,8 @@ addprocs(SlurmManager())
 
 # File location for saving jld output + slurm idx
 file                        = "pretesting_baseline_est_z" 
-@everywhere hm              = false
-@everywhere output_target   = "gdp" # "alp"
+@everywhere hm              = true
+@everywhere output_target   = "alp" # "alp"
 
 # Update file name
 file                        = file*"_"*output_target
@@ -21,7 +21,8 @@ file                        = hm ? file*"_hm" : file
     # get moment targets and weight matrix
     est_mom = Dict(:std_Δlw => true, :dlw1_du => true, 
                    :dlw_dly => true, :u_ss => true) 
-
+                   
+    # adjust settings
     if hm == true
         est_mom[:dlw_dlp] = true
         est_mom[:dlw1_du] = false

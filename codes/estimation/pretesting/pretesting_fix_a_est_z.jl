@@ -10,8 +10,8 @@ println(nprocs())
 file                        = "pretesting_fix_a_bwc"*replace(string(cyc), "." => "")
 fix_wages                   = true
 pv                          = true        
-@everywhere hm              = false
-@everywhere output_target   = "gdp" # "alp", can be anything if est_z = false 
+@everywhere hm              = true
+@everywhere output_target   = "alp" # "alp", can be anything if est_z = false 
 
 # Update file name
 file            = fix_wages ? file*"_fix_wages" : file 

@@ -296,6 +296,7 @@ savefig(p8, file_save*"dlogtheta.pdf")
 # Check convergence 
 indices    = sortperm(est_output[:,1])
 stop       = findlast(x -> x < 0.05, est_output[indices,1])
+stop       = (stop == 0) ? length(indices) : stop
 indices    = reverse(indices[1:stop])
 
 p1 = plot()
